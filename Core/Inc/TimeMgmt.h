@@ -20,4 +20,7 @@ extern volatile uint8_t ppsTick;
 
 uint32_t GetMillisecondsFromTimeStamp(SensorTimestamp* timeStamp);
 
+void GetStartStopSensorTimeStamp(SensorTimestamp* copy);
+void GetStopSensorTimeStamp(SensorTimestamp* copy);
+
 #endif

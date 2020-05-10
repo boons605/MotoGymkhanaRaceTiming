@@ -8,10 +8,10 @@
 #ifndef INC_DISPLAY_H_
 #define INC_DISPLAY_H_
 
+#include <stdint.h>
 
 
 #endif /* INC_DISPLAY_H_ */
 
-uint32_t CalculateMinutesComponent(uint32_t milliSeconds);
-uint32_t CalculateSecondsComponent(uint32_t milliSeconds);
-uint32_t CalculateMillisecondsComponent(uint32_t milliSeconds);
+void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs);
+void RunDisplay(void);

@@ -8,6 +8,8 @@
 #ifndef INC_LAPTIMER_H_
 #define INC_LAPTIMER_H_
 
+#include <stdint.h>
+
 #define MAXLAPCOUNT 32
 
 typedef struct
@@ -18,9 +20,10 @@ typedef struct
 
 extern Lap laps[MAXLAPCOUNT];
 extern Lap* currentLap;
+extern Lap* previousLap;
+extern uint8_t lapFinished;
 
 void RunLapTimer(void);
 
-uint8_t IsLastLap(Lap* lap);
 
 #endif /* INC_LAPTIMER_H_ */

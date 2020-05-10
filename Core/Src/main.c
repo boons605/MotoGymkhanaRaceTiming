@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "TimeMgmt.h"
 #include "Configuration.h"
+#include "RaceTiming.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -60,31 +61,7 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//static void DumpStuffOnUART(void)
-//{
-//	static uint32_t lastCallTime = 0U;
-//
-//	if ((lastCallTime+500) < systemTime.timeStampMs)
-//	{
-//		lastCallTime = systemTime.timeStampMs;
-//
-//		memcpy(uartData, &sensorStartStopTimeStamp, sizeof(sensorStartStopTimeStamp));
-//		uartData[12] = 10;
-//		uartData[13] = 13;
-//		uartTxIndex = 0;
-//
-//	}
-//
-//	if (LL_USART_IsActiveFlag_TXE(USART1))
-//	{
-//		if (uartTxIndex < sizeof(uartData))
-//		{
-//			LL_USART_TransmitData8(USART1, uartData[uartTxIndex]);
-//			uartTxIndex++;
-//		}
-//	}
-//
-//}
+
 /* USER CODE END 0 */
 
 /**
@@ -155,6 +132,9 @@ int main(void)
 			  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
 			  ppsTick = 0U;
 		  }
+		  RunRaceTiming();
+
+
 	  }
 
     /* USER CODE BEGIN 3 */
@@ -228,7 +208,7 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
-  TIM_InitStruct.Prescaler = 32;
+  TIM_InitStruct.Prescaler = 31;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
   TIM_InitStruct.Autoreload = 999;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;

@@ -16,7 +16,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if ((lastEdge + 500U) < millis())
+  if ((lastEdge + 500U) <= millis())
   {
     if (state == 0U)
     {
@@ -34,37 +34,37 @@ void loop() {
 
   if (digitalRead(10) == HIGH)
   {
-    if ((lastEdgeSensor2Out + 5000) < millis())
+    if ((lastEdgeSensor2Out + 5000) <= millis())
     {
       digitalWrite(7, HIGH);
       lastEdgeSensor1Out = millis();
     }
 
-    if ((lastEdgeSensor1Out + 500) < millis())
+    if ((lastEdgeSensor1Out + 500) <= millis())
     {
       digitalWrite(7, LOW);
     }
 
-    if ((lastEdgeSensor1Out + 12845) < millis())
+    if ((lastEdgeSensor1Out + 12845) <= millis())
     {
       digitalWrite(4, HIGH);
       lastEdgeSensor2Out = millis();
     }
 
-    if ((lastEdgeSensor2Out + 500) < millis())
+    if ((lastEdgeSensor2Out + 500) <= millis())
     {
       digitalWrite(4, LOW);
     }
   }
   else
   {
-    if ((lastEdgeSensor1Out + 10560) < millis())
+    if ((lastEdgeSensor1Out + 10560) <= millis())
     {
       digitalWrite(7, HIGH);
       lastEdgeSensor1Out = millis();
     }
 
-    if ((lastEdgeSensor1Out + 500) < millis())
+    if ((lastEdgeSensor1Out + 500) <= millis())
     {
       digitalWrite(7, LOW);
     }
