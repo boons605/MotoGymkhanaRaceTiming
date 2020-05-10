@@ -31,8 +31,9 @@ void loop() {
     
     lastEdge = millis();
   }
-
-  if (digitalRead(10) == HIGH)
+  else 
+  {
+    if (digitalRead(10) == HIGH)
   {
     if ((lastEdgeSensor2Out + 5000) <= millis())
     {
@@ -68,7 +69,9 @@ void loop() {
     {
       digitalWrite(7, LOW);
     }
+  }  
   }
+  
   
   
 }
