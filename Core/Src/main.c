@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "TimeMgmt.h"
+#include "Configuration.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -143,10 +144,17 @@ int main(void)
   {
     /* USER CODE END WHILE */
 	  //DumpStuffOnUART();
-	  if (ppsTick == 1U)
+	  if (autoConfigurationDone == 0U)
 	  {
-		  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
-		  ppsTick = 0U;
+		  RunAutoConfiguration();
+	  }
+	  else
+	  {
+		  if (ppsTick == 1U)
+		  {
+			  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
+			  ppsTick = 0U;
+		  }
 	  }
 
     /* USER CODE BEGIN 3 */

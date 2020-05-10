@@ -18,10 +18,6 @@ extern volatile uint8_t sensorStopInterrupt;
 extern volatile uint8_t ppsTick;
 
 
-uint32_t CalculateTotalMillisecondsBetweenTimeStamps(SensorTimestamp* startTime, SensorTimestamp* endTime);
-uint32_t CalculateMinutesComponent(uint32_t milliSeconds);
-uint32_t CalculateSecondsComponent(uint32_t milliSeconds);
-uint32_t CalculateMillisecondsComponent(uint32_t milliSeconds);
-
+uint32_t GetMillisecondsFromTimeStamp(SensorTimestamp* timeStamp);
 
 #endif
