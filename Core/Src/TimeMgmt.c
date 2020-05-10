@@ -6,6 +6,7 @@
  */
 #include "TimeMgmt.h"
 #include "stm32f1xx_ll_exti.h"
+#include <string.h>
 
 volatile SensorTimestamp systemTime;
 volatile SensorTimestamp sensorStartStopTimeStamp;
