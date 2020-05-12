@@ -55,6 +55,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -105,9 +106,11 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_TIM2_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   LL_TIM_EnableIT_UPDATE(TIM2);
   LL_TIM_EnableCounter(TIM2);
+  LL_I2C_Enable(I2C1);
 
   //LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_11);
   //LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_8);
@@ -121,24 +124,22 @@ int main(void)
   {
     /* USER CODE END WHILE */
 	  //DumpStuffOnUART();
+
+
+    /* USER CODE BEGIN 3 */
+	  if (ppsTick == 1U)
+	  {
+		  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
+		  ppsTick = 0U;
+	  }
 	  if (autoConfigurationDone == 0U)
 	  {
 		  RunAutoConfiguration();
 	  }
 	  else
 	  {
-		  if (ppsTick == 1U)
-		  {
-			  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
-			  ppsTick = 0U;
-		  }
 		  RunRaceTiming();
-
-
 	  }
-
-    /* USER CODE BEGIN 3 */
-
   }
   /* USER CODE END 3 */
 }
@@ -182,6 +183,58 @@ void SystemClock_Config(void)
   }
   LL_Init1msTick(32000000);
   LL_SetSystemCoreClock(32000000);
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  LL_I2C_InitTypeDef I2C_InitStruct = {0};
+
+  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
+  /**I2C1 GPIO Configuration  
+  PB6   ------> I2C1_SCL
+  PB7   ------> I2C1_SDA 
+  */
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_6|LL_GPIO_PIN_7;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
+  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  /** I2C Initialization 
+  */
+  LL_I2C_DisableOwnAddress2(I2C1);
+  LL_I2C_DisableGeneralCall(I2C1);
+  LL_I2C_EnableClockStretching(I2C1);
+  I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
+  I2C_InitStruct.ClockSpeed = 50000;
+  I2C_InitStruct.DutyCycle = LL_I2C_DUTYCYCLE_2;
+  I2C_InitStruct.OwnAddress1 = 0;
+  I2C_InitStruct.TypeAcknowledge = LL_I2C_ACK;
+  I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
+  LL_I2C_Init(I2C1, &I2C_InitStruct);
+  LL_I2C_SetOwnAddress2(I2C1, 0);
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**

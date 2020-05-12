@@ -15,6 +15,7 @@ static uint16_t CalculateMillisecondsComponent(uint32_t milliSeconds);
 static void UpdateDisplayedTime(uint32_t milliseconds);
 
 static uint32_t displayResultUntil = 0U;
+static uint8_t permanentResultDisplay = 0U;
 static uint32_t displayedResult = 0U;
 static uint32_t runningTimeStartTime = 0U;
 static uint32_t lastDisplayUpdate = 0U;
@@ -24,7 +25,15 @@ static uint8_t uartTxIndex = 0U;
 
 void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 {
-	displayResultUntil = systemTime.timeStampMs + displayDurationInMs;
+	if (displayDurationInMs > 0U)
+	{
+		displayResultUntil = systemTime.timeStampMs + displayDurationInMs;
+	}
+	else
+	{
+		permanentResultDisplay = 1U;
+	}
+
 	displayedResult = newTimeInMs;
 	//Force display update
 	lastDisplayUpdate = 0U;
@@ -33,6 +42,7 @@ void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 void ResetRunningDisplayTime(void)
 {
 	runningTimeStartTime = systemTime.timeStampMs;
+	permanentResultDisplay = 0U;
 }
 
 static void SendUartBuffer(void)
@@ -51,7 +61,8 @@ void RunDisplay(void)
 {
 	uint32_t timeStamp = systemTime.timeStampMs;
 
-	if (timeStamp < displayResultUntil)
+	if ((timeStamp < displayResultUntil) ||
+			(permanentResultDisplay == 1U))
 	{
 		if (((lastDisplayUpdate+500U) < timeStamp))
 		{

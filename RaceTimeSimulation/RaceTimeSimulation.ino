@@ -2,7 +2,9 @@ unsigned long lastEdge = 0U;
 unsigned char state = 0U;
 
 unsigned long lastEdgeSensor1Out = 0U;
-unsigned long lastEdgeSensor2Out = 0U;
+
+unsigned long dualSensorRaceState = 0U;
+unsigned long millisOnStateEntry = 0U;
 
 void setup() {
   // put your setup code here, to run once:
@@ -35,26 +37,49 @@ void loop() {
   {
     if (digitalRead(10) == HIGH)
   {
-    if ((lastEdgeSensor2Out + 5000) <= millis())
-    {
-      digitalWrite(7, HIGH);
-      lastEdgeSensor1Out = millis();
-    }
-
-    if ((lastEdgeSensor1Out + 500) <= millis())
-    {
-      digitalWrite(7, LOW);
-    }
-
-    if ((lastEdgeSensor1Out + 12845) <= millis())
-    {
-      digitalWrite(4, HIGH);
-      lastEdgeSensor2Out = millis();
-    }
-
-    if ((lastEdgeSensor2Out + 500) <= millis())
-    {
-      digitalWrite(4, LOW);
+    switch (dualSensorRaceState)
+    { 
+      case 0U:
+      {
+        if ((millisOnStateEntry + 5000) < millis())
+        {
+          digitalWrite(7, HIGH);
+          millisOnStateEntry = millis();
+          dualSensorRaceState++;
+        }
+        break;
+      }
+      case 1U:
+      {
+        if ((millisOnStateEntry + 500) < millis())
+        {
+          digitalWrite(7, LOW);
+          millisOnStateEntry = millis();
+          dualSensorRaceState++;
+        }
+        break;
+      }
+      case 2U:
+      {
+        if ((millisOnStateEntry + 12845) < millis())
+        {
+          digitalWrite(4, HIGH);
+          millisOnStateEntry = millis();
+          dualSensorRaceState++;
+        }
+        break;
+      }
+      case 3U:
+      {
+        if ((millisOnStateEntry + 500) < millis())
+        {
+          digitalWrite(4, LOW);
+          millisOnStateEntry = millis();
+          dualSensorRaceState = 0U;;
+        }
+        break;
+      }
+      
     }
   }
   else

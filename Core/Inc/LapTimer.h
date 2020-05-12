@@ -22,8 +22,9 @@ extern Lap laps[MAXLAPCOUNT];
 extern Lap* currentLap;
 extern Lap* previousLap;
 extern uint8_t lapFinished;
+extern uint8_t newRunStarted;
 
-void RunLapTimer(void);
+void RunStandAloneTimer(void);
 
 
 #endif /* INC_LAPTIMER_H_ */
