@@ -22,15 +22,8 @@ static uint8_t slaveDataIndex = 0U;
 
 //Data for DS1307 RTC setup
 static const uint8_t rtcConfigBytes[9] = {
-		0x00, //Set pointer to register 0
-		0x00, //Write to register 0, to turn off the CH bit in order to start RTC
-		0x00, //Clear register 1
-		0x00, //Clear register 2
-		0x00, //Clear register 3
-		0x00, //Clear register 4
-		0x00, //Clear register 5
-		0x00, //Clear register 6
-		0x10, //Set bits RS0 and RS1 to 0 for 1Hz pulse, set SQWE to 1
+		0x0E, //Set pointer to register 0x0E
+		0x00, //Set bits RS0 and RS1 to 0 for 1Hz pulse, set SQWE to 1
 		};
 
 static void InitRTC(void)

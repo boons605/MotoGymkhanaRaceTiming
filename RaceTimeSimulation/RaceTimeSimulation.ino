@@ -18,30 +18,14 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  if ((lastEdge + 500U) <= millis())
-  {
-    if (state == 0U)
-    {
-      digitalWrite(2, HIGH);
-      state = 1U;
-    }
-    else
-    {
-      digitalWrite(2, LOW);
-      state = 0U;
-    }
-    
-    lastEdge = millis();
-  }
-  else 
-  {
-    if (digitalRead(10) == HIGH)
+
+  if (digitalRead(10) == HIGH)
   {
     switch (dualSensorRaceState)
     { 
       case 0U:
       {
-        if ((millisOnStateEntry + 5000) < millis())
+        if ((millisOnStateEntry + 5000) <= millis())
         {
           digitalWrite(7, HIGH);
           millisOnStateEntry = millis();
@@ -51,7 +35,7 @@ void loop() {
       }
       case 1U:
       {
-        if ((millisOnStateEntry + 500) < millis())
+        if ((millisOnStateEntry + 500) <= millis())
         {
           digitalWrite(7, LOW);
           millisOnStateEntry = millis();
@@ -61,7 +45,7 @@ void loop() {
       }
       case 2U:
       {
-        if ((millisOnStateEntry + 12845) < millis())
+        if ((millisOnStateEntry + 18845) <= millis())
         {
           digitalWrite(4, HIGH);
           millisOnStateEntry = millis();
@@ -71,7 +55,7 @@ void loop() {
       }
       case 3U:
       {
-        if ((millisOnStateEntry + 500) < millis())
+        if ((millisOnStateEntry + 500) <= millis())
         {
           digitalWrite(4, LOW);
           millisOnStateEntry = millis();
@@ -95,7 +79,7 @@ void loop() {
       digitalWrite(7, LOW);
     }
   }  
-  }
+  
   
   
   

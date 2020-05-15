@@ -144,15 +144,17 @@ static void DualSensorSingleRunTimer(void)
 {
 	SensorTimestamp timeStamp;
 
+	if (currentLap == (Lap*)0U)
+	{
+		currentLap = &laps[0];
+		currentLap->startTimeStamp = 0U;
+	}
+
 	if (sensorStartStopInterrupt == 1U)
 	{
 		sensorStartStopInterrupt = 0U;
 		GetStartStopSensorTimeStamp(&timeStamp);
-		if (currentLap == (Lap*)0U)
-		{
-			currentLap = &laps[0];
-			currentLap->startTimeStamp = 0U;
-		}
+
 
 		if (currentLap->startTimeStamp == 0U)
 		{
@@ -167,8 +169,12 @@ static void DualSensorSingleRunTimer(void)
 		sensorStopInterrupt = 0U;
 		GetStopSensorTimeStamp(&timeStamp);
 
-		FinishCurrentLapAndPrepareNext(&timeStamp);
-		currentLap->startTimeStamp = 0U;
+		if ((currentLap->endTimeStamp == 0U) && (currentLap->startTimeStamp != 0U))
+		{
+			FinishCurrentLapAndPrepareNext(&timeStamp);
+			currentLap->startTimeStamp = 0U;
+		}
+
 	}
 }
 
