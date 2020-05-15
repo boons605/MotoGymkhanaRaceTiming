@@ -11,19 +11,19 @@
 
 #define DISPLAYCOUNT 4
 
-const uint8_t CH[12][7] = {
-  {4, 8, 0b00111110, 0b01000001, 0b01000001, 0b00111110, 0b00000000}, // 0
-  {3, 8, 0b01000010, 0b01111111, 0b01000000, 0b00000000, 0b00000000}, // 1
-  {4, 8, 0b01100010, 0b01010001, 0b01001001, 0b01000110, 0b00000000}, // 2
-  {4, 8, 0b00100010, 0b01000001, 0b01001001, 0b00110110, 0b00000000}, // 3
-  {4, 8, 0b00011000, 0b00010100, 0b00010010, 0b01111111, 0b00000000}, // 4
-  {4, 8, 0b00100111, 0b01000101, 0b01000101, 0b00111001, 0b00000000}, // 5
-  {4, 8, 0b00111110, 0b01001001, 0b01001001, 0b00110000, 0b00000000}, // 6
-  {4, 8, 0b01100001, 0b00010001, 0b00001001, 0b00000111, 0b00000000}, // 7
-  {4, 8, 0b00110110, 0b01001001, 0b01001001, 0b00110110, 0b00000000}, // 8
-  {4, 8, 0b00000110, 0b01001001, 0b01001001, 0b00111110, 0b00000000}, // 9
-  {2, 8, 0b01010000, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, // :
-  {2, 8, 0b01000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000}// .
+const uint8_t CH[12][8] = {
+		{0x06, 0x09, 0x09, 0x09, 0x09, 0x09, 0x06, 0x00}, // 0
+		{0x02, 0x06, 0x02, 0x02, 0x02, 0x02, 0x07, 0x00}, // 1
+		{0x06, 0x09, 0x01, 0x02, 0x04, 0x04, 0x0F, 0x00}, // 2
+		{0x06, 0x09, 0x01, 0x06, 0x01, 0x09, 0x06, 0x00}, // 3
+		{0x01, 0x03, 0x05, 0x09, 0x0F, 0x01, 0x01, 0x00}, // 4
+		{0x0F, 0x08, 0x0E, 0x01, 0x01, 0x09, 0x06, 0x00}, // 5
+		{0x06, 0x08, 0x08, 0x06, 0x09, 0x09, 0x06, 0x00}, // 6
+		{0x0F, 0x01, 0x01, 0x02, 0x04, 0x08, 0x08, 0x00}, // 7
+		{0x06, 0x09, 0x09, 0x06, 0x09, 0x09, 0x06, 0x00}, // 8
+		{0x06, 0x09, 0x09, 0x06, 0x01, 0x01, 0x06, 0x00}, // 9
+		{0x00, 0x00, 0x02 ,0x00, 0x00, 0x02, 0x00, 0x00}, // :
+		{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01} // .
 };
 
 const uint16_t digits[] = {
@@ -41,7 +41,7 @@ const uint16_t max7219InitActions[4] = {
 		REG_SHUTDOWN | 0x01,
 		REG_DECODE_MODE | 0x00,
 		REG_SCAN_LIMIT | 0x07,
-		REG_INTENSITY | 0x0F
+		REG_INTENSITY | 0x01
 };
 
 static uint16_t max7219SpiBuffer[DISPLAYCOUNT] = {0};
@@ -107,6 +107,7 @@ static void SendSPIBuffer(void)
 void UpdateMax7219Display(uint32_t data)
 {
 	timeDataBCD = data;
+	//timeDataBCD = 0x000789123;
 	newTime = 1U;
 }
 
@@ -123,100 +124,56 @@ void InitMax7219Display(void)
 	}
 }
 
-static uint8_t GetCharBit(uint8_t digit, uint8_t digitPosition)
-{
-	return ((CH[digit][digitPosition+2] >> (7U-displayLine)) & 0x01);
-}
-
-//I'm not gonna be proud of this code. There must be a smarter way.
-static void UpdateDisplayLineDisplay1(void)
+static uint32_t GenerateDisplayData(void)
 {
 	uint8_t index = 0U;
-	uint16_t data = digits[displayLine];
-	for (index = 0U; index < 8; index++)
+	uint32_t retVal = 0U;
+	for (index = 6U; index > 0U; index--)
 	{
-		if (index < 4)
+		uint8_t digit = ((timeDataBCD >> ((index-1)*4)) & 0x0F);
+		if (digit < 10U)
 		{
-			data |= (GetCharBit(((timeDataBCD >> 4) & 0x0F), index) << index);
+			retVal |= CH[digit][displayLine];
 		}
-		else if (index > 4)
-		{
-			data |= (GetCharBit((timeDataBCD & 0x0F), index-5) << index);
-		}
-	}
-	sendData(data, 0U);
-}
 
-static void UpdateDisplayLineDisplay2(void)
-{
-	uint8_t index = 0U;
-	uint16_t data = digits[displayLine];
-	for (index = 0U; index < 8; index++)
-	{
-		if (index < 1)
+		if (index == 6U)
 		{
-			data |= (GetCharBit(11, index+3) << index);
-		}
-		else if ((index > 1) && (index < 6))
-		{
-			data |= (GetCharBit(((timeDataBCD >> 8) & 0x0F), index-2) << index);
-		}
-		else if (index > 6)
-		{
-			data |= (GetCharBit(((timeDataBCD >> 4) & 0x0F), index-7) << index);;
-		}
-	}
-	sendData(data, 1U);
-}
+			retVal <<= 3U;
+			retVal |= CH[10][displayLine];
+			retVal <<= 4U;
 
-static void UpdateDisplayLineDisplay3(void)
-{
-	uint8_t index = 0U;
-	uint16_t data = digits[displayLine];
-	for (index = 0U; index < 8; index++)
-	{
-		if (index < 4)
-		{
-			data |= (GetCharBit(((timeDataBCD >> 20) & 0x0F), index) << index);
 		}
-		else if (index > 4)
+		else if (index == 4U)
 		{
-			data |= (GetCharBit(((timeDataBCD >> 16) & 0x0F), index-5) << index);
-		}
-	}
-	sendData(data, 2U);
-}
+			retVal <<= 2U;
+			retVal |= CH[11][displayLine];
+			retVal <<= 4U;
 
-static void UpdateDisplayLineDisplay4(void)
-{
-	uint8_t index = 0U;
-	uint16_t data = digits[displayLine];
-	for (index = 0U; index < 8; index++)
-	{
-		if (index < 1)
-		{
-			data |= (GetCharBit(((timeDataBCD >> 24) & 0x0F), index+3) << index);
 		}
-		else if ((index > 1) && (index < 4))
+		else if (index > 1U)
 		{
-			data |= (GetCharBit(10, index-2) << index);
+			retVal <<= 5U;
 		}
-		else
-		{
-			data |= (GetCharBit(((timeDataBCD >> 20) & 0x0F), index-2) << index);
-		}
+
+
 	}
-	sendData(data, 3U);
+
+	return retVal;
 }
 
 static void UpdateMax7219DisplayTime(void)
 {
 	if ((max7219dataTransmissionState == 0U) && (newTime == 1U))
 	{
-		UpdateDisplayLineDisplay1();
-		UpdateDisplayLineDisplay2();
-		UpdateDisplayLineDisplay3();
-		UpdateDisplayLineDisplay4();
+		uint32_t lineData = GenerateDisplayData();
+		uint8_t index = 0U;
+		uint8_t shift = 24U;
+		for (index = 0U; index < 4U; index++)
+		{
+			sendData((digits[displayLine] | ((lineData >> shift) & 0xFF)), index);
+			shift -= 8;
+		}
+
 		displayLine++;
 
 		if (displayLine > 7U)

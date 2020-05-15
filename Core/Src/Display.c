@@ -14,7 +14,7 @@
 static uint8_t CalculateMinutesComponent(uint32_t milliSeconds);
 static uint8_t CalculateSecondsComponent(uint32_t milliSeconds);
 static uint16_t CalculateMillisecondsComponent(uint32_t milliSeconds);
-static void UpdateDisplayedTime(uint32_t milliseconds);
+static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits);
 
 static uint32_t displayResultUntil = 0U;
 static uint8_t permanentResultDisplay = 0U;
@@ -76,7 +76,7 @@ void RunDisplay(void)
 	{
 		if (((lastDisplayUpdate+500U) < timeStamp))
 		{
-			UpdateDisplayedTime(displayedResult);
+			UpdateDisplayedTime(displayedResult, 0U);
 
 		}
 	}
@@ -84,7 +84,7 @@ void RunDisplay(void)
 	{
 		if ((lastDisplayUpdate+100U) < timeStamp)
 		{
-			UpdateDisplayedTime(timeStamp - runningTimeStartTime);
+			UpdateDisplayedTime(timeStamp - runningTimeStartTime, 1U);
 		}
 	}
 
@@ -94,7 +94,7 @@ void RunDisplay(void)
 }
 
 //Abusing the UART to display the time for the moment, by lack of display hardware.
-static void UpdateDisplayedTime(uint32_t milliseconds)
+static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
 {
 	if ((uartTxIndex >= sizeof(bcdTimeData)) || (uartTxIndex == 0))
 	{
@@ -106,10 +106,18 @@ static void UpdateDisplayedTime(uint32_t milliseconds)
 		uartTxIndex = 0U;
 		uint32_t bcdDisplayData = 0U;
 
-		bcdDisplayData |= ((uint32_t)bcdTimeData[0]) << 24;
-		bcdDisplayData |= ((uint32_t)bcdTimeData[1]) << 16;
+		bcdDisplayData |= ((uint32_t)bcdTimeData[0]) << 20;
+		bcdDisplayData |= ((uint32_t)bcdTimeData[1]) << 12;
 		bcdDisplayData |= ((uint32_t)bcdTimeData[2]) << 8;
-		bcdDisplayData |= ((uint32_t)bcdTimeData[3]) << 0;
+		if (cutOffLastDigits == 0U)
+		{
+			bcdDisplayData |= ((uint32_t)bcdTimeData[3]) << 0;
+		}
+		else
+		{
+			bcdDisplayData |= 0xCC;
+		}
+
 
 		UpdateMax7219Display(bcdDisplayData);
 		lastDisplayUpdate = systemTime.timeStampMs;
