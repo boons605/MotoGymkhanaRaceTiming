@@ -11,7 +11,7 @@
 
 #define DISPLAYCOUNT 4
 
-const uint8_t CH[12][8] = {
+static const uint8_t CH[12][8] = {
 		{0x06, 0x09, 0x09, 0x09, 0x09, 0x09, 0x06, 0x00}, // 0
 		{0x02, 0x06, 0x02, 0x02, 0x02, 0x02, 0x07, 0x00}, // 1
 		{0x06, 0x09, 0x01, 0x02, 0x04, 0x04, 0x0F, 0x00}, // 2
@@ -26,7 +26,7 @@ const uint8_t CH[12][8] = {
 		{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01} // .
 };
 
-const uint16_t digits[] = {
+static const uint16_t digits[] = {
 		REG_DIGIT_0,
 		REG_DIGIT_1,
 		REG_DIGIT_2,
@@ -37,11 +37,11 @@ const uint16_t digits[] = {
 		REG_DIGIT_7
 };
 
-const uint16_t max7219InitActions[4] = {
+static const uint16_t max7219InitActions[4] = {
 		REG_SHUTDOWN | 0x01,
 		REG_DECODE_MODE | 0x00,
 		REG_SCAN_LIMIT | 0x07,
-		REG_INTENSITY | 0x01
+		REG_INTENSITY | 0x0F
 };
 
 static uint16_t max7219SpiBuffer[DISPLAYCOUNT] = {0};
@@ -133,13 +133,21 @@ static uint32_t GenerateDisplayData(void)
 		uint8_t digit = ((timeDataBCD >> ((index-1)*4)) & 0x0F);
 		if (digit < 10U)
 		{
-			retVal |= CH[digit][displayLine];
+			if ((digit != 0U) || (retVal != 0U))
+			{
+				retVal |= CH[digit][displayLine];
+			}
+
 		}
 
 		if (index == 6U)
 		{
 			retVal <<= 3U;
-			retVal |= CH[10][displayLine];
+			if (retVal != 0U)
+			{
+				retVal |= CH[10][displayLine];
+			}
+
 			retVal <<= 4U;
 
 		}

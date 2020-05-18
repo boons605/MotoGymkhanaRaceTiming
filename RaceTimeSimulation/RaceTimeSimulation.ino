@@ -25,40 +25,40 @@ void loop() {
     { 
       case 0U:
       {
-        if ((millisOnStateEntry + 5000) <= millis())
+        if ((millisOnStateEntry + 5000000) <= micros())
         {
           digitalWrite(7, HIGH);
-          millisOnStateEntry = millis();
+          millisOnStateEntry = micros();
           dualSensorRaceState++;
         }
         break;
       }
       case 1U:
       {
-        if ((millisOnStateEntry + 500) <= millis())
+        if ((millisOnStateEntry + 500000) <= micros())
         {
           digitalWrite(7, LOW);
-          millisOnStateEntry = millis();
+          millisOnStateEntry = micros();
           dualSensorRaceState++;
         }
         break;
       }
       case 2U:
       {
-        if ((millisOnStateEntry + 18845) <= millis())
+        if ((millisOnStateEntry + 18845000) <= micros())
         {
           digitalWrite(4, HIGH);
-          millisOnStateEntry = millis();
+          millisOnStateEntry = micros();
           dualSensorRaceState++;
         }
         break;
       }
       case 3U:
       {
-        if ((millisOnStateEntry + 500) <= millis())
+        if ((millisOnStateEntry + 500000) <= micros())
         {
           digitalWrite(4, LOW);
-          millisOnStateEntry = millis();
+          millisOnStateEntry = micros();
           dualSensorRaceState = 0U;;
         }
         break;
@@ -68,13 +68,13 @@ void loop() {
   }
   else
   {
-    if ((lastEdgeSensor1Out + 10560) <= millis())
+    if ((lastEdgeSensor1Out + 10560000) <= micros())
     {
       digitalWrite(7, HIGH);
-      lastEdgeSensor1Out = millis();
+      lastEdgeSensor1Out = micros();
     }
 
-    if ((lastEdgeSensor1Out + 500) <= millis())
+    if ((lastEdgeSensor1Out + 500000) <= micros())
     {
       digitalWrite(7, LOW);
     }
