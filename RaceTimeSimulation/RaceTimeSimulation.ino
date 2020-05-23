@@ -25,41 +25,41 @@ void loop() {
     { 
       case 0U:
       {
-        if ((millisOnStateEntry + 5000000) <= micros())
+        if (millisOnStateEntry <= micros())
         {
           digitalWrite(7, HIGH);
-          millisOnStateEntry = micros();
+          millisOnStateEntry = micros() + 500000;
           dualSensorRaceState++;
         }
         break;
       }
       case 1U:
       {
-        if ((millisOnStateEntry + 500000) <= micros())
+        if ((millisOnStateEntry) <= micros())
         {
           digitalWrite(7, LOW);
-          millisOnStateEntry = micros();
+          millisOnStateEntry = micros() + 18845000;
           dualSensorRaceState++;
         }
         break;
       }
       case 2U:
       {
-        if ((millisOnStateEntry + 18845000) <= micros())
+        if ((millisOnStateEntry) <= micros())
         {
           digitalWrite(4, HIGH);
-          millisOnStateEntry = micros();
+          millisOnStateEntry = micros() + 500000;
           dualSensorRaceState++;
         }
         break;
       }
       case 3U:
       {
-        if ((millisOnStateEntry + 500000) <= micros())
+        if (millisOnStateEntry <= micros())
         {
           digitalWrite(4, LOW);
-          millisOnStateEntry = micros();
-          dualSensorRaceState = 0U;;
+          millisOnStateEntry = micros() + 5000000;
+          dualSensorRaceState = 0U;
         }
         break;
       }

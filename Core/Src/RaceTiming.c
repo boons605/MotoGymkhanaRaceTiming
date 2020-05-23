@@ -49,8 +49,5 @@ void RunRaceTiming(void)
 		}
 	}
 
-
-
-
 	RunDisplay();
 }

@@ -39,6 +39,7 @@ typedef enum
 extern OperationModes operationMode;
 extern SensorModes sensorMode;
 extern uint8_t autoConfigurationDone;
+extern uint8_t displayLines;
 
 void RunAutoConfiguration(void);
 uint8_t RTCInitSuccesful(void);

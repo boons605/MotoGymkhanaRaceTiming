@@ -4,11 +4,12 @@
  *  Created on: May 10, 2020
  *      Author: r.boonstra
  */
-
+#include "Configuration.h"
 #include "Display.h"
 #include "TimeMgmt.h"
 #include "stm32f1xx_ll_usart.h"
 #include "Max7219Display.h"
+#include "Max7219DLDWDisplay.h"
 
 
 static uint8_t CalculateMinutesComponent(uint32_t milliSeconds);
@@ -90,7 +91,16 @@ void RunDisplay(void)
 
 
 	SendUartBuffer();
-	RunMax7219Display();
+
+	if (displayLines == 2U)
+	{
+		RunMax7219DLDWDisplay();
+	}
+	else
+	{
+		RunMax7219Display();
+	}
+
 }
 
 //Abusing the UART to display the time for the moment, by lack of display hardware.
@@ -119,7 +129,14 @@ static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
 		}
 
 
-		UpdateMax7219Display(bcdDisplayData);
+		if (displayLines == 2U)
+		{
+			UpdateMax7219DLDWDisplay(bcdDisplayData);
+		}
+		else
+		{
+			UpdateMax7219Display(bcdDisplayData);
+		}
 		lastDisplayUpdate = systemTime.timeStampMs;
 	}
 

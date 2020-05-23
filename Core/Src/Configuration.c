@@ -16,6 +16,8 @@
 OperationModes operationMode = NoOperation;
 SensorModes sensorMode = NoSensors;
 uint8_t autoConfigurationDone = 0U;
+uint8_t displayLines = 2U;
+
 static RTCInitStates RTCInitState = RTCInit_SendStartCondition;
 
 static uint8_t slaveDataIndex = 0U;

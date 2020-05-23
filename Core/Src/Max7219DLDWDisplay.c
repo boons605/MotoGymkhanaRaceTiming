@@ -7,6 +7,7 @@
  *      Dual Line, Double Wide display
  */
 
+
 #include "Max7219Display.h"
 #include "Max7219DLDWDisplay.h"
 #include "stm32f1xx_ll_spi.h"
@@ -30,7 +31,7 @@ static const uint8_t CH[12][8] = {
 		{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03} // .
 };
 
-static const uint16_t digits[] = {
+static const uint16_t maxtrixLines[] = {
 		REG_DIGIT_0,
 		REG_DIGIT_1,
 		REG_DIGIT_2,
@@ -48,8 +49,8 @@ static const uint16_t max7219InitActions[4] = {
 		REG_INTENSITY | 0x01
 };
 
-static const SPI_TypeDef* spiBus[LINECOUNT] = {SPI2, SPI1};
-static const GPIO_TypeDef* csGpio[LINECOUNT] = {GPIOB, GPIOA};
+static SPI_TypeDef* spiBus[LINECOUNT] = {SPI2, SPI1};
+static GPIO_TypeDef* csGpio[LINECOUNT] = {GPIOB, GPIOA};
 static const uint32_t csPin[LINECOUNT] = {LL_GPIO_PIN_12, LL_GPIO_PIN_4};
 
 static uint16_t max7219SpiBuffer[LINECOUNT][DISPLAYCOUNT] = {0U };
@@ -58,7 +59,8 @@ static uint8_t max7219dataTransmissionState[LINECOUNT] = { 0U };
 static uint8_t initState[LINECOUNT] = { 0U} ;
 static uint8_t newTime = 0U;
 static uint32_t timeDataBCD = 0U;
-static uint8_t displayLine = 0U;
+static uint8_t characterLine = 0U;
+static uint8_t initDone = 0U;
 
 
 static void sendData(uint16_t data, uint8_t index, uint8_t line) {
@@ -119,89 +121,150 @@ void UpdateMax7219DLDWDisplay(uint32_t data)
 	newTime = 1U;
 }
 
-void InitMax7219DLDWDisplay(uint8_t line)
+static void InitMax7219DLDWDisplay(void)
 {
-	if (max7219dataTransmissionState == 0U)
+	uint8_t line = 0U;
+	for (line = 0U; line < LINECOUNT; line++)
 	{
-		uint8_t index = 0U;
-		for (index = 0U; index < DISPLAYCOUNT; index++)
+		if (max7219dataTransmissionState[line] == 0U)
 		{
-			sendData(max7219InitActions[line][initState], index, line);
+
+			if (initState[line] < (sizeof(max7219InitActions) / sizeof(uint16_t)))
+			{
+				uint8_t index = 0U;
+				for (index = 0U; index < DISPLAYCOUNT; index++)
+				{
+					sendData(max7219InitActions[initState[line]], index, line);
+				}
+				initState[line]++;
+
+			}
 		}
-		initState[line]++;
+	}
+
+	initDone = 1U;
+	for (line = 0U; line < LINECOUNT; line++)
+	{
+		if (initState[line] < (sizeof(max7219InitActions) / sizeof(uint16_t)))
+		{
+			initDone = 0U;
+		}
 	}
 }
 
-static uint32_t GenerateDisplayData(void)
+static void GenerateDisplayData(uint32_t* minSec, uint32_t* millis, uint8_t displayLineNo)
 {
 	uint8_t index = 0U;
-	uint32_t retVal = 0U;
+	uint8_t characterLineIndex = (characterLine / 2U) + (4U * displayLineNo);
+
 	for (index = 6U; index > 0U; index--)
 	{
+		uint32_t *retVal;
+		if (index < 4U)
+		{
+			retVal = millis;
+		}
+		else
+		{
+			retVal = minSec;
+		}
+
 		uint8_t digit = ((timeDataBCD >> ((index-1)*4)) & 0x0F);
 		if (digit < 10U)
 		{
-			retVal |= CH[digit][displayLine];
+			if ((digit != 0U) || (*retVal != 0U))
+			{
+				*retVal |= CH[digit][characterLineIndex];
+			}
 		}
 
 		if (index == 6U)
 		{
-			retVal <<= 3U;
-			retVal |= CH[10][displayLine];
-			retVal <<= 4U;
-
+			*retVal <<= 4U;
+			if (*retVal != 0U)
+			{
+				*retVal |= CH[10U][characterLineIndex];;
+			}
+			*retVal <<= 8U;
 		}
 		else if (index == 4U)
 		{
-			retVal <<= 2U;
-			retVal |= CH[11][displayLine];
-			retVal <<= 4U;
-
+			*retVal <<= 3U;
+			*retVal |= CH[11U][characterLineIndex];
+			//*retVal <<= 8U;
 		}
 		else if (index > 1U)
 		{
-			retVal <<= 5U;
+			*retVal <<= 9U;
 		}
 
 
 	}
 
-	return retVal;
 }
 
 static void UpdateMax7219DLDWDisplayTime(void)
 {
-	if ((max7219dataTransmissionState == 0U) && (newTime == 1U))
+	uint8_t lineIndex = 0U;
+	uint8_t readyForNextTransmission = 1U;
+	for (lineIndex = 0U; lineIndex < LINECOUNT; lineIndex++)
 	{
-		uint32_t lineData = GenerateDisplayData();
-		uint8_t index = 0U;
-		uint8_t shift = 24U;
-		for (index = 0U; index < DISPLAYCOUNT; index++)
+		if (max7219dataTransmissionState[lineIndex] != 0U)
 		{
-			sendData((digits[displayLine] | ((lineData >> shift) & 0xFF)), index, 0U);
-			shift -= 8;
+			readyForNextTransmission = 0U;
 		}
+	}
 
-		displayLine++;
+	if ((readyForNextTransmission == 1U) && (newTime == 1U))
+	{
+		for (lineIndex = 0U; lineIndex < LINECOUNT; lineIndex++)
+		{
+			uint32_t lineDataMinSec = 0U;
+			uint32_t lineDataMillis = 0U;
+			GenerateDisplayData(&lineDataMinSec, &lineDataMillis, lineIndex);
+			uint8_t index = 0U;
+			uint8_t shift = 24U;
+			uint32_t* lineData = &lineDataMinSec;
+			for (index = 0U; index < DISPLAYCOUNT; index++)
+			{
+				sendData((maxtrixLines[characterLine] | (((*lineData) >> shift) & 0xFF)), index, lineIndex);
+				if (shift == 0U)
+				{
+					shift = 24U;
+					lineData = &lineDataMillis;
+				}
+				else
+				{
+					shift -= 8;
+				}
+			}
+		}
+		characterLine++;
 
-		if (displayLine > 7U)
+		if (characterLine > 7U)
 		{
 			newTime = 0U;
-			displayLine = 0U;
+			characterLine = 0U;
 		}
 	}
 }
 
 void RunMax7219DLDWDisplay(void)
 {
-	if (initState > 3U)
+
+	if (initDone == 1U)
 	{
-		UpdateMax7219DisplayTime();
+		UpdateMax7219DLDWDisplayTime();
 	}
 	else
 	{
-		InitMax7219Display();
+		InitMax7219DLDWDisplay();
 	}
 
-	SendSPIBuffer(0U);
+	uint8_t index = 0U;
+	for (index = 0U; index < LINECOUNT; index++)
+	{
+		SendSPIBuffer(index);
+	}
+
 }
