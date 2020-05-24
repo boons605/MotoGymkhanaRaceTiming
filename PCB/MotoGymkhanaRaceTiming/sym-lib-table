@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name STM32Board)(type Legacy)(uri C:/Users/r.boonstra/STM32CubeIDE/workspace_1.3.0/MotoGymkhanaRaceTiming/PCB/STM32Board.lib)(options "")(descr ""))
+  (lib (name bluepill)(type Legacy)(uri C:/Users/r.boonstra/STM32CubeIDE/bluepill.lib)(options "")(descr ""))
+)
