@@ -77,12 +77,18 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin LL_GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
+#define SpecialOpMode_Pin LL_GPIO_PIN_10
+#define SpecialOpMode_GPIO_Port GPIOB
 #define PPS_In_Pin LL_GPIO_PIN_11
 #define PPS_In_GPIO_Port GPIOB
 #define PPS_In_EXTI_IRQn EXTI15_10_IRQn
 #define SensorStartStop_Pin LL_GPIO_PIN_8
 #define SensorStartStop_GPIO_Port GPIOA
 #define SensorStartStop_EXTI_IRQn EXTI9_5_IRQn
+#define ModeSelect_Pin LL_GPIO_PIN_4
+#define ModeSelect_GPIO_Port GPIOB
+#define SensorCount_Pin LL_GPIO_PIN_5
+#define SensorCount_GPIO_Port GPIOB
 #ifndef NVIC_PRIORITYGROUP_0
 #define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority,
                                                                  4 bits for subpriority */

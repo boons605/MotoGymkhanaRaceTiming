@@ -9,6 +9,7 @@
 #include "TimeMgmt.h"
 
 #include "stm32f1xx_ll_i2c.h"
+#include "stm32f1xx_ll_gpio.h"
 #include <stdint.h>
 
 #define RTC_SLAVE_ADDRESS 0x68
@@ -22,10 +23,10 @@ static RTCInitStates RTCInitState = RTCInit_SendStartCondition;
 
 static uint8_t slaveDataIndex = 0U;
 
-//Data for DS1307 RTC setup
+//Data for DS3231 RTC setup
 static const uint8_t rtcConfigBytes[9] = {
 		0x0E, //Set pointer to register 0x0E
-		0x00, //Set bits RS0 and RS1 to 0 for 1Hz pulse, set SQWE to 1
+		0x00, //Set bits RS0 and RS1 to 0 for 1Hz pulse
 		};
 
 static void InitRTC(void)
@@ -115,8 +116,25 @@ void RunAutoConfiguration(void)
 	if ((systemTime.timeStampMs > 5000U)
 			|| (RTCInitSuccesful() == 1U))
 	{
-		operationMode = SingleRunTimerOperation;
-		sensorMode = DualSensor;
+
+		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_4) == 1U)
+		{
+			operationMode = SingleRunTimerOperation;
+		}
+		else
+		{
+			operationMode = LaptimerOperation;
+		}
+
+		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_5) == 1U)
+		{
+			sensorMode = DualSensor;
+		}
+		else
+		{
+			sensorMode = SingleSensor;
+		}
+
 		autoConfigurationDone = 1U;
 	}
 }

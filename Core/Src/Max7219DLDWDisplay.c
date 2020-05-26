@@ -46,7 +46,7 @@ static const uint16_t max7219InitActions[4] = {
 		REG_SHUTDOWN | 0x01,
 		REG_DECODE_MODE | 0x00,
 		REG_SCAN_LIMIT | 0x07,
-		REG_INTENSITY | 0x01
+		REG_INTENSITY | 0x0F
 };
 
 static SPI_TypeDef* spiBus[LINECOUNT] = {SPI2, SPI1};
@@ -119,6 +119,7 @@ void UpdateMax7219DLDWDisplay(uint32_t data)
 	timeDataBCD = data;
 	//timeDataBCD = 0x000789123;
 	newTime = 1U;
+	characterLine = 0U;
 }
 
 static void InitMax7219DLDWDisplay(void)
@@ -172,7 +173,7 @@ static void GenerateDisplayData(uint32_t* minSec, uint32_t* millis, uint8_t disp
 		uint8_t digit = ((timeDataBCD >> ((index-1)*4)) & 0x0F);
 		if (digit < 10U)
 		{
-			if ((digit != 0U) || (*retVal != 0U))
+			if ((digit != 0U) || (*retVal != 0U) || (index < 4U))
 			{
 				*retVal |= CH[digit][characterLineIndex];
 			}

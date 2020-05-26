@@ -475,6 +475,12 @@ static void MX_GPIO_Init(void)
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /**/
+  GPIO_InitStruct.Pin = SpecialOpMode_Pin|ModeSelect_Pin|SensorCount_Pin;
+  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
+  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /**/
   GPIO_InitStruct.Pin = LL_GPIO_PIN_12;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
   GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;

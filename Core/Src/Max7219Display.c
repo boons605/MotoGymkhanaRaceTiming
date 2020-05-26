@@ -109,6 +109,7 @@ void UpdateMax7219Display(uint32_t data)
 	timeDataBCD = data;
 	//timeDataBCD = 0x000789123;
 	newTime = 1U;
+	displayLine = 0U;
 }
 
 void InitMax7219Display(void)
