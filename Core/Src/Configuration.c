@@ -116,23 +116,22 @@ void RunAutoConfiguration(void)
 	if ((systemTime.timeStampMs > 5000U)
 			|| (RTCInitSuccesful() == 1U))
 	{
-
-		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_4) == 1U)
+		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_5) == 1U)
 		{
+			sensorMode = DualSensor;
 			operationMode = SingleRunTimerOperation;
 		}
 		else
 		{
-			operationMode = LaptimerOperation;
-		}
-
-		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_5) == 1U)
-		{
-			sensorMode = DualSensor;
-		}
-		else
-		{
 			sensorMode = SingleSensor;
+			if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_4) == 1U)
+			{
+				operationMode = SingleRunTimerOperation;
+			}
+			else
+			{
+				operationMode = LaptimerOperation;
+			}
 		}
 
 		autoConfigurationDone = 1U;
