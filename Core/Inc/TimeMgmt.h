@@ -1,12 +1,12 @@
 #ifndef TIMEMGMT_H
 #define TIMEMGMT_H
 #include <stdint.h>
-#define MIN_SENSOR_INTERRUPT_WAIT 2000U
+#define MIN_SENSOR_INTERRUPT_WAIT 20000U
 
 typedef struct {
 	uint32_t timeStampPps;
-	uint32_t ppsOffsetMs;
-	uint32_t timeStampMs;
+	uint32_t ppsOffset100us;
+	uint32_t timeStamp100us;
 } SensorTimestamp;
 
 extern volatile SensorTimestamp systemTime;
@@ -18,6 +18,7 @@ extern volatile uint8_t sensorStopInterrupt;
 extern volatile uint8_t ppsTick;
 
 
+uint32_t GetMillisecondsFromTimeStampPPS(SensorTimestamp* timeStamp);
 uint32_t GetMillisecondsFromTimeStamp(SensorTimestamp* timeStamp);
 
 void GetStartStopSensorTimeStamp(SensorTimestamp* copy);

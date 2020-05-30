@@ -27,6 +27,11 @@ static void SingleSensorSingeRuntimer(void);
 static void DualSensorSingleRunTimer(void);
 static uint8_t IsLastLap(Lap* lap);
 
+uint32_t GetPreviousLapTimeMs(void)
+{
+	return ((previousLap->endTimeStamp - previousLap->startTimeStamp) / 10U);
+}
+
 void RunStandAloneTimer(void)
 {
 	switch (operationMode)
@@ -71,7 +76,7 @@ static uint8_t IsLastLap(Lap* lap)
 
 static void FinishCurrentLapAndPrepareNext(SensorTimestamp* timeStamp)
 {
-	currentLap->endTimeStamp = GetMillisecondsFromTimeStamp(timeStamp);
+	currentLap->endTimeStamp = GetMillisecondsFromTimeStampPPS(timeStamp);
 	lapFinished = 1U;
 	previousLap = currentLap;
 	if (IsLastLap(currentLap) == 0U)
@@ -101,7 +106,7 @@ static void SingleSensorLaptimer(void)
 		{
 			FinishCurrentLapAndPrepareNext(&timeStamp);
 		}
-		currentLap->startTimeStamp = GetMillisecondsFromTimeStamp(&timeStamp);
+		currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 	}
 
 }
@@ -118,7 +123,7 @@ static void SingleSensorSingeRuntimer(void)
 		if (currentLap == (Lap*)0U)
 		{
 			currentLap = &laps[0];
-			currentLap->startTimeStamp = GetMillisecondsFromTimeStamp(&timeStamp);
+			currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 			currentLap->endTimeStamp = 0U;
 		}
 		else
@@ -130,7 +135,7 @@ static void SingleSensorSingeRuntimer(void)
 			}
 			else if (currentLap->startTimeStamp == 0U)
 			{
-				currentLap->startTimeStamp = GetMillisecondsFromTimeStamp(&timeStamp);
+				currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 				currentLap->endTimeStamp = 0U;
 				newRunStarted = 1U;
 			}
@@ -158,7 +163,7 @@ static void DualSensorSingleRunTimer(void)
 
 		if (currentLap->startTimeStamp == 0U)
 		{
-			currentLap->startTimeStamp = GetMillisecondsFromTimeStamp(&timeStamp);
+			currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 			currentLap->endTimeStamp = 0U;
 			newRunStarted = 1U;
 		}

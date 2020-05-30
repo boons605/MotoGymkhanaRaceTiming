@@ -20,7 +20,7 @@ void RunRaceTiming(void)
 			if (lapFinished == 1U)
 			{
 				lapFinished = 0U;
-				UpdateDisplay((previousLap->endTimeStamp - previousLap->startTimeStamp), 5000U);
+				UpdateDisplay(GetPreviousLapTimeMs(), 5000U);
 				ResetRunningDisplayTime();
 			}
 			break;
@@ -31,7 +31,7 @@ void RunRaceTiming(void)
 			if (lapFinished == 1U)
 			{
 				lapFinished = 0U;
-				UpdateDisplay((previousLap->endTimeStamp - previousLap->startTimeStamp), 0U);
+				UpdateDisplay(GetPreviousLapTimeMs(), 0U);
 			}
 
 			if (newRunStarted == 1U)

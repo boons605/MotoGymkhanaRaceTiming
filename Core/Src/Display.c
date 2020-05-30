@@ -34,7 +34,7 @@ void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 {
 	if (displayDurationInMs > 0U)
 	{
-		displayResultUntil = systemTime.timeStampMs + displayDurationInMs;
+		displayResultUntil = GetMillisecondsFromTimeStamp(&systemTime) + displayDurationInMs;
 	}
 	else
 	{
@@ -50,7 +50,7 @@ void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 
 void ResetRunningDisplayTime(void)
 {
-	runningTimeStartTime = systemTime.timeStampMs;
+	runningTimeStartTime = GetMillisecondsFromTimeStamp(&systemTime);
 	permanentResultDisplay = 0U;
 }
 
@@ -70,7 +70,7 @@ static void SendUartBuffer(void)
 
 void RunDisplay(void)
 {
-	uint32_t timeStamp = systemTime.timeStampMs;
+	uint32_t timeStamp = GetMillisecondsFromTimeStamp(&systemTime);
 
 	if ((timeStamp < displayResultUntil) ||
 			(permanentResultDisplay == 1U))
@@ -137,7 +137,7 @@ static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
 		{
 			UpdateMax7219Display(bcdDisplayData);
 		}
-		lastDisplayUpdate = systemTime.timeStampMs;
+		lastDisplayUpdate = GetMillisecondsFromTimeStamp(&systemTime);
 	}
 
 

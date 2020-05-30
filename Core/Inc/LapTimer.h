@@ -25,6 +25,7 @@ extern uint8_t lapFinished;
 extern uint8_t newRunStarted;
 
 void RunStandAloneTimer(void);
+uint32_t GetPreviousLapTimeMs(void);
 
 
 #endif /* INC_LAPTIMER_H_ */

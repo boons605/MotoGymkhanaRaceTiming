@@ -210,7 +210,7 @@ void EXTI3_IRQHandler(void)
   {
     /* USER CODE BEGIN LL_EXTI_LINE_3 */
 	systemTime.timeStampPps++;
-	systemTime.ppsOffsetMs = 0U;
+	systemTime.ppsOffset100us = 0U;
 	ppsTick = 1U;
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_3);
     /* USER CODE END LL_EXTI_LINE_3 */
@@ -231,7 +231,7 @@ void EXTI9_5_IRQHandler(void)
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_8) != RESET)
   {
     /* USER CODE BEGIN LL_EXTI_LINE_8 */
-    if ((sensorStartStopTimeStamp.timeStampMs + MIN_SENSOR_INTERRUPT_WAIT) <= systemTime.timeStampMs)
+    if ((sensorStartStopTimeStamp.timeStamp100us + MIN_SENSOR_INTERRUPT_WAIT) <= systemTime.timeStamp100us)
 	{
     	sensorStartStopTimeStamp = systemTime;
     	sensorStartStopInterrupt = 1U;
@@ -250,8 +250,8 @@ void EXTI9_5_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
-	systemTime.timeStampMs++;
-	systemTime.ppsOffsetMs++;
+	systemTime.timeStamp100us++;
+	systemTime.ppsOffset100us++;
 	LL_TIM_ClearFlag_UPDATE(TIM2);
   /* USER CODE END TIM2_IRQn 0 */
   /* USER CODE BEGIN TIM2_IRQn 1 */
@@ -270,7 +270,7 @@ void EXTI15_10_IRQHandler(void)
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_11) != RESET)
   {
     /* USER CODE BEGIN LL_EXTI_LINE_11 */
-    if ((sensorStopTimeStamp.timeStampMs + MIN_SENSOR_INTERRUPT_WAIT) <= systemTime.timeStampMs)
+    if ((sensorStopTimeStamp.timeStamp100us + MIN_SENSOR_INTERRUPT_WAIT) <= systemTime.timeStamp100us)
     {
     	sensorStopTimeStamp = systemTime;
         sensorStopInterrupt = 1U;

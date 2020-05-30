@@ -112,8 +112,9 @@ void RunAutoConfiguration(void)
 {
 	InitRTC();
 
+
 	//For now, this isn't anything exciting. Just finish auto configuration after 2000ms
-	if ((systemTime.timeStampMs > 5000U)
+	if ((GetMillisecondsFromTimeStamp(&systemTime) > 5000U)
 			|| (RTCInitSuccesful() == 1U))
 	{
 		if (LL_GPIO_IsInputPinSet(GPIOB, LL_GPIO_PIN_5) == 1U)
