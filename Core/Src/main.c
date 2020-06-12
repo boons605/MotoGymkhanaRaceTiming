@@ -115,6 +115,8 @@ int main(void)
   LL_TIM_EnableIT_UPDATE(TIM2);
   LL_TIM_EnableCounter(TIM2);
   LL_I2C_Enable(I2C1);
+  LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_4);
+  LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_12);
   LL_SPI_Enable(SPI2);
   LL_SPI_Enable(SPI1);
 

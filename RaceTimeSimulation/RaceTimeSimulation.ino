@@ -19,7 +19,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
 
-  if (digitalRead(10) == HIGH)
+  /*if (digitalRead(10) == HIGH)
   {
     switch (dualSensorRaceState)
     { 
@@ -66,9 +66,9 @@ void loop() {
       
     }
   }
-  else
+  else*/
   {
-    if ((lastEdgeSensor1Out + 10560000) <= micros())
+    if ((lastEdgeSensor1Out + 13260000) <= micros())
     {
       digitalWrite(7, HIGH);
       lastEdgeSensor1Out = micros();

@@ -134,7 +134,9 @@ void RunAutoConfiguration(void)
 				operationMode = LaptimerOperation;
 			}
 		}
-
-		autoConfigurationDone = 1U;
+		if (GetMillisecondsFromTimeStamp(&systemTime) > 1000U)
+		{
+			autoConfigurationDone = 1U;
+		}
 	}
 }
