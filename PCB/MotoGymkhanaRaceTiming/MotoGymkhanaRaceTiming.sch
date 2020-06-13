@@ -454,7 +454,7 @@ U 1 1 5ED66EB3
 P 5450 5100
 F 0 "RTC1" V 5296 5348 50  0000 L CNN
 F 1 "Conn_01x06_Female" V 5387 5348 50  0001 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical" H 5450 5100 50  0001 C CNN
+F 2 "MotoGymkhanaRaceTiming:RTC_Socket" H 5450 5100 50  0001 C CNN
 F 3 "~" H 5450 5100 50  0001 C CNN
 	1    5450 5100
 	0    1    1    0   
@@ -491,7 +491,7 @@ L Connector:Conn_01x05_Male Disp_L2
 U 1 1 5ED7DE7F
 P 4950 2100
 F 0 "Disp_L2" V 5012 2344 50  0000 L CNN
-F 1 "Conn_01x05_Male" V 5103 2344 50  0000 L CNN
+F 1 "Conn_01x05_Male" V 5103 2344 50  0001 L CNN
 F 2 "MotoGymkhanaRaceTiming:DisplayLineConnector" H 4950 2100 50  0001 C CNN
 F 3 "~" H 4950 2100 50  0001 C CNN
 	1    4950 2100
@@ -564,7 +564,6 @@ NoConn ~ 6400 3150
 NoConn ~ 6300 3150
 NoConn ~ 6200 3150
 NoConn ~ 6100 3150
-NoConn ~ 5800 3150
 NoConn ~ 5200 3150
 NoConn ~ 5100 3150
 NoConn ~ 4800 3150
@@ -672,7 +671,6 @@ Wire Wire Line
 	5150 2450 5500 2450
 Wire Wire Line
 	5500 2450 5500 3150
-NoConn ~ 5700 3150
 Wire Wire Line
 	6600 4450 6600 4250
 Wire Wire Line
@@ -730,7 +728,7 @@ L Connector:Conn_01x03_Male CMODE1
 U 1 1 5EE0E5C1
 P 4400 2400
 F 0 "CMODE1" V 4462 2544 50  0000 L CNN
-F 1 "Conn_01x03_Male" V 4553 2544 50  0000 L CNN
+F 1 "Conn_01x03_Male" V 4553 2544 50  0001 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 4400 2400 50  0001 C CNN
 F 3 "~" H 4400 2400 50  0001 C CNN
 	1    4400 2400
@@ -832,7 +830,7 @@ Wire Wire Line
 	6000 2900 6000 3150
 Connection ~ 6550 2450
 Wire Wire Line
-	4700 3050 6300 3050
+	4700 3050 5400 3050
 Wire Wire Line
 	6300 3050 6300 2350
 Connection ~ 4700 3050
@@ -983,4 +981,48 @@ Wire Wire Line
 	5450 4350 5800 4350
 Wire Wire Line
 	5800 4350 5800 4000
+Wire Wire Line
+	5550 2150 5550 2400
+Wire Wire Line
+	5550 2400 5400 2400
+Wire Wire Line
+	5400 2400 5400 3050
+Connection ~ 5400 3050
+Wire Wire Line
+	5400 3050 6300 3050
+$Comp
+L Connector:Conn_01x04_Male UART2
+U 1 1 5EE5EE8E
+P 5750 1950
+F 0 "UART2" V 5858 2094 50  0000 L CNN
+F 1 "Conn_01x04_Male" V 5903 2094 50  0001 L CNN
+F 2 "MotoGymkhanaRaceTiming:UART" H 5750 1950 50  0001 C CNN
+F 3 "~" H 5750 1950 50  0001 C CNN
+	1    5750 1950
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5850 2150 5850 2250
+Wire Wire Line
+	5850 2250 6100 2250
+Wire Wire Line
+	6100 2250 6100 2100
+Wire Wire Line
+	6100 2100 7000 2100
+Wire Wire Line
+	7000 2100 7000 3700
+Wire Wire Line
+	7000 3700 6550 3700
+Wire Wire Line
+	5750 2150 5750 2350
+Wire Wire Line
+	5750 2350 5800 2350
+Wire Wire Line
+	5800 2350 5800 3150
+Wire Wire Line
+	5650 2150 5650 2950
+Wire Wire Line
+	5650 2950 5700 2950
+Wire Wire Line
+	5700 2950 5700 3150
 $EndSCHEMATC
