@@ -25,7 +25,7 @@ static uint32_t lastDisplayUpdate = 0U;
 
 static uint8_t bcdTimeData[4] = {0};
 static uint8_t uartTxIndex = 0U;
-
+static uint8_t displayConfig = 1U;
 
 
 
@@ -44,6 +44,7 @@ void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 	displayedResult = newTimeInMs;
 	//Force display update
 	lastDisplayUpdate = 0U;
+	displayConfig = 0U;
 
 
 }
@@ -52,6 +53,7 @@ void ResetRunningDisplayTime(void)
 {
 	runningTimeStartTime = GetMillisecondsFromTimeStamp(&systemTime);
 	permanentResultDisplay = 0U;
+	displayConfig = 0U;
 }
 
 static void SendUartBuffer(void)
@@ -65,7 +67,6 @@ static void SendUartBuffer(void)
 		}
 	}
 }
-
 
 
 void RunDisplay(void)
@@ -103,7 +104,7 @@ void RunDisplay(void)
 
 }
 
-//Abusing the UART to display the time for the moment, by lack of display hardware.
+
 static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
 {
 	if ((uartTxIndex >= sizeof(bcdTimeData)) || (uartTxIndex == 0))
@@ -128,6 +129,10 @@ static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
 			bcdDisplayData |= 0xCC;
 		}
 
+		if (displayConfig == 1U)
+		{
+			bcdDisplayData = GetConfigBCDDisplay();
+		}
 
 		if (displayLines == 2U)
 		{

@@ -9,6 +9,9 @@
 #define INC_CONFIGURATION_H_
 
 #include <stdint.h>
+#include "Inputs.h"
+
+#define DISPLAYBRIGHTNESS 0x06 // Range from 0x01 to 0x0F where 0x0F is max brightness
 
 typedef enum
 {
@@ -43,4 +46,5 @@ extern uint8_t displayLines;
 
 void RunAutoConfiguration(void);
 uint8_t RTCInitSuccesful(void);
+uint32_t GetConfigBCDDisplay(void);
 #endif /* INC_CONFIGURATION_H_ */

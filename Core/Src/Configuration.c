@@ -134,9 +134,29 @@ void RunAutoConfiguration(void)
 				operationMode = LaptimerOperation;
 			}
 		}
+		//Wait for at least 1000ms after startup, to allow power supply to stabilize.
 		if (GetMillisecondsFromTimeStamp(&systemTime) > 1000U)
 		{
 			autoConfigurationDone = 1U;
 		}
 	}
+}
+
+uint32_t GetConfigBCDDisplay(void)
+{
+	uint32_t retVal = 0U;
+
+	retVal = sensorMode;
+	retVal <<= 4;
+	retVal |= operationMode;
+	retVal <<= 4;
+	retVal |= RTCInitState;
+	retVal <<= 4;
+	retVal |= displayLines;
+	retVal <<= 4;
+	retVal |= autoConfigurationDone;
+
+	return retVal;
+
+
 }

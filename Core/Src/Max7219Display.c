@@ -6,6 +6,7 @@
  */
 
 #include "Max7219Display.h"
+#include "Configuration.h"
 #include "stm32f1xx_ll_spi.h"
 #include "stm32f1xx_ll_gpio.h"
 
@@ -41,7 +42,7 @@ static const uint16_t max7219InitActions[4] = {
 		REG_SHUTDOWN | 0x01,
 		REG_DECODE_MODE | 0x00,
 		REG_SCAN_LIMIT | 0x07,
-		REG_INTENSITY | 0x0F
+		REG_INTENSITY | DISPLAYBRIGHTNESS
 };
 
 static uint16_t max7219SpiBuffer[DISPLAYCOUNT] = {0};

@@ -27,6 +27,18 @@ static void SingleSensorSingeRuntimer(void);
 static void DualSensorSingleRunTimer(void);
 static uint8_t IsLastLap(Lap* lap);
 
+uint8_t IsFirstLapStarted(void)
+{
+	uint8_t retVal = 1U;
+
+	if (currentLap == (Lap*)0U)
+	{
+		retVal = 0U;
+	}
+
+	return retVal;
+}
+
 uint32_t GetPreviousLapTimeMs(void)
 {
 	return ((previousLap->endTimeStamp - previousLap->startTimeStamp) / 10U);
@@ -100,6 +112,7 @@ static void SingleSensorLaptimer(void)
 
 		if (currentLap == (Lap*)0U)
 		{
+			lapFinished = 1U;
 			currentLap = &laps[0];
 		}
 		else
@@ -123,6 +136,7 @@ static void SingleSensorSingeRuntimer(void)
 		if (currentLap == (Lap*)0U)
 		{
 			currentLap = &laps[0];
+			newRunStarted = 1U;
 			currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 			currentLap->endTimeStamp = 0U;
 		}
