@@ -14,8 +14,8 @@
 
 typedef struct
 {
-	uint32_t startTimeStamp;
-	uint32_t endTimeStamp;
+    uint32_t startTimeStamp;
+    uint32_t endTimeStamp;
 } Lap;
 
 extern Lap laps[MAXLAPCOUNT];
@@ -26,7 +26,10 @@ extern uint8_t newRunStarted;
 
 void RunStandAloneTimer(void);
 uint32_t GetPreviousLapTimeMs(void);
-uint8_t IsFirstLapStarted(void);
+uint8_t IsFirstLap(void);
+uint32_t GetCurrentLapStartTime(void);
+uint8_t GetCurrentLapIndex(void);
+uint32_t GetLapTimestampMs(Lap* lap);
 
 
 #endif /* INC_LAPTIMER_H_ */

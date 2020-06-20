@@ -17,4 +17,4 @@
 
 void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs);
 void RunDisplay(void);
-void ResetRunningDisplayTime(void);
+void ResetRunningDisplayTime(uint32_t startTime);
