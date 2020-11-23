@@ -21,6 +21,7 @@ static MGBTCommProtoState state = CommProtoIdle;
 static uint32_t stateEntryTime = 0U;
 static MGBTCommandData rxCommand = {0};
 static MGBTCommandData txResponse = {0};
+static uint8_t commandIsNew = 0U;
 
 static const char* AppName = "MGBTCommProto";
 static const uart_config_t uart_config = {
@@ -87,14 +88,38 @@ static uint16_t calculateCRC(uint8_t* u8Buf, uint8_t len)
   return crc;
 }
 
+uint8_t CanSendResponse(void)
+{
+	uint8_t retVal = 0U;
+	if ((state == CommProtoSending) || (state == CommProtoWaiting))
+	{
+		retVal = 1U;
+	}
+
+	return retVal;
+}
+
+void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
+{
+	data->crc = calculateCRC((uint8_t*)&data->status, (data->dataLength + 4));
+	uart_write_bytes(MGBT_UART, (char*)data, data->dataLength + 8);
+}
+
+
 uint8_t CommandAvailable(void)
 {
 	uint8_t retVal = 0U;
 	if (rxDataBufferPosition > 0U)
 	{
-		retVal = rxCommand.status;
+		retVal = commandIsNew;
 	}
 	return retVal;
+}
+
+MGBTCommandData* GetAndClearCommand(void)
+{
+	commandIsNew = 0U;
+	return &rxCommand;
 }
 
 static uint8_t CheckAllDataArrived(void)
@@ -172,6 +197,7 @@ static void CheckReceivedData(void)
 	{
 		if (ProcessCommand() > 0U)
 		{
+			commandIsNew = 1U;
 			state = CommProtoWaiting;
 		}
 	}

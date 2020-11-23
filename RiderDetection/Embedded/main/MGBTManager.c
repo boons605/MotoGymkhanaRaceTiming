@@ -14,14 +14,76 @@
 
 static const char* AppName = "MGBTManager";
 
+static MGBTDeviceData deviceList[MAXDEVICES] = {0};
+static MGBTCommandData pendingResponse = {0};
+static uint8_t lastResponseSent = 0U;
+
 void InitManager(void)
 {
 	InitCommProto();
 }
 
+
+
+static void AddDeviceToList(uint8_t* address)
+{
+
+}
+
+static void RemoveDeviceFromList(uint8_t* address)
+{
+
+}
+
+
+static void ProcessCommand(MGBTCommandData* command)
+{
+	switch (command->cmdType)
+	{
+		case AddAllowedDevice:
+		{
+			AddDeviceToList(command->data);
+			break;
+		}
+		case RemoveAllowedDevice:
+		{
+			RemoveDeviceFromList(command->data);
+			break;
+		}
+		default:
+		{
+			break;
+		}
+
+	}
+}
+
+static void ProcessManagerWork(void)
+{
+
+}
+
+static void SendPendingResponse(void)
+{
+	if (pendingResponse.cmdType != NoOperation)
+	{
+		SendResponse(&pendingResponse, lastResponseSent);
+		memset(&pendingResponse, 0, sizeof(MGBTCommandData));
+	}
+}
+
 void RunManager(void)
 {
 	RunCommProto();
+	if (CommandAvailable() != 0U)
+	{
+		ProcessCommand(GetAndClearCommand());
+	}
+	ProcessManagerWork();
+	if (CanSendResponse() != 0U)
+	{
+		SendPendingResponse();
+	}
 }
 
 void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)

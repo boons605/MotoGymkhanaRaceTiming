@@ -25,7 +25,10 @@ typedef enum {
 } MGBTCommProtoState;
 
 typedef enum {
-	NoOperation = 0U
+	NoOperation = 0U,
+	AddAllowedDevice = 1U,
+	RemoveAllowedDevice = 2U,
+
 } MGBTCommandType;
 
 typedef struct {
@@ -37,6 +40,9 @@ typedef struct {
 } MGBTCommandData;
 
 uint8_t CommandAvailable(void);
+MGBTCommandData* GetAndClearCommand(void);
+uint8_t CanSendResponse(void);
+void SendResponse(MGBTCommandData* data, uint8_t lastResponse);
 void RunCommProto(void);
 void InitCommProto(void);
 

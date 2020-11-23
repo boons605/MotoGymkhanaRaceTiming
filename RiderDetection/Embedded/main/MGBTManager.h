@@ -11,6 +11,8 @@
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
 
+#define MAXDEVICES 64
+
 typedef enum {
 	MgBtMState_Idle = 0U,
 	MgBtMState_ProcessingCommand = 1U
