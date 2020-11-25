@@ -23,16 +23,81 @@ void InitManager(void)
 	InitCommProto();
 }
 
+static void FindDeviceOrFirstFreeIndex(uint8_t* address, uint16_t* firstFreeIndex, uint16_t* indexFound)
+{
 
+	uint16_t index = 0U;
+	MGBTDeviceData emptyDevice = {0};
+
+	(*firstFreeIndex) = MAXDEVICES;
+	(*indexFound) = MAXDEVICES;
+
+	while (index < MAXDEVICES)
+	{
+		if (memcmp(&deviceList[index], &emptyDevice, sizeof(MGBTDeviceData)) != 0U)
+		{
+			if (BTDeviceAddressEquals(&deviceList[index], address) == 1U)
+			{
+				(*indexFound) = index;
+			}
+		}
+		else
+		{
+			if ((*firstFreeIndex) == MAXDEVICES)
+			{
+				(*firstFreeIndex) = index;
+			}
+		}
+		index++;
+
+		if (((*indexFound) != MAXDEVICES) && ((*firstFreeIndex) != MAXDEVICES))
+		{
+			index = MAXDEVICES;
+		}
+	}
+}
 
 static void AddDeviceToList(uint8_t* address)
 {
+	uint16_t firstFreeIndex = MAXDEVICES;
+	uint16_t indexFound = MAXDEVICES;
 
+	FindDeviceOrFirstFreeIndex(address, &firstFreeIndex, &indexFound);
+
+	if (indexFound == MAXDEVICES)
+	{
+		if (firstFreeIndex != MAXDEVICES)
+		{
+			memcpy(deviceList[firstFreeIndex].device.address, address, ESP_BD_ADDR_LEN);
+			pendingResponse->status = 0U;
+		}
+		else
+		{
+			pendingResponse->status = 0xFFFEU;
+		}
+	}
+	else
+	{
+		pendingResponse->status = 0xFFFFU;
+	}
 }
 
 static void RemoveDeviceFromList(uint8_t* address)
 {
+	uint16_t firstFreeIndex = MAXDEVICES;
+	uint16_t indexFound = MAXDEVICES;
 
+	FindDeviceOrFirstFreeIndex(address, &firstFreeIndex, &indexFound);
+
+	if (indexFound != MAXDEVICES)
+	{
+		memset(&deviceList[indexFound], 0U, sizeof(MGBTDeviceData));
+		pendingResponse->status = 0U;
+	}
+	else
+	{
+		pendingResponse->status = 0xFFFFU;
+	}
 }
 
 
@@ -42,12 +107,28 @@ static void ProcessCommand(MGBTCommandData* command)
 	{
 		case AddAllowedDevice:
 		{
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
 			AddDeviceToList(command->data);
+			lastResponseSent = 1U;
 			break;
 		}
 		case RemoveAllowedDevice:
 		{
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
 			RemoveDeviceFromList(command->data);
+			lastResponseSent = 1U;
+			break;
+		}
+		case ListAllowedDevices:
+		{
+			break;
+		}
+		case ListDetectedDevices:
+		{
+			break;
+		}
+		case GetClosestDevice:
+		{
 			break;
 		}
 		default:
@@ -68,7 +149,10 @@ static void SendPendingResponse(void)
 	if (pendingResponse.cmdType != NoOperation)
 	{
 		SendResponse(&pendingResponse, lastResponseSent);
-		memset(&pendingResponse, 0, sizeof(MGBTCommandData));
+		if (lastResponseSent == 1U)
+		{
+			memset(&pendingResponse, 0, sizeof(MGBTCommandData));
+		}
 	}
 }
 

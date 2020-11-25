@@ -88,6 +88,17 @@ static uint16_t calculateCRC(uint8_t* u8Buf, uint8_t len)
   return crc;
 }
 
+uint16_t GetCommandDataSize(MGBTCommandData* data)
+{
+	uint16_t retVal = 0U;
+	if (data != (MGBTCommandData*)0)
+	{
+		retVal = data->dataLength + 8U;
+	}
+
+	return retVal;
+}
+
 uint8_t CanSendResponse(void)
 {
 	uint8_t retVal = 0U;
@@ -102,7 +113,7 @@ uint8_t CanSendResponse(void)
 void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
 {
 	data->crc = calculateCRC((uint8_t*)&data->status, (data->dataLength + 4));
-	uart_write_bytes(MGBT_UART, (char*)data, data->dataLength + 8);
+	uart_write_bytes(MGBT_UART, (char*)data, GetCommandDataSize(data));
 }
 
 

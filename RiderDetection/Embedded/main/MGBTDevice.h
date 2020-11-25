@@ -25,6 +25,9 @@ typedef struct {
 
 } MGBTDeviceData;
 
-uint8_t BTAddressEquals(MGBTDevice* otherDevice);
+uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice);
+uint8_t BTAddressEquals(uint8_t* address1, uint8_t* address2);
+uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address);
+uint16_t GetDistance(MGBTDeviceData* device);
 
 #endif /* MAIN_MGBTDEVICE_H_ */

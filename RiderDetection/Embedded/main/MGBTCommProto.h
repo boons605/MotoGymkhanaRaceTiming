@@ -28,6 +28,9 @@ typedef enum {
 	NoOperation = 0U,
 	AddAllowedDevice = 1U,
 	RemoveAllowedDevice = 2U,
+	ListAllowedDevices = 3U,
+	ListDetectedDevices = 4U,
+	GetClosestDevice = 5U
 
 } MGBTCommandType;
 
@@ -45,5 +48,6 @@ uint8_t CanSendResponse(void);
 void SendResponse(MGBTCommandData* data, uint8_t lastResponse);
 void RunCommProto(void);
 void InitCommProto(void);
+uint16_t GetCommandDataSize(MGBTCommandData* data);
 
 #endif /* MAIN_MGBTCOMMPROTO_H_ */
