@@ -114,6 +114,14 @@ void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
 {
 	data->crc = calculateCRC((uint8_t*)&data->status, (data->dataLength + 4));
 	uart_write_bytes(MGBT_UART, (char*)data, GetCommandDataSize(data));
+	if (lastResponse == 0U)
+	{
+		state = CommProtoSending;
+	}
+	else
+	{
+		state = CommProtoIdle;
+	}
 }
 
 
@@ -233,7 +241,7 @@ static void RunProtoReceivingState(void)
 	{
 		if ((GetTimestampMs() - stateEntryTime) > RECEIVETIMEOUT)
 		{
-			ResetData();
+			ESP_LOGW(AppName, "Timeout on receive state");
 			state = CommProtoIdle;
 		}
 	}
@@ -244,7 +252,7 @@ static void RunProtoWaitingState(void)
 	uart_flush(MGBT_UART);
 	if ((GetTimestampMs() - stateEntryTime) > MAXWAITSTATETIME)
 	{
-		ResetData();
+		ESP_LOGW(AppName, "Timeout on wait state");
 		state = CommProtoIdle;
 	}
 	else
@@ -291,13 +299,16 @@ void RunCommProto(void)
 		}
 		default:
 		{
-			ResetData();
 			state = CommProtoIdle;
 		}
 	}
 
 	if (oldState != state)
 	{
+		if (state == CommProtoIdle)
+		{
+			ResetData();
+		}
 		stateEntryTime = GetTimestampMs();
 	}
 

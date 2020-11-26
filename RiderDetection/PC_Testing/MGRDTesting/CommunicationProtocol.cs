@@ -13,7 +13,7 @@ namespace MGRDTesting
     {
         ConcurrentQueue<MGBTCommandData> rxQueue = new ConcurrentQueue<MGBTCommandData>();
 
-        MGBTCommandData? commandToSend = null;
+        MGBTCommandData commandToSend = null;
 
         object lockObj = new object();
 
@@ -22,6 +22,9 @@ namespace MGRDTesting
         Thread commThread;
 
         public event EventHandler<EventArgs> ConnectionStateChanged;
+
+        public event EventHandler<EventArgs> NewDataArrived;
+
 
         private System.Timers.Timer timeoutTimer;
 
@@ -86,7 +89,7 @@ namespace MGRDTesting
                            timeoutTimer.Start();
                            state = State.Receiving; 
                         }
-                        else if (commandToSend.HasValue)
+                        else if (commandToSend != null)
                         {
                             state = State.Sending;
                         }
@@ -106,8 +109,17 @@ namespace MGRDTesting
                                         serialPort.Read(dataBuffer, bufferPosition, bytesToRead);
                                         bufferPosition += bytesToRead;
                                         if (CheckDataBuffer(dataBuffer))
-                                        {
-                                            rxQueue.Enqueue(MGBTCommandData.FromArray(dataBuffer));
+                                        { 
+                                            MGBTCommandData data = MGBTCommandData.FromArray(dataBuffer);
+                                            if (data.VerifyCRC())
+                                            {
+                                                rxQueue.Enqueue(data);
+                                            }
+                                            else
+                                            {
+
+                                            }
+                                            
                                             Array.Clear(dataBuffer, 0, dataBuffer.Length);
                                             bufferPosition = 0;
                                         }
@@ -125,8 +137,10 @@ namespace MGRDTesting
                                 byte[] data = null;
                                 lock (lockObj)
                                 {
-                                    data = commandToSend.Value.ToArray();
+                                    commandToSend.UpdateCRC();
+                                    data = commandToSend.ToArray(false);
                                     commandToSend = null;
+                                    state = State.Idle;
                                 }
 
                                 if (data != null)
@@ -196,6 +210,8 @@ namespace MGRDTesting
                 commandToSend = cmd;
             }
         }
+
+        
 
     }
 }

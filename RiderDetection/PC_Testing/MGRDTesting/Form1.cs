@@ -24,7 +24,7 @@ namespace MGRDTesting
         {
             foreach (string pName in SerialPort.GetPortNames())
             {
-                if (toolStripComboBox1.Items.Contains(pName))
+                if (!toolStripComboBox1.Items.Contains(pName))
                 {
                     toolStripComboBox1.Items.Add(pName);
                 }
@@ -33,7 +33,40 @@ namespace MGRDTesting
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
+            if (proto == null)
+            {
+                proto = new CommunicationProtocol(toolStripComboBox1.SelectedItem.ToString());
+                proto.ConnectionStateChanged += Proto_ConnectionStateChanged;
+                proto.NewDataArrived += Proto_NewDataArrived;
+                proto.Start();
+            }
+        }
 
+        private void Proto_NewDataArrived(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Proto_ConnectionStateChanged(object sender, EventArgs e)
+        {
+            MessageBox.Show("Connection running: " + proto.IsRunning);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (proto == null)
+            {
+                return;
+            }
+
+            if (proto.ReadyToSend())
+            {
+                MGBTCommandData data = new MGBTCommandData();
+                data.Status = 0x0000;
+                data.CommandType = 0x0001;
+                data.data = new byte[] { 0x24, 0x6f, 0x28, 0x7c, 0x13, 0x5a };
+                proto.SendCommand(data);
+            }
         }
     }
 }

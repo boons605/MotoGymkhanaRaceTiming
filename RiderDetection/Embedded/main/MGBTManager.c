@@ -68,17 +68,18 @@ static void AddDeviceToList(uint8_t* address)
 	{
 		if (firstFreeIndex != MAXDEVICES)
 		{
-			memcpy(deviceList[firstFreeIndex].device.address, address, ESP_BD_ADDR_LEN);
-			pendingResponse->status = 0U;
+			memcpy(&deviceList[firstFreeIndex].device.address, address, ESP_BD_ADDR_LEN);
+			pendingResponse.status = 0U;
+			esp_log_buffer_hex("Added device:", address, ESP_BD_ADDR_LEN );
 		}
 		else
 		{
-			pendingResponse->status = 0xFFFEU;
+			pendingResponse.status = 0xFFFEU;
 		}
 	}
 	else
 	{
-		pendingResponse->status = 0xFFFFU;
+		pendingResponse.status = 0xFFFFU;
 	}
 }
 
@@ -92,11 +93,11 @@ static void RemoveDeviceFromList(uint8_t* address)
 	if (indexFound != MAXDEVICES)
 	{
 		memset(&deviceList[indexFound], 0U, sizeof(MGBTDeviceData));
-		pendingResponse->status = 0U;
+		pendingResponse.status = 0U;
 	}
 	else
 	{
-		pendingResponse->status = 0xFFFFU;
+		pendingResponse.status = 0xFFFFU;
 	}
 }
 
@@ -107,6 +108,7 @@ static void ProcessCommand(MGBTCommandData* command)
 	{
 		case AddAllowedDevice:
 		{
+			ESP_LOGI(AppName, "Add to allowed devices");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
 			AddDeviceToList(command->data);
 			lastResponseSent = 1U;
@@ -114,6 +116,7 @@ static void ProcessCommand(MGBTCommandData* command)
 		}
 		case RemoveAllowedDevice:
 		{
+			ESP_LOGI(AppName, "Remove from allowed devices");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
 			RemoveDeviceFromList(command->data);
 			lastResponseSent = 1U;
@@ -121,14 +124,23 @@ static void ProcessCommand(MGBTCommandData* command)
 		}
 		case ListAllowedDevices:
 		{
+			ESP_LOGI(AppName, "List allowed devices");
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			lastResponseSent = 1U;
 			break;
 		}
 		case ListDetectedDevices:
 		{
+			ESP_LOGI(AppName, "List detected devices");
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			lastResponseSent = 1U;
 			break;
 		}
 		case GetClosestDevice:
 		{
+			ESP_LOGI(AppName, "Get closest device");
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			lastResponseSent = 1U;
 			break;
 		}
 		default:
@@ -177,19 +189,34 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 		esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scanResult->scan_rst.ble_adv);
 		ESP_LOGI(AppName, "----------iBeacon Found----------");
 		esp_log_buffer_hex("IBEACON_DEMO: Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN );
-		esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
+		/*esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
 
 		uint16_t major = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.major);
 		uint16_t minor = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.minor);
 		ESP_LOGI(AppName, "Major: 0x%04x (%d)", major, major);
 		ESP_LOGI(AppName, "Minor: 0x%04x (%d)", minor, minor);
-		ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);
+		ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);*/
 		ESP_LOGI(AppName, "RSSI of packet:%d dbm", scanResult->scan_rst.rssi);
+
+		uint16_t index = MAXDEVICES;
+		uint16_t firstIndex = MAXDEVICES;
+
+		FindDeviceOrFirstFreeIndex(&scanResult->scan_rst.bda, &firstIndex, &index);
+
+		if (index != MAXDEVICES)
+		{
+			ESP_LOGI(AppName, "Device is allowed");
+		}
+		else
+		{
+			ESP_LOGI(AppName, "Device is NOT allowed");
+		}
+
 	}
-	else
+	/*else
 	{
 		ESP_LOGI(AppName, "Found non-iBeacon device:");
 		esp_log_buffer_hex("IBEACON_DEMO: Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN );
 		ESP_LOGI(AppName, "RSSI of packet:%d dbm", scanResult->scan_rst.rssi);
-	}
+	}*/
 }

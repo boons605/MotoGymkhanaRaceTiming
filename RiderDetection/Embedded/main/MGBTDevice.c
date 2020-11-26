@@ -8,6 +8,7 @@
 
 #include "MGBTDevice.h"
 #include "esp_gap_bt_api.h"
+#include <string.h>
 
 uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice)
 {
@@ -54,5 +55,5 @@ uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address)
 //Get Distance in 0.1m
 uint16_t GetDistance(MGBTDeviceData* device)
 {
-
+	return 0;
 }
