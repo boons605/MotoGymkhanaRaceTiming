@@ -121,6 +121,7 @@ void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
 	else
 	{
 		state = CommProtoIdle;
+		ResetData();
 	}
 }
 

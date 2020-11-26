@@ -68,5 +68,22 @@ namespace MGRDTesting
                 proto.SendCommand(data);
             }
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (proto == null)
+            {
+                return;
+            }
+
+            if (proto.ReadyToSend())
+            {
+                MGBTCommandData data = new MGBTCommandData();
+                data.Status = 0x0000;
+                data.CommandType = 0x0002;
+                data.data = new byte[] { 0x24, 0x6f, 0x28, 0x7c, 0x13, 0x5a };
+                proto.SendCommand(data);
+            }
+        }
     }
 }
