@@ -17,6 +17,8 @@
 * visit https://developer.apple.com/ibeacon/ to obtain a license.
 *
 ****************************************************************************/
+#ifndef ESP_IBEACONAPI_H_
+#define ESP_IBEACONAPI_H_
 
 #include <stdint.h>
 #include <string.h>
@@ -75,3 +77,5 @@ extern esp_ble_ibeacon_head_t ibeacon_common_head;
 bool esp_ble_is_ibeacon_packet (uint8_t *adv_data, uint8_t adv_data_len);
 
 esp_err_t esp_ble_config_ibeacon_data (esp_ble_ibeacon_vendor_t *vendor_config, esp_ble_ibeacon_t *ibeacon_adv_data);
+
+#endif

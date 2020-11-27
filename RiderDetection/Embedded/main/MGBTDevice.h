@@ -9,6 +9,12 @@
 #define MAIN_MGBTDEVICE_H_
 #include <stdint.h>
 #include "esp_gap_ble_api.h"
+#include "esp_ibeacon_api.h"
+
+#define RSSISAMPLES 4
+#define ACTIVEDEVICETIMEOUT 10000
+#define ACTIVEDEVICEMINRSSI -80
+#define DISTANCEENVFACTOR 2
 
 typedef struct {
 	uint8_t address[ESP_BD_ADDR_LEN];
@@ -29,5 +35,7 @@ uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice);
 uint8_t BTAddressEquals(uint8_t* address1, uint8_t* address2);
 uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address);
 uint16_t GetDistance(MGBTDeviceData* device);
+void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult, esp_ble_ibeacon_t *ibeacon_data);
+uint8_t IsDeviceActive(MGBTDeviceData* device);
 
 #endif /* MAIN_MGBTDEVICE_H_ */

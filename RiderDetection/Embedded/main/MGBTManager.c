@@ -8,6 +8,7 @@
 #include "MGBTManager.h"
 #include "MGBTCommProto.h"
 #include "MGBTDevice.h"
+#include "MGBTTimeMgmt.h"
 
 #include "esp_ibeacon_api.h"
 #include "esp_log.h"
@@ -182,6 +183,7 @@ void RunManager(void)
 	}
 }
 
+
 void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 {
 	 /* Search for BLE iBeacon Packet */
@@ -189,13 +191,7 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 		esp_ble_ibeacon_t *ibeacon_data = (esp_ble_ibeacon_t*)(scanResult->scan_rst.ble_adv);
 		ESP_LOGI(AppName, "----------iBeacon Found----------");
 		esp_log_buffer_hex("IBEACON_DEMO: Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN );
-		/*esp_log_buffer_hex("IBEACON_DEMO: Proximity UUID:", ibeacon_data->ibeacon_vendor.proximity_uuid, ESP_UUID_LEN_128);
-
-		uint16_t major = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.major);
-		uint16_t minor = ENDIAN_CHANGE_U16(ibeacon_data->ibeacon_vendor.minor);
-		ESP_LOGI(AppName, "Major: 0x%04x (%d)", major, major);
-		ESP_LOGI(AppName, "Minor: 0x%04x (%d)", minor, minor);
-		ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);*/
+		ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);
 		ESP_LOGI(AppName, "RSSI of packet:%d dbm", scanResult->scan_rst.rssi);
 
 		uint16_t index = MAXDEVICES;
@@ -205,7 +201,9 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 
 		if (index != MAXDEVICES)
 		{
-			ESP_LOGI(AppName, "Device is allowed");
+			UpdateDeviceData(&deviceList[index], scanResult, ibeacon_data);
+			uint16_t dist = GetDistance(&deviceList[index]);
+			ESP_LOGI(AppName, "Device is at distance of %d dm", dist);
 		}
 		else
 		{

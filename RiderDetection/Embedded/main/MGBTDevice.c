@@ -8,7 +8,10 @@
 
 #include "MGBTDevice.h"
 #include "esp_gap_bt_api.h"
+#include "MGBTTimeMgmt.h"
 #include <string.h>
+#include <math.h>
+#include "esp_log.h"
 
 uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice)
 {
@@ -53,7 +56,59 @@ uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address)
 }
 
 //Get Distance in 0.1m
+//Formula found here: https://iotandelectronics.wordpress.com/2016/10/07/how-to-calculate-distance-from-the-rssi-value-of-the-ble-beacon/
 uint16_t GetDistance(MGBTDeviceData* device)
 {
-	return 0;
+	uint16_t retVal = 0U;
+	if (device != (MGBTDeviceData*)0)
+	{
+		if (device->averageRssi > device->device.measuredPower)
+		{
+			retVal = 10U;
+		}
+		else
+		{
+			double exp = (double)(device->device.measuredPower - device->averageRssi);
+			exp /= (double)(10*DISTANCEENVFACTOR);
+
+			double distance = pow(10, exp) * 10;
+			retVal = (uint16_t)distance;
+		}
+
+	}
+	return retVal;
+}
+
+uint8_t IsDeviceActive(MGBTDeviceData* device)
+{
+	uint8_t retVal;
+	if (device != (MGBTDeviceData*)0)
+	{
+		if ((device->millisLastSeen > 0U) &&
+			((GetTimestampMs() - device->millisLastSeen) < ACTIVEDEVICETIMEOUT) &&
+			(device->averageRssi > ACTIVEDEVICEMINRSSI))
+		{
+			retVal = 1;
+		}
+
+	}
+	return retVal;
+}
+
+void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult, esp_ble_ibeacon_t *ibeacon_data)
+{
+	if ((device != (MGBTDeviceData*)0) && (scanResult != (esp_ble_gap_cb_param_t*)0) && (ibeacon_data != (esp_ble_ibeacon_t*)0))
+	{
+		device->lastRssi = (uint16_t)scanResult->scan_rst.rssi;
+		device->averageRssi = (((device->averageRssi * (RSSISAMPLES-1)) + device->lastRssi) / RSSISAMPLES);
+		device->device.rssi = device->averageRssi;
+
+		if (device->millisFirstSeen == 0U)
+		{
+			device->millisFirstSeen = GetTimestampMs();
+		}
+		device->millisLastSeen = GetTimestampMs();
+
+		device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power;
+	}
 }
