@@ -18,24 +18,33 @@ static const char* AppName = "MGBTManager";
 static MGBTDeviceData deviceList[MAXDEVICES] = {0};
 static MGBTCommandData pendingResponse = {0};
 static uint8_t lastResponseSent = 0U;
+static uint32_t lastTimeCleanup = 0U;
+
+static uint8_t totalPackets;
+static uint8_t currentPacket;
+static uint8_t currentDeviceIndex;
+
+
+ManagerState managerState = MgBtMState_Idle;
 
 void InitManager(void)
 {
 	InitCommProto();
+	lastTimeCleanup = GetTimestampMs();
 }
 
 static void FindDeviceOrFirstFreeIndex(uint8_t* address, uint16_t* firstFreeIndex, uint16_t* indexFound)
 {
 
 	uint16_t index = 0U;
-	MGBTDeviceData emptyDevice = {0};
+
 
 	(*firstFreeIndex) = MAXDEVICES;
 	(*indexFound) = MAXDEVICES;
 
 	while (index < MAXDEVICES)
 	{
-		if (memcmp(&deviceList[index], &emptyDevice, sizeof(MGBTDeviceData)) != 0U)
+		if (IsDeviceEntryEmpty(&deviceList[index]) == 0U)
 		{
 			if (BTDeviceAddressEquals(&deviceList[index], address) == 1U)
 			{
@@ -58,7 +67,33 @@ static void FindDeviceOrFirstFreeIndex(uint8_t* address, uint16_t* firstFreeInde
 	}
 }
 
-static void AddDeviceToList(uint8_t* address)
+static uint8_t CountAllowedDevices(void)
+{
+	uint8_t retVal = 0U;
+
+	uint8_t index = 0U;
+	for (index = 0U; index < MAXDEVICES; index++)
+	{
+		if (deviceList[index].allowed == 1U)
+		{
+			retVal++;
+		}
+	}
+
+	return retVal;
+}
+
+static void AddDeviceToListAtIndex(uint16_t index, uint8_t* address, uint8_t allowed)
+{
+	if (index < MAXDEVICES)
+	{
+		MGBTDeviceData* device = &deviceList[index];
+		memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
+		device->allowed = allowed;
+	}
+}
+
+static void AddDeviceToList(uint8_t* address, uint8_t allowed)
 {
 	uint16_t firstFreeIndex = MAXDEVICES;
 	uint16_t indexFound = MAXDEVICES;
@@ -69,7 +104,7 @@ static void AddDeviceToList(uint8_t* address)
 	{
 		if (firstFreeIndex != MAXDEVICES)
 		{
-			memcpy(&deviceList[firstFreeIndex].device.address, address, ESP_BD_ADDR_LEN);
+			AddDeviceToListAtIndex(firstFreeIndex, address, allowed);
 			pendingResponse.status = 0U;
 			esp_log_buffer_hex("Added device:", address, ESP_BD_ADDR_LEN );
 		}
@@ -80,7 +115,16 @@ static void AddDeviceToList(uint8_t* address)
 	}
 	else
 	{
-		pendingResponse.status = 0xFFFFU;
+		MGBTDeviceData* device = &deviceList[indexFound];
+		if (device->allowed == 0U)
+		{
+			device->allowed = 0U;
+			pendingResponse.status = 0U;
+		}
+		else
+		{
+			pendingResponse.status = 0xFFFFU;
+		}
 	}
 }
 
@@ -93,7 +137,7 @@ static void RemoveDeviceFromList(uint8_t* address)
 
 	if (indexFound != MAXDEVICES)
 	{
-		memset(&deviceList[indexFound], 0U, sizeof(MGBTDeviceData));
+		ClearDeviceEntry(&deviceList[indexFound]);
 		pendingResponse.status = 0U;
 	}
 	else
@@ -101,6 +145,73 @@ static void RemoveDeviceFromList(uint8_t* address)
 		pendingResponse.status = 0xFFFFU;
 	}
 }
+
+static void StartListingAllowedDevices(void)
+{
+	uint8_t nbOfAllowedDevices = CountAllowedDevices();
+	uint8_t devicesPerPacket = (uint8_t)(GetCommandMaxDataLength() / sizeof(MGBTDevice));
+
+	if (nbOfAllowedDevices < devicesPerPacket)
+	{
+		totalPackets = 1U;
+	}
+	else
+	{
+		totalPackets = (nbOfAllowedDevices / devicesPerPacket);
+		if ((nbOfAllowedDevices % devicesPerPacket) > 0)
+		{
+			totalPackets++;
+		}
+	}
+
+	currentDeviceIndex = 0;
+	currentPacket = 0;
+	managerState = MgBtMState_ListingAllowedDevices;
+}
+
+static void SendListAllowedDevicePacket(void)
+{
+
+}
+
+static void StartListingAllDevices(void)
+{
+
+}
+
+static void SendListAllDevicesPacket(void)
+{
+
+}
+
+static MGBTDeviceData* GetClosestDeviceFromList(void)
+{
+	MGBTDeviceData* retVal = (MGBTDeviceData*)0;
+	uint16_t index = 0U;
+	for (index = 0U; index < MAXDEVICES; index++)
+	{
+		MGBTDeviceData* entry = &deviceList[index];
+		if (entry->allowed == 1U)
+		{
+			if (IsDeviceActive(entry) == 1U)
+			{
+				if (retVal == (MGBTDeviceData*)0)
+				{
+					retVal = entry;
+				}
+				else
+				{
+					if (entry->lastDistanceExponent < retVal->lastDistanceExponent)
+					{
+						retVal = entry;
+					}
+				}
+			}
+		}
+	}
+	return retVal;
+}
+
 
 
 static void ProcessCommand(MGBTCommandData* command)
@@ -111,7 +222,7 @@ static void ProcessCommand(MGBTCommandData* command)
 		{
 			ESP_LOGI(AppName, "Add to allowed devices");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
-			AddDeviceToList(command->data);
+			AddDeviceToList(command->data, 1U);
 			lastResponseSent = 1U;
 			break;
 		}
@@ -127,6 +238,7 @@ static void ProcessCommand(MGBTCommandData* command)
 		{
 			ESP_LOGI(AppName, "List allowed devices");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			StartListingAllowedDevices();
 			lastResponseSent = 1U;
 			break;
 		}
@@ -134,6 +246,7 @@ static void ProcessCommand(MGBTCommandData* command)
 		{
 			ESP_LOGI(AppName, "List detected devices");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			StartListingAllDevices();
 			lastResponseSent = 1U;
 			break;
 		}
@@ -141,6 +254,17 @@ static void ProcessCommand(MGBTCommandData* command)
 		{
 			ESP_LOGI(AppName, "Get closest device");
 			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			MGBTDeviceData* device = GetClosestDeviceFromList();
+			if (device != (MGBTDeviceData*)0)
+			{
+				memcpy(pendingResponse.data, &device->device, sizeof(MGBTDevice));
+				pendingResponse.dataLength = sizeof(MGBTDevice);
+				pendingResponse.status = 0U;
+			}
+			else
+			{
+				pendingResponse.status = 0xFFFFU;
+			}
 			lastResponseSent = 1U;
 			break;
 		}
@@ -148,13 +272,34 @@ static void ProcessCommand(MGBTCommandData* command)
 		{
 			break;
 		}
-
 	}
+}
+
+static void ManagerIdleWork(void)
+{
+
 }
 
 static void ProcessManagerWork(void)
 {
+	switch (managerState)
+	{
+		case MgBtMState_ListingAllowedDevices:
+		{
+			SendListAllowedDevicePacket();
+			break;
+		}
+		case MgBtMState_ListingAllDetectedDevices:
+		{
+			SendListAllDevicesPacket();
+			break;
+		}
+		default:
+		{
+			ManagerIdleWork();
+		}
 
+	}
 }
 
 static void SendPendingResponse(void)
@@ -183,6 +328,14 @@ void RunManager(void)
 	}
 }
 
+static uint8_t GetFilterAllowedDevices(void)
+{
+	uint8_t retVal = 0U;
+
+
+
+	return retVal;
+}
 
 void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 {
@@ -197,7 +350,7 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 		uint16_t index = MAXDEVICES;
 		uint16_t firstIndex = MAXDEVICES;
 
-		FindDeviceOrFirstFreeIndex(&scanResult->scan_rst.bda, &firstIndex, &index);
+		FindDeviceOrFirstFreeIndex(scanResult->scan_rst.bda, &firstIndex, &index);
 
 		if (index != MAXDEVICES)
 		{
@@ -208,6 +361,10 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
 		else
 		{
 			ESP_LOGI(AppName, "Device is NOT allowed");
+			if (GetFilterAllowedDevices() == 0U)
+			{
+				AddDeviceToListAtIndex(firstIndex, scanResult->scan_rst.bda, 0U);
+			}
 		}
 
 	}

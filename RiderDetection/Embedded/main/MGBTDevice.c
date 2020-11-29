@@ -18,7 +18,7 @@ uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice)
 	uint8_t retVal = 0U;
 	if (device == otherDevice)
 	{
-
+		retVal = 1U;
 	}
 	else if ((device != (MGBTDeviceData*)0) && (otherDevice != (MGBTDeviceData*)0))
 	{
@@ -55,26 +55,44 @@ uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address)
 	return retVal;
 }
 
-//Get Distance in 0.1m
-//Formula found here: https://iotandelectronics.wordpress.com/2016/10/07/how-to-calculate-distance-from-the-rssi-value-of-the-ble-beacon/
-uint16_t GetDistance(MGBTDeviceData* device)
+
+//Exponent > 3 is used as error value, as this would mean more than 1000m, which is well outside the
+//the maximum range of BLE, which is about 100m.
+static double GetDistancingExponent(MGBTDeviceData* device)
 {
-	uint16_t retVal = 0U;
+	double retVal = 3.1;
+
 	if (device != (MGBTDeviceData*)0)
 	{
-		if (device->averageRssi > device->device.measuredPower)
-		{
-			retVal = 10U;
-		}
-		else
-		{
-			double exp = (double)(device->device.measuredPower - device->averageRssi);
-			exp /= (double)(10*DISTANCEENVFACTOR);
+		retVal = (double)(device->device.measuredPower - device->averageRssi);
+		retVal /= (double)(10*DISTANCEENVFACTOR);
+	}
 
-			double distance = pow(10, exp) * 10;
-			retVal = (uint16_t)distance;
-		}
+	return retVal;
+}
 
+//Get Distance in 0.1m
+//Formula found here: https://iotandelectronics.wordpress.com/2016/10/07/how-to-calculate-distance-from-the-rssi-value-of-the-ble-beacon/
+//Return value of > 1500 is considered error, as the max range of BLE is about 100m.
+uint16_t GetDistance(MGBTDeviceData* device)
+{
+	uint16_t retVal = 10000U;
+	if (device != (MGBTDeviceData*)0)
+	{
+		double exp = device->lastDistanceExponent;
+		double absExp = fabs(exp);
+		if (absExp < 3.0)
+		{
+			double distance = pow(10, absExp);
+			if (exp > 0)
+			{
+				retVal = (uint16_t)(distance*10.0);
+			}
+			else
+			{
+				retVal = (uint16_t)((1.0/distance)*10.0);
+			}
+		}
 	}
 	return retVal;
 }
@@ -86,7 +104,7 @@ uint8_t IsDeviceActive(MGBTDeviceData* device)
 	{
 		if ((device->millisLastSeen > 0U) &&
 			((GetTimestampMs() - device->millisLastSeen) < ACTIVEDEVICETIMEOUT) &&
-			(device->averageRssi > ACTIVEDEVICEMINRSSI))
+			(device->lastDistanceExponent < MAXDISTEXPONENT))
 		{
 			retVal = 1;
 		}
@@ -110,5 +128,29 @@ void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult
 		device->millisLastSeen = GetTimestampMs();
 
 		device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power;
+		device->lastDistanceExponent = GetDistancingExponent(device);
+	}
+}
+
+uint8_t IsDeviceEntryEmpty(MGBTDeviceData* device)
+{
+	uint8_t retVal = 0U;
+	if (device != (MGBTDeviceData*)0)
+	{
+		MGBTDeviceData emptyDevice = {0};
+		if (memcmp(device, &emptyDevice, sizeof(MGBTDeviceData)) == 0U)
+		{
+			retVal = 1U;
+		}
+	}
+	return retVal;
+
+}
+
+void ClearDeviceEntry(MGBTDeviceData* device)
+{
+	if (device != (MGBTDeviceData*)0)
+	{
+		memset(device, 0U, sizeof(MGBTDeviceData));
 	}
 }

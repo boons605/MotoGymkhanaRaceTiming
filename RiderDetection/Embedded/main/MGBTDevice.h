@@ -13,13 +13,14 @@
 
 #define RSSISAMPLES 4
 #define ACTIVEDEVICETIMEOUT 10000
-#define ACTIVEDEVICEMINRSSI -80
+#define MAXDISTEXPONENT 0.85
 #define DISTANCEENVFACTOR 2
 
 typedef struct {
 	uint8_t address[ESP_BD_ADDR_LEN];
 	int16_t rssi;
 	int16_t measuredPower;
+	uint16_t distance;
 } MGBTDevice;
 
 typedef struct {
@@ -28,6 +29,9 @@ typedef struct {
 	int16_t averageRssi;
 	uint32_t millisFirstSeen;
 	uint32_t millisLastSeen;
+	uint8_t allowed;
+	double lastDistanceExponent;
+
 
 } MGBTDeviceData;
 
@@ -37,5 +41,7 @@ uint8_t BTDeviceAddressEquals(MGBTDeviceData* device, uint8_t* address);
 uint16_t GetDistance(MGBTDeviceData* device);
 void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult, esp_ble_ibeacon_t *ibeacon_data);
 uint8_t IsDeviceActive(MGBTDeviceData* device);
+uint8_t IsDeviceEntryEmpty(MGBTDeviceData* device);
+void ClearDeviceEntry(MGBTDeviceData* device);
 
 #endif /* MAIN_MGBTDEVICE_H_ */

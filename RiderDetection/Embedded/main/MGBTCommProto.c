@@ -13,6 +13,7 @@
 #include "esp_log.h"
 
 #define MAXWAITSTATETIME 1000U
+#define MAXSENDINGTIME 10000U
 #define RECEIVETIMEOUT 200U
 
 static uint8_t rxDataBuffer[DATABUFFERLENGTH] = {0U};
@@ -32,6 +33,11 @@ static const uart_config_t uart_config = {
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_APB,
 };
+
+static uint32_t GetTimeInState(void)
+{
+	return GetTimestampMs() - stateEntryTime;
+}
 
 static void ResetData(void)
 {
@@ -86,6 +92,11 @@ static uint16_t calculateCRC(uint8_t* u8Buf, uint8_t len)
   }
 
   return crc;
+}
+
+uint16_t GetCommandMaxDataLength(void)
+{
+	return COMMANDDATAMAXSIZE;
 }
 
 uint16_t GetCommandDataSize(MGBTCommandData* data)
@@ -170,9 +181,7 @@ static uint8_t ProcessCommand(void)
 {
 	uint8_t retVal = 0U;
 	memcpy((void*)&rxCommand, &rxDataBuffer[1], rxDataBufferPosition);
-	ESP_LOGI(AppName, "calculated CRC from position 5 to %d, %d", (rxCommand.dataLength + 4), rxDataBufferPosition);
 	uint16_t calcCrc = calculateCRC(&rxDataBuffer[5], rxCommand.dataLength + 4);
-	ESP_LOGI(AppName, "calculated CRC 0x%.4X", calcCrc);
 	if (calcCrc == rxCommand.crc)
 	{
 		retVal = 1U;
@@ -240,7 +249,7 @@ static void RunProtoReceivingState(void)
 
 	if (state == CommProtoReceiving)
 	{
-		if ((GetTimestampMs() - stateEntryTime) > RECEIVETIMEOUT)
+		if (GetTimeInState() > RECEIVETIMEOUT)
 		{
 			ESP_LOGW(AppName, "Timeout on receive state");
 			state = CommProtoIdle;
@@ -251,18 +260,16 @@ static void RunProtoReceivingState(void)
 static void RunProtoWaitingState(void)
 {
 	uart_flush(MGBT_UART);
-	if ((GetTimestampMs() - stateEntryTime) > MAXWAITSTATETIME)
+	if (GetTimeInState() > MAXWAITSTATETIME)
 	{
 		ESP_LOGW(AppName, "Timeout on wait state");
 		state = CommProtoIdle;
 	}
 	else
 	{
-		if ((GetTimestampMs() - stateEntryTime) < 50)
+		if (GetTimeInState() < 50)
 		{
-			ESP_LOGI(AppName, "Command data length %d", rxCommand.dataLength);
-			ESP_LOGI(AppName, "Command data crc 0x%.4X", rxCommand.crc);
-			ESP_LOGI(AppName, "Command type %d", rxCommand.cmdType);
+			ESP_LOGI(AppName, "Command data length %d of type %d", rxCommand.dataLength, rxCommand.cmdType);
 			ESP_LOG_BUFFER_HEXDUMP(AppName, rxCommand.data, rxCommand.dataLength, ESP_LOG_INFO);
 		}
 	}
@@ -271,6 +278,11 @@ static void RunProtoWaitingState(void)
 static void RunProtoSendingState(void)
 {
 	uart_flush(MGBT_UART);
+	if (GetTimeInState() > MAXSENDINGTIME)
+	{
+		ESP_LOGW(AppName, "Timeout on sending state");
+		state = CommProtoIdle;
+	}
 }
 
 void RunCommProto(void)

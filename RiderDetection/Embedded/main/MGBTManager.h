@@ -15,7 +15,10 @@
 
 typedef enum {
 	MgBtMState_Idle = 0U,
-	MgBtMState_ProcessingCommand = 1U
+	MgBtMState_ProcessingCommand = 1U,
+	MgBtMState_CleaningUpInactive = 2U,
+	MgBtMState_ListingAllowedDevices = 3U,
+	MgBtMState_ListingAllDetectedDevices = 4U
 
 } ManagerState;
 
