@@ -10,5 +10,5 @@
 
 uint32_t GetTimestampMs(void)
 {
-	return (uint32_t)(esp_timer_get_time() / 1000U);
+    return (uint32_t)(esp_timer_get_time() / 1000U);
 }

@@ -12,13 +12,16 @@
 #include "esp_gap_ble_api.h"
 
 #define MAXDEVICES 64
+#define DEVICELISTSCANTIME 5000U
+#define DEVICELISTPROGRESSINTERVAL 250U
 
-typedef enum {
-	MgBtMState_Idle = 0U,
-	MgBtMState_ProcessingCommand = 1U,
-	MgBtMState_CleaningUpInactive = 2U,
-	MgBtMState_ListingAllowedDevices = 3U,
-	MgBtMState_ListingAllDetectedDevices = 4U
+typedef enum
+{
+    MgBtMState_Idle = 0U,
+    MgBtMState_ProcessingCommand = 1U,
+    MgBtMState_CleaningUpInactive = 2U,
+    MgBtMState_ListingAllowedDevices = 3U,
+    MgBtMState_ListingAllDetectedDevices = 4U
 
 } ManagerState;
 

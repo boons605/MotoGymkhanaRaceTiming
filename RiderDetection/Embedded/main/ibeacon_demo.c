@@ -39,10 +39,11 @@
 static const char* AppName = "MGBTDetectMain";
 
 ///Declare static functions
-static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
+static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
 
-static esp_ble_scan_params_t ble_scan_params = {
+static esp_ble_scan_params_t ble_scan_params =
+{
     .scan_type              = BLE_SCAN_TYPE_ACTIVE,
     .own_addr_type          = BLE_ADDR_TYPE_PUBLIC,
     .scan_filter_policy     = BLE_SCAN_FILTER_ALLOW_ALL,
@@ -54,61 +55,71 @@ static esp_ble_scan_params_t ble_scan_params = {
 
 
 
-static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param)
 {
     esp_err_t err;
 
-    switch (event) {
-    case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
-        //the unit of the duration is second, 0 means scan permanently
-        uint32_t duration = 0;
-        esp_ble_gap_start_scanning(duration);
-        break;
-    }
-    case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
-        //scan start complete event to indicate scan start successfully or failed
-        if ((err = param->scan_start_cmpl.status) != ESP_BT_STATUS_SUCCESS) {
-            ESP_LOGE(AppName, "Scan start failed: %s", esp_err_to_name(err));
-        }
-        break;
-    case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-        //adv start complete event to indicate adv start successfully or failed
-        if ((err = param->adv_start_cmpl.status) != ESP_BT_STATUS_SUCCESS) {
-            ESP_LOGE(AppName, "Adv start failed: %s", esp_err_to_name(err));
-        }
-        break;
-    case ESP_GAP_BLE_SCAN_RESULT_EVT: {
-        esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
-        switch (scan_result->scan_rst.search_evt) {
-        case ESP_GAP_SEARCH_INQ_RES_EVT:
-        	ProcessScanResult(scan_result);
+    switch(event)
+    {
+        case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
+        {
+            //the unit of the duration is second, 0 means scan permanently
+            uint32_t duration = 0;
+            esp_ble_gap_start_scanning(duration);
             break;
+        }
+        case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
+            //scan start complete event to indicate scan start successfully or failed
+            if((err = param->scan_start_cmpl.status) != ESP_BT_STATUS_SUCCESS)
+            {
+                ESP_LOGE(AppName, "Scan start failed: %s", esp_err_to_name(err));
+            }
+            break;
+        case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
+            //adv start complete event to indicate adv start successfully or failed
+            if((err = param->adv_start_cmpl.status) != ESP_BT_STATUS_SUCCESS)
+            {
+                ESP_LOGE(AppName, "Adv start failed: %s", esp_err_to_name(err));
+            }
+            break;
+        case ESP_GAP_BLE_SCAN_RESULT_EVT:
+        {
+            esp_ble_gap_cb_param_t* scan_result = (esp_ble_gap_cb_param_t*)param;
+            switch(scan_result->scan_rst.search_evt)
+            {
+                case ESP_GAP_SEARCH_INQ_RES_EVT:
+                    ProcessScanResult(scan_result);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+
+        case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
+            if((err = param->scan_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS)
+            {
+                ESP_LOGE(AppName, "Scan stop failed: %s", esp_err_to_name(err));
+            }
+            else
+            {
+                ESP_LOGI(AppName, "Stop scan successfully");
+            }
+            break;
+
+        case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
+            if((err = param->adv_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS)
+            {
+                ESP_LOGE(AppName, "Adv stop failed: %s", esp_err_to_name(err));
+            }
+            else
+            {
+                ESP_LOGI(AppName, "Stop adv successfully");
+            }
+            break;
+
         default:
             break;
-        }
-        break;
-    }
-
-    case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
-        if ((err = param->scan_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS){
-            ESP_LOGE(AppName, "Scan stop failed: %s", esp_err_to_name(err));
-        }
-        else {
-            ESP_LOGI(AppName, "Stop scan successfully");
-        }
-        break;
-
-    case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
-        if ((err = param->adv_stop_cmpl.status) != ESP_BT_STATUS_SUCCESS){
-            ESP_LOGE(AppName, "Adv stop failed: %s", esp_err_to_name(err));
-        }
-        else {
-            ESP_LOGI(AppName, "Stop adv successfully");
-        }
-        break;
-
-    default:
-        break;
     }
 }
 
@@ -120,7 +131,8 @@ static void ble_ibeacon_appRegister(void)
     ESP_LOGI(AppName, "register callback");
 
     //register the scan callback function to the gap module
-    if ((status = esp_ble_gap_register_callback(esp_gap_cb)) != ESP_OK) {
+    if((status = esp_ble_gap_register_callback(esp_gap_cb)) != ESP_OK)
+    {
         ESP_LOGE(AppName, "gap register error: %s", esp_err_to_name(status));
         return;
     }
@@ -134,14 +146,15 @@ static void ble_ibeacon_init(void)
     ble_ibeacon_appRegister();
 }
 
-static void rx_task(void *arg)
+static void rx_task(void* arg)
 {
-	const TickType_t xFrequency = 10 / portTICK_PERIOD_MS;
-	TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = 10 / portTICK_PERIOD_MS;
+    TickType_t lastWakeTime = xTaskGetTickCount();
 
-    while (1) {
-    	RunManager();
-    	vTaskDelayUntil(&lastWakeTime, xFrequency);
+    while(1)
+    {
+        RunManager();
+        vTaskDelayUntil(&lastWakeTime, xFrequency);
     }
 }
 
