@@ -35,17 +35,26 @@ namespace MGRDTesting
 
         public static MGBTCommandData FromArray(byte[] bytes)
         {
-            var reader = new BinaryReader(new MemoryStream(bytes));
+            try 
+            {
+                var reader = new BinaryReader(new MemoryStream(bytes));
 
-            var s = new MGBTCommandData();
+                var s = new MGBTCommandData();
 
-            s.dataLength = reader.ReadUInt16();
-            s.CRC = reader.ReadUInt16();
-            s.Status = reader.ReadUInt16();
-            s.CommandType = reader.ReadUInt16();
-            s.data = reader.ReadBytes(s.dataLength);
+                s.dataLength = reader.ReadUInt16();
+                s.CRC = reader.ReadUInt16();
+                s.Status = reader.ReadUInt16();
+                s.CommandType = reader.ReadUInt16();
+                s.data = reader.ReadBytes(s.dataLength);
 
-            return s;
+
+                return s;
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+            
         }
 
         public void UpdateCRC()

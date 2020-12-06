@@ -21,7 +21,6 @@ typedef struct
     uint8_t address[ESP_BD_ADDR_LEN];
     int16_t rssi;
     int16_t measuredPower;
-    uint16_t distance;
 } MGBTDevice;
 
 typedef struct
@@ -45,5 +44,6 @@ void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult
 uint8_t IsDeviceActive(MGBTDeviceData* device);
 uint8_t IsDeviceEntryEmpty(MGBTDeviceData* device);
 void ClearDeviceEntry(MGBTDeviceData* device);
+void ResetDeviceEntry(MGBTDeviceData* device);
 
 #endif /* MAIN_MGBTDEVICE_H_ */

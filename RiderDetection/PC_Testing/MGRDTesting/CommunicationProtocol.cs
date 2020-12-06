@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Ports;
@@ -11,6 +12,12 @@ namespace MGRDTesting
 {
     public class CommunicationProtocol
     {
+
+        /// <summary>
+        /// Logger object used to display data in a console or file.
+        /// </summary>
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         ConcurrentQueue<MGBTCommandData> rxQueue = new ConcurrentQueue<MGBTCommandData>();
 
         MGBTCommandData commandToSend = null;
@@ -49,6 +56,24 @@ namespace MGRDTesting
         {
             serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One);
             commThread = new Thread(this.run) { IsBackground = true };
+        }
+
+        public bool HasData
+        {
+            get
+            {
+                return !rxQueue.IsEmpty;
+            }
+        }
+
+        public MGBTCommandData GetLatestData()
+        {
+            MGBTCommandData data = null;
+            if (rxQueue.TryDequeue(out data))
+            {
+                return data;
+            }
+            return data;
         }
 
         public bool CheckDataBuffer(byte[] data)
@@ -114,6 +139,7 @@ namespace MGRDTesting
                                             if (data.VerifyCRC())
                                             {
                                                 rxQueue.Enqueue(data);
+                                                NewDataArrived?.Invoke(this, null);
                                             }
                                             else
                                             {

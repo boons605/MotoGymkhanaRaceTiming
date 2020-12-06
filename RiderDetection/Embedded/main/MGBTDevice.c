@@ -13,6 +13,10 @@
 #include <math.h>
 #include "esp_log.h"
 
+static const MGBTDeviceData emptyDevice = {0};
+
+static const char* AppName = "Device struct manager";
+
 uint8_t BTDeviceEquals(MGBTDeviceData* device, MGBTDeviceData* otherDevice)
 {
     uint8_t retVal = 0U;
@@ -99,9 +103,10 @@ uint16_t GetDistance(MGBTDeviceData* device)
 
 uint8_t IsDeviceActive(MGBTDeviceData* device)
 {
-    uint8_t retVal;
+    uint8_t retVal = 0U;
     if(device != (MGBTDeviceData*)0)
     {
+    	ESP_LOGI(AppName, "Last seen %d, time since last seen %d, distExp %f", device->millisLastSeen, (GetTimestampMs() - device->millisLastSeen), device->lastDistanceExponent);
         if((device->millisLastSeen > 0U) &&
            ((GetTimestampMs() - device->millisLastSeen) < ACTIVEDEVICETIMEOUT) &&
            (device->lastDistanceExponent < MAXDISTEXPONENT))
@@ -137,7 +142,6 @@ uint8_t IsDeviceEntryEmpty(MGBTDeviceData* device)
     uint8_t retVal = 0U;
     if(device != (MGBTDeviceData*)0)
     {
-        MGBTDeviceData emptyDevice = {0};
         if(memcmp(device, &emptyDevice, sizeof(MGBTDeviceData)) == 0U)
         {
             retVal = 1U;
@@ -152,5 +156,24 @@ void ClearDeviceEntry(MGBTDeviceData* device)
     if(device != (MGBTDeviceData*)0)
     {
         memset(device, 0U, sizeof(MGBTDeviceData));
+    }
+}
+
+void ResetDeviceEntry(MGBTDeviceData* device)
+{
+    if(device != (MGBTDeviceData*)0)
+    {
+        if (device->allowed == 0U)
+        {
+        	ClearDeviceEntry(device);
+        }
+        else
+        {
+        	uint8_t address[ESP_BD_ADDR_LEN] = {0};
+        	memcpy(address, device->device.address, ESP_BD_ADDR_LEN);
+        	ClearDeviceEntry(device);
+        	memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
+        	device->allowed = 1U;
+        }
     }
 }

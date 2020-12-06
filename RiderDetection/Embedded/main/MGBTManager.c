@@ -232,6 +232,7 @@ static void SendNextPacket(void)
     currentPacket++;
     pendingResponse.data[1] = totalPackets;
     pendingResponse.dataLength = 2U;
+    pendingResponse.status = 0U;
 }
 
 static void SendListAllowedDevicePacket(void)
@@ -424,9 +425,38 @@ static void ProcessCommand(MGBTCommandData* command)
     }
 }
 
-static void ManagerIdleWork(void)
+static void CleanUpDeviceList(void)
 {
 
+}
+
+static void ManagerIdleWork(void)
+{
+    if((GetTimestampMs() - lastTimeCleanup) >= DEVICELISTCLEANINTERVAL)
+    {
+    	ESP_LOGI(AppName, "Running cleanup");
+        lastTimeCleanup = GetTimestampMs();
+        CleanUpDeviceList();
+        uint8_t index;
+        for(index = 0U; index < MAXDEVICES; index++)
+        {
+            MGBTDeviceData* device = &deviceList[index];
+            if((IsDeviceEntryEmpty(device) == 0U) &&
+            		(device->millisLastSeen > 0U))
+            {
+                if(IsDeviceActive(device) == 0U)
+                {
+                	esp_log_buffer_hex("Cleaning device:", device->device.address, ESP_BD_ADDR_LEN);
+                    ResetDeviceEntry(device);
+                }
+                else
+                {
+                	esp_log_buffer_hex("Device still active:", device->device.address, ESP_BD_ADDR_LEN);
+                }
+            }
+
+        }
+    }
 }
 
 static void ProcessManagerWork(void)
@@ -485,7 +515,7 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
     {
         esp_ble_ibeacon_t* ibeacon_data = (esp_ble_ibeacon_t*)(scanResult->scan_rst.ble_adv);
         ESP_LOGI(AppName, "----------iBeacon Found----------");
-        esp_log_buffer_hex("IBEACON_DEMO: Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN);
+        esp_log_buffer_hex("Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN);
         ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);
         ESP_LOGI(AppName, "RSSI of packet:%d dbm", scanResult->scan_rst.rssi);
 
