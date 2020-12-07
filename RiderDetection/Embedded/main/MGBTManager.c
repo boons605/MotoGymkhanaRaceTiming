@@ -27,7 +27,7 @@ static uint8_t currentPacket;
 static uint8_t currentDeviceIndex;
 
 
-ManagerState managerState = MgBtMState_Idle;
+static ManagerState managerState = MgBtMState_Idle;
 
 void InitManager(void)
 {
@@ -228,17 +228,17 @@ static void StartListingAllowedDevices(void)
 static void SendNextPacket(void)
 {
     ClearPacketData(&pendingResponse);
+    pendingResponse.status = 1U;
     pendingResponse.data[0] = currentPacket;
     currentPacket++;
     pendingResponse.data[1] = totalPackets;
     pendingResponse.dataLength = 2U;
-    pendingResponse.status = 0U;
 }
 
 static void SendListAllowedDevicePacket(void)
 {
     SendNextPacket();
-
+    ESP_LOGI(AppName, "Sending transport packet: AllowedDev");
     while((SpaceLeftInPacket() > sizeof(MGBTDevice)) &&
           (currentDeviceIndex < MAXDEVICES))
     {
@@ -250,6 +250,9 @@ static void SendListAllowedDevicePacket(void)
         }
         currentDeviceIndex++;
     }
+
+
+    ESP_LOGI(AppName, "Sending transport packet: AllowedDev, device index: %d", currentDeviceIndex);
 
     if(currentDeviceIndex >= MAXDEVICES)
     {
@@ -282,7 +285,8 @@ static uint8_t GetFilterAllowedDevices(void)
 
 static void StartListingAllDevices(void)
 {
-    scanStartTime = GetTimestampMs();
+	managerState = MgBtMState_ListingAllDetectedDevices;
+	scanStartTime = GetTimestampMs();
     lastProgressPacketTime = scanStartTime;
     currentPacket = 0U;
     totalPackets = 0U;
@@ -292,6 +296,7 @@ static void SendListAllDevicesProgress(void)
 {
     if(GetTimestampMs() > (lastProgressPacketTime + GetProgressInterval()))
     {
+    	ESP_LOGI(AppName, "Sending progress packet");
         lastProgressPacketTime = GetTimestampMs();
         uint32_t progress = ((GetTimestampMs() - scanStartTime) * 100U) / GetScanDuration();
         pendingResponse.dataLength = 2U;
@@ -310,6 +315,7 @@ static void SendListAllDevicesPacket(void)
     }
     else
     {
+    	ESP_LOGI(AppName, "Sending transport packet: AllDev");
         if(totalPackets == 0U)
         {
             PrepareTransportPacket(CountDevices(2U, 2U));
@@ -319,7 +325,7 @@ static void SendListAllDevicesPacket(void)
               (currentDeviceIndex < MAXDEVICES))
         {
             MGBTDeviceData* device = &deviceList[currentDeviceIndex];
-            if(IsDeviceEntryEmpty(device) != 0U)
+            if(IsDeviceEntryEmpty(device) == 0U)
             {
                 memcpy(&pendingResponse.data[pendingResponse.dataLength], &device->device, sizeof(MGBTDevice));
                 pendingResponse.dataLength += sizeof(MGBTDevice);
@@ -327,6 +333,7 @@ static void SendListAllDevicesPacket(void)
             currentDeviceIndex++;
         }
 
+        ESP_LOGI(AppName, "Sending transport packet: AllDev, device index: %d", currentDeviceIndex);
         if(currentDeviceIndex >= MAXDEVICES)
         {
             lastResponseSent = 1U;
@@ -367,6 +374,7 @@ static MGBTDeviceData* GetClosestDeviceFromList(void)
 
 static void ProcessCommand(MGBTCommandData* command)
 {
+	lastResponseSent = 0U;
     switch(command->cmdType)
     {
         case AddAllowedDevice:
@@ -397,7 +405,7 @@ static void ProcessCommand(MGBTCommandData* command)
             ESP_LOGI(AppName, "List detected devices");
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
             StartListingAllDevices();
-            lastResponseSent = 1U;
+            //lastResponseSent = 1U;
             break;
         }
         case GetClosestDevice:
@@ -427,7 +435,25 @@ static void ProcessCommand(MGBTCommandData* command)
 
 static void CleanUpDeviceList(void)
 {
+	uint8_t index;
+	        for(index = 0U; index < MAXDEVICES; index++)
+	        {
+	            MGBTDeviceData* device = &deviceList[index];
+	            if((IsDeviceEntryEmpty(device) == 0U) &&
+	            		(device->millisLastSeen > 0U))
+	            {
+	                if(IsDeviceActive(device) == 0U)
+	                {
+	                	esp_log_buffer_hex("Cleaning device:", device->device.address, ESP_BD_ADDR_LEN);
+	                    ResetDeviceEntry(device);
+	                }
+	                else
+	                {
+	                	esp_log_buffer_hex("Device still active:", device->device.address, ESP_BD_ADDR_LEN);
+	                }
+	            }
 
+	        }
 }
 
 static void ManagerIdleWork(void)
@@ -437,30 +463,13 @@ static void ManagerIdleWork(void)
     	ESP_LOGI(AppName, "Running cleanup");
         lastTimeCleanup = GetTimestampMs();
         CleanUpDeviceList();
-        uint8_t index;
-        for(index = 0U; index < MAXDEVICES; index++)
-        {
-            MGBTDeviceData* device = &deviceList[index];
-            if((IsDeviceEntryEmpty(device) == 0U) &&
-            		(device->millisLastSeen > 0U))
-            {
-                if(IsDeviceActive(device) == 0U)
-                {
-                	esp_log_buffer_hex("Cleaning device:", device->device.address, ESP_BD_ADDR_LEN);
-                    ResetDeviceEntry(device);
-                }
-                else
-                {
-                	esp_log_buffer_hex("Device still active:", device->device.address, ESP_BD_ADDR_LEN);
-                }
-            }
 
-        }
     }
 }
 
 static void ProcessManagerWork(void)
 {
+	//ESP_LOGI(AppName, "mState: %d", managerState);
     switch(managerState)
     {
         case MgBtMState_ListingAllowedDevices:
@@ -479,6 +488,7 @@ static void ProcessManagerWork(void)
         }
 
     }
+    //ESP_LOGI(AppName, "mState2: %d", managerState);
 }
 
 static void SendPendingResponse(void)
@@ -489,6 +499,7 @@ static void SendPendingResponse(void)
         if(lastResponseSent == 1U)
         {
             memset(&pendingResponse, 0, sizeof(MGBTCommandData));
+            managerState = MgBtMState_Idle;
         }
     }
 }

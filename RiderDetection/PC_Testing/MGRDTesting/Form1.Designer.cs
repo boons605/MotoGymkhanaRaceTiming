@@ -37,6 +37,13 @@
             this.button2 = new System.Windows.Forms.Button();
             this.statusLbx = new System.Windows.Forms.ListBox();
             this.macTbx = new System.Windows.Forms.TextBox();
+            this.AllowedDevicesLbx = new System.Windows.Forms.ListBox();
+            this.UpdateAllowedDevicesBtn = new System.Windows.Forms.Button();
+            this.updateDetectedDevicesBtn = new System.Windows.Forms.Button();
+            this.detectedDevicesLbx = new System.Windows.Forms.ListBox();
+            this.closestDeviceLbl = new System.Windows.Forms.Label();
+            this.updateClosestDeviceBtn = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -44,7 +51,7 @@
             // 
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(800, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(755, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -55,7 +62,7 @@
             this.toolStripButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(800, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(755, 25);
             this.toolStrip1.TabIndex = 1;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -76,9 +83,12 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(170, 63);
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.button1.Location = new System.Drawing.Point(170, 65);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.Size = new System.Drawing.Size(66, 29);
             this.button1.TabIndex = 2;
             this.button1.Text = "Add";
             this.button1.UseVisualStyleBackColor = true;
@@ -86,9 +96,12 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(251, 62);
+            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.button2.Location = new System.Drawing.Point(251, 65);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.Size = new System.Drawing.Size(66, 29);
             this.button2.TabIndex = 3;
             this.button2.Text = "Remove";
             this.button2.UseVisualStyleBackColor = true;
@@ -96,24 +109,123 @@
             // 
             // statusLbx
             // 
+            this.statusLbx.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.statusLbx.FormattingEnabled = true;
             this.statusLbx.Location = new System.Drawing.Point(12, 343);
             this.statusLbx.Name = "statusLbx";
-            this.statusLbx.Size = new System.Drawing.Size(776, 95);
+            this.statusLbx.Size = new System.Drawing.Size(733, 95);
             this.statusLbx.TabIndex = 4;
             // 
             // macTbx
             // 
-            this.macTbx.Location = new System.Drawing.Point(13, 65);
+            this.macTbx.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.macTbx.Location = new System.Drawing.Point(13, 67);
             this.macTbx.Name = "macTbx";
-            this.macTbx.Size = new System.Drawing.Size(151, 20);
+            this.macTbx.Size = new System.Drawing.Size(142, 20);
             this.macTbx.TabIndex = 5;
+            // 
+            // AllowedDevicesLbx
+            // 
+            this.AllowedDevicesLbx.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.AllowedDevicesLbx.FormattingEnabled = true;
+            this.AllowedDevicesLbx.Location = new System.Drawing.Point(332, 65);
+            this.AllowedDevicesLbx.Name = "AllowedDevicesLbx";
+            this.AllowedDevicesLbx.Size = new System.Drawing.Size(199, 238);
+            this.AllowedDevicesLbx.TabIndex = 6;
+            // 
+            // UpdateAllowedDevicesBtn
+            // 
+            this.UpdateAllowedDevicesBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.UpdateAllowedDevicesBtn.Location = new System.Drawing.Point(546, 311);
+            this.UpdateAllowedDevicesBtn.Name = "UpdateAllowedDevicesBtn";
+            this.UpdateAllowedDevicesBtn.Size = new System.Drawing.Size(199, 29);
+            this.UpdateAllowedDevicesBtn.TabIndex = 7;
+            this.UpdateAllowedDevicesBtn.Text = "Update";
+            this.UpdateAllowedDevicesBtn.UseVisualStyleBackColor = true;
+            this.UpdateAllowedDevicesBtn.Click += new System.EventHandler(this.UpdateAllowedDevicesBtn_Click);
+            // 
+            // updateDetectedDevicesBtn
+            // 
+            this.updateDetectedDevicesBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.updateDetectedDevicesBtn.Location = new System.Drawing.Point(332, 311);
+            this.updateDetectedDevicesBtn.Name = "updateDetectedDevicesBtn";
+            this.updateDetectedDevicesBtn.Size = new System.Drawing.Size(199, 29);
+            this.updateDetectedDevicesBtn.TabIndex = 9;
+            this.updateDetectedDevicesBtn.Text = "Update";
+            this.updateDetectedDevicesBtn.UseVisualStyleBackColor = true;
+            this.updateDetectedDevicesBtn.Click += new System.EventHandler(this.updateDetectedDevicesBtn_Click);
+            // 
+            // detectedDevicesLbx
+            // 
+            this.detectedDevicesLbx.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.detectedDevicesLbx.FormattingEnabled = true;
+            this.detectedDevicesLbx.Location = new System.Drawing.Point(546, 65);
+            this.detectedDevicesLbx.Name = "detectedDevicesLbx";
+            this.detectedDevicesLbx.Size = new System.Drawing.Size(199, 238);
+            this.detectedDevicesLbx.TabIndex = 8;
+            // 
+            // closestDeviceLbl
+            // 
+            this.closestDeviceLbl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.closestDeviceLbl.AutoSize = true;
+            this.closestDeviceLbl.Location = new System.Drawing.Point(13, 117);
+            this.closestDeviceLbl.Name = "closestDeviceLbl";
+            this.closestDeviceLbl.Size = new System.Drawing.Size(95, 13);
+            this.closestDeviceLbl.TabIndex = 10;
+            this.closestDeviceLbl.Text = "Not detected yet...";
+            // 
+            // updateClosestDeviceBtn
+            // 
+            this.updateClosestDeviceBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.updateClosestDeviceBtn.Location = new System.Drawing.Point(16, 134);
+            this.updateClosestDeviceBtn.Name = "updateClosestDeviceBtn";
+            this.updateClosestDeviceBtn.Size = new System.Drawing.Size(66, 29);
+            this.updateClosestDeviceBtn.TabIndex = 11;
+            this.updateClosestDeviceBtn.Text = "Update";
+            this.updateClosestDeviceBtn.UseVisualStyleBackColor = true;
+            this.updateClosestDeviceBtn.Click += new System.EventHandler(this.updateClosestDeviceBtn_Click);
+            // 
+            // button3
+            // 
+            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.button3.Location = new System.Drawing.Point(170, 134);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(66, 29);
+            this.button3.TabIndex = 12;
+            this.button3.Text = "Add";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(755, 456);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.updateClosestDeviceBtn);
+            this.Controls.Add(this.closestDeviceLbl);
+            this.Controls.Add(this.updateDetectedDevicesBtn);
+            this.Controls.Add(this.detectedDevicesLbx);
+            this.Controls.Add(this.UpdateAllowedDevicesBtn);
+            this.Controls.Add(this.AllowedDevicesLbx);
             this.Controls.Add(this.macTbx);
             this.Controls.Add(this.statusLbx);
             this.Controls.Add(this.button2);
@@ -141,6 +253,13 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.ListBox statusLbx;
         private System.Windows.Forms.TextBox macTbx;
+        private System.Windows.Forms.ListBox AllowedDevicesLbx;
+        private System.Windows.Forms.Button UpdateAllowedDevicesBtn;
+        private System.Windows.Forms.Button updateDetectedDevicesBtn;
+        private System.Windows.Forms.ListBox detectedDevicesLbx;
+        private System.Windows.Forms.Label closestDeviceLbl;
+        private System.Windows.Forms.Button updateClosestDeviceBtn;
+        private System.Windows.Forms.Button button3;
     }
 }
 

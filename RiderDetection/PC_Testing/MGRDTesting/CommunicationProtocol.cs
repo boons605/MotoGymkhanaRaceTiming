@@ -76,9 +76,9 @@ namespace MGRDTesting
             return data;
         }
 
-        public bool CheckDataBuffer(byte[] data)
+        public bool CheckDataBuffer(byte[] data, int position)
         {
-            if (data.Length >= (BitConverter.ToUInt16(data, 0) + 8))
+            if (position >= (BitConverter.ToUInt16(data, 0) + 8))
             {
                 return true;
             }
@@ -129,11 +129,19 @@ namespace MGRDTesting
                             {
                                 if (bytesToRead > 0)
                                 {
-                                    if (bytesToRead + bufferPosition < dataBuffer.Length)
+                                    if ((bytesToRead + bufferPosition) < dataBuffer.Length)
                                     {
                                         serialPort.Read(dataBuffer, bufferPosition, bytesToRead);
                                         bufferPosition += bytesToRead;
-                                        if (CheckDataBuffer(dataBuffer))
+                                    }
+                                    else
+                                    {
+                                        serialPort.Read(dataBuffer, bufferPosition, (dataBuffer.Length-bufferPosition));
+                                        bufferPosition += (dataBuffer.Length - bufferPosition);
+                                    }
+                                    
+                                        
+                                        while (CheckDataBuffer(dataBuffer, bufferPosition))
                                         { 
                                             MGBTCommandData data = MGBTCommandData.FromArray(dataBuffer);
                                             if (data.VerifyCRC())
@@ -145,16 +153,22 @@ namespace MGRDTesting
                                             {
 
                                             }
+                                            if (bufferPosition > (data.dataLength + 8))
+                                            {
+                                                byte[] newDataBuffer = new byte[dataBuffer.Length];
+                                                Array.Copy(dataBuffer, (data.dataLength + 8), newDataBuffer, 0, dataBuffer.Length - (data.dataLength + 8));
+                                                dataBuffer = newDataBuffer;
+                                                bufferPosition -= (data.dataLength + 8);
+                                            }
+                                            else
+                                            {
+                                                Array.Clear(dataBuffer, 0, dataBuffer.Length);
+                                                bufferPosition = 0;
+                                                state = State.Idle;
+                                            }
                                             
-                                            Array.Clear(dataBuffer, 0, dataBuffer.Length);
-                                            bufferPosition = 0;
                                         }
-                                    }
-                                    else
-                                    {
-                                        Array.Clear(dataBuffer, 0, dataBuffer.Length);
-                                        bufferPosition = 0;
-                                    }
+                                    
                                 }
                                 break;
                             }

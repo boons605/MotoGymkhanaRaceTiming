@@ -23,6 +23,9 @@ namespace MGRDTesting
         CommunicationProtocol proto;
         private string lastMessage;
 
+        private bool addingMultiple = false;
+        private int multiIndex = 0;
+
         public Form1()
         {
             InitializeComponent();
@@ -76,14 +79,127 @@ namespace MGRDTesting
                     switch (cmd.CommandType)
                     {
                         case 1:
-                            HandleAddAllowedResponse(cmd.data);
+                            HandleAddAllowedResponse(cmd);
                             break;
                         case 2:
-                            HandleRemoveAllowedResponse(cmd.data);
+                            HandleRemoveAllowedResponse(cmd);
                             break;
-
+                        case 3:
+                            HandleListAllowedDevices(cmd);
+                            break;
+                        case 4:
+                            HandleListDetectedDevices(cmd);
+                            break;
+                        case 5:
+                            HandleGetClosestDevice(cmd);
+                            break;
+                        default:
+                            break;
                     }
                 }
+            }
+        }
+
+        private void HandleGetClosestDevice(MGBTCommandData cmd)
+        {
+            if (cmd.Status == 0)
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    List<MGBTDevice> devices = MGBTDevice.FromArray(cmd.data);
+                    if (devices.Count > 0)
+                    {
+                        closestDeviceLbl.Text = devices[0].ToString();
+                    }
+                }));
+            }
+            else
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    AddLineToStatus(String.Format("Error response: {0}", cmd.Status));
+                }));
+            }
+        }
+
+        private void HandleListDetectedDevices(MGBTCommandData cmd)
+        {
+            switch (cmd.Status)
+            {
+                case 8:
+                    HandleListDetectedDevicesProgress(cmd.data);
+                    break;
+                case 0:
+                    InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                        AddLineToStatus("Started listing all devices");
+                    }));
+                    break;
+                case 1:
+                    if (cmd.data.Length > 2)
+                    {
+                        byte[] devicesData = new byte[cmd.data.Length - 2];
+                        Array.Copy(cmd.data, 2, devicesData, 0, devicesData.Length);
+                        if (cmd.data[0] == 0)
+                        {
+                            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                                detectedDevicesLbx.Items.Clear();
+                                HandleListDetectedDevicesDeviceData(devicesData);
+                            }));
+                        }
+                        else
+                        {
+                            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                                HandleListDetectedDevicesDeviceData(devicesData);
+                            }));
+                        }
+                        
+                    }
+                    else
+                    {
+                        InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                            AddLineToStatus("Data not long enough");
+                        }));
+                    }
+                    break;
+                default:
+                    InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                        AddLineToStatus(String.Format("Error response: {0}", cmd.Status));
+                    }));
+                    break;
+            }
+        }
+
+        private void HandleListDetectedDevicesDeviceData(byte[] devicesData)
+        {
+            List<MGBTDevice> devices = MGBTDevice.FromArray(devicesData);
+            detectedDevicesLbx.Items.AddRange(devices.ToArray());
+        }
+
+        private void HandleListDetectedDevicesProgress(byte[] data)
+        {
+            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                AddLineToStatus(String.Format("Detection progress: {0:D}%", data[0]));
+            }));
+        }
+
+        private void HandleListAllowedDevices(MGBTCommandData cmd)
+        {
+            if ((cmd.data.Length > 2) && (cmd.Status == 1))
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    if (cmd.data[0] == 0)
+                    {
+                        AllowedDevicesLbx.Items.Clear();
+                    }
+                    byte[] devicesData = new byte[cmd.data.Length - 2];
+                    Array.Copy(cmd.data, 2, devicesData, 0, devicesData.Length);
+                    List<MGBTDevice> devices = MGBTDevice.FromArray(devicesData);
+                    AllowedDevicesLbx.Items.AddRange(devices.ToArray());
+                }));
+            }
+            else
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    AddLineToStatus(String.Format("Data length or error response: {0}", cmd.Status));
+                }));
             }
         }
 
@@ -104,17 +220,22 @@ namespace MGRDTesting
             return builder.ToString();
         }
 
-        private void HandleAddAllowedResponse(byte[] data)
+        private void HandleAddAllowedResponse(MGBTCommandData cmd)
         {
             InvocationHelper.InvokeIfRequired(this, new Action(() => {
-                AddLineToStatus("Added device: " + MacBytesToString(data));
+
+                AddLineToStatus("Added device: " + MacBytesToString(cmd.data) + ", status: " + cmd.Status);
+                if (addingMultiple)
+                {
+                    SendNextMultiAdd();
+                }
             }));
         }
 
-        private void HandleRemoveAllowedResponse(byte[] data)
+        private void HandleRemoveAllowedResponse(MGBTCommandData cmd)
         {
             InvocationHelper.InvokeIfRequired(this, new Action(() => {
-                AddLineToStatus("Removed device: " + MacBytesToString(data));
+                AddLineToStatus("Removed device: " + MacBytesToString(cmd.data) + ", status: " + cmd.Status);
             }));
         }
 
@@ -159,12 +280,53 @@ namespace MGRDTesting
                         }
                     }
                 }
+                else
+                {
+                    AddLineToStatus("Not a valid address: " + text);
+                }
             }
 
             return macBytes;
         }
 
+        private void SendNextMultiAdd()
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0001;
+            data.data = new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x00 };
+            data.data[5] = (byte)(multiIndex << 4);
+            data.data[5] |= (byte)multiIndex;
+            multiIndex++;
+            if (multiIndex >= 16)
+            {
+                addingMultiple = false;
+            }
+            SendCommand(data);
+
+        }
+
         private void button1_Click(object sender, EventArgs e)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0001;
+            data.data = TextToMacBytes(macTbx.Text);
+            SendCommand(data);
+           
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0002;
+            data.data = TextToMacBytes(macTbx.Text);
+            SendCommand(data);
+        }
+
+        private void SendCommand(MGBTCommandData data)
         {
             if (proto == null)
             {
@@ -173,10 +335,7 @@ namespace MGRDTesting
 
             if (proto.ReadyToSend())
             {
-                MGBTCommandData data = new MGBTCommandData();
-                data.Status = 0x0000;
-                data.CommandType = 0x0001;
-                data.data = TextToMacBytes(macTbx.Text);
+
                 proto.SendCommand(data);
             }
             else
@@ -185,21 +344,38 @@ namespace MGRDTesting
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void UpdateAllowedDevicesBtn_Click(object sender, EventArgs e)
         {
-            if (proto == null)
-            {
-                return;
-            }
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0003;
+            data.data = new byte[2];
+            SendCommand(data);
+        }
 
-            if (proto.ReadyToSend())
-            {
-                MGBTCommandData data = new MGBTCommandData();
-                data.Status = 0x0000;
-                data.CommandType = 0x0002;
-                data.data = TextToMacBytes(macTbx.Text);
-                proto.SendCommand(data);
-            }
+        private void updateDetectedDevicesBtn_Click(object sender, EventArgs e)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0004;
+            data.data = new byte[2];
+            SendCommand(data);
+        }
+
+        private void updateClosestDeviceBtn_Click(object sender, EventArgs e)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x0005;
+            data.data = new byte[2];
+            SendCommand(data);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            multiIndex = 0;
+            addingMultiple = true;
+            SendNextMultiAdd();
         }
     }
 }
