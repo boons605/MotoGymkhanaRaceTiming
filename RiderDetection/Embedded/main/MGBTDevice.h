@@ -21,6 +21,7 @@ typedef struct
     uint8_t address[ESP_BD_ADDR_LEN];
     int16_t rssi;
     int16_t measuredPower;
+    int16_t measuredPowerCorrection; //For cheap Chinese beacons that don't seem to provide the right MP
 } MGBTDevice;
 
 typedef struct

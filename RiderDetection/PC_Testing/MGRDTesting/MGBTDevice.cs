@@ -13,6 +13,7 @@ namespace MGRDTesting
         private byte[] address = new byte[6];
         private Int16 rssi;
         private Int16 measuredPower;
+        private Int16 measurePowerCorrection;
 
         private const double distEnvFactor = 4.0;
 
@@ -40,6 +41,7 @@ namespace MGRDTesting
                         s.address = reader.ReadBytes(s.address.Length);
                         s.rssi = reader.ReadInt16();
                         s.measuredPower = reader.ReadInt16();
+                        s.measurePowerCorrection = reader.ReadInt16();
 
                         devices.Add(s);
                     }
@@ -63,7 +65,7 @@ namespace MGRDTesting
                     builder.Append(":");
                 }
             }
-            builder.AppendFormat(", P: {0:D2}", measuredPower);
+            builder.AppendFormat(", P: {0:D2}(-{1:D2})", measuredPower, measurePowerCorrection);
             builder.AppendFormat(", R: {0:D2}", rssi);
             builder.AppendFormat(", D: {0:F3}", Distance);
 
