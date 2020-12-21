@@ -106,7 +106,7 @@ uint8_t IsDeviceActive(MGBTDeviceData* device)
     uint8_t retVal = 0U;
     if(device != (MGBTDeviceData*)0)
     {
-    	ESP_LOGI(AppName, "Last seen %d, time since last seen %d, distExp %f", device->millisLastSeen, (GetTimestampMs() - device->millisLastSeen), device->lastDistanceExponent);
+        ESP_LOGI(AppName, "Last seen %d, time since last seen %d, distExp %f", device->millisLastSeen, (GetTimestampMs() - device->millisLastSeen), device->lastDistanceExponent);
         if((device->millisLastSeen > 0U) &&
            ((GetTimestampMs() - device->millisLastSeen) < ACTIVEDEVICETIMEOUT) &&
            (device->lastDistanceExponent < MAXDISTEXPONENT))
@@ -122,8 +122,17 @@ void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult
 {
     if((device != (MGBTDeviceData*)0) && (scanResult != (esp_ble_gap_cb_param_t*)0) && (ibeacon_data != (esp_ble_ibeacon_t*)0))
     {
-        device->lastRssi = (uint16_t)scanResult->scan_rst.rssi;
-        device->averageRssi = (((device->averageRssi * (RSSISAMPLES - 1)) + device->lastRssi) / RSSISAMPLES);
+        device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power;
+
+        device->lastRssi = (int16_t)scanResult->scan_rst.rssi;
+        if(device->averageRssi > (device->device.measuredPower / 2))
+        {
+            device->averageRssi = device->lastRssi;
+        }
+        else
+        {
+            device->averageRssi = (((device->averageRssi * (RSSISAMPLES - 1)) + device->lastRssi) / RSSISAMPLES);
+        }
         device->device.rssi = device->averageRssi;
 
         if(device->millisFirstSeen == 0U)
@@ -132,7 +141,7 @@ void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult
         }
         device->millisLastSeen = GetTimestampMs();
 
-        device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power;
+
         device->lastDistanceExponent = GetDistancingExponent(device);
     }
 }
@@ -163,17 +172,17 @@ void ResetDeviceEntry(MGBTDeviceData* device)
 {
     if(device != (MGBTDeviceData*)0)
     {
-        if (device->allowed == 0U)
+        if(device->allowed == 0U)
         {
-        	ClearDeviceEntry(device);
+            ClearDeviceEntry(device);
         }
         else
         {
-        	uint8_t address[ESP_BD_ADDR_LEN] = {0};
-        	memcpy(address, device->device.address, ESP_BD_ADDR_LEN);
-        	ClearDeviceEntry(device);
-        	memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
-        	device->allowed = 1U;
+            uint8_t address[ESP_BD_ADDR_LEN] = {0};
+            memcpy(address, device->device.address, ESP_BD_ADDR_LEN);
+            ClearDeviceEntry(device);
+            memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
+            device->allowed = 1U;
         }
     }
 }

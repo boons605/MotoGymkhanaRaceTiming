@@ -19,6 +19,7 @@ static MGBTDeviceData deviceList[MAXDEVICES] = {0};
 static MGBTCommandData pendingResponse = {0};
 static uint8_t lastResponseSent = 0U;
 static uint32_t lastTimeCleanup = 0U;
+static uint32_t lastTimeClosestDevice = 0U;
 static uint32_t scanStartTime = 0U;
 static uint32_t lastProgressPacketTime = 0U;
 
@@ -33,6 +34,7 @@ void InitManager(void)
 {
     InitCommProto();
     lastTimeCleanup = GetTimestampMs();
+    lastTimeClosestDevice = lastTimeCleanup;
 }
 
 static void FindDeviceOrFirstFreeIndex(uint8_t* address, uint16_t* firstFreeIndex, uint16_t* indexFound)
@@ -285,8 +287,8 @@ static uint8_t GetFilterAllowedDevices(void)
 
 static void StartListingAllDevices(void)
 {
-	managerState = MgBtMState_ListingAllDetectedDevices;
-	scanStartTime = GetTimestampMs();
+    managerState = MgBtMState_ListingAllDetectedDevices;
+    scanStartTime = GetTimestampMs();
     lastProgressPacketTime = scanStartTime;
     currentPacket = 0U;
     totalPackets = 0U;
@@ -296,7 +298,7 @@ static void SendListAllDevicesProgress(void)
 {
     if(GetTimestampMs() > (lastProgressPacketTime + GetProgressInterval()))
     {
-    	ESP_LOGI(AppName, "Sending progress packet");
+        ESP_LOGI(AppName, "Sending progress packet");
         lastProgressPacketTime = GetTimestampMs();
         uint32_t progress = ((GetTimestampMs() - scanStartTime) * 100U) / GetScanDuration();
         pendingResponse.dataLength = 2U;
@@ -315,7 +317,7 @@ static void SendListAllDevicesPacket(void)
     }
     else
     {
-    	ESP_LOGI(AppName, "Sending transport packet: AllDev");
+        ESP_LOGI(AppName, "Sending transport packet: AllDev");
         if(totalPackets == 0U)
         {
             PrepareTransportPacket(CountDevices(2U, 2U));
@@ -370,11 +372,25 @@ static MGBTDeviceData* GetClosestDeviceFromList(void)
     return retVal;
 }
 
-
+static void PrepareClosestDeviceData(void)
+{
+    MGBTDeviceData* device = GetClosestDeviceFromList();
+    if(device != (MGBTDeviceData*)0)
+    {
+        memcpy(pendingResponse.data, &device->device, sizeof(MGBTDevice));
+        pendingResponse.dataLength = sizeof(MGBTDevice);
+        pendingResponse.status = 0U;
+    }
+    else
+    {
+        pendingResponse.status = 0xFFFFU;
+    }
+    lastResponseSent = 1U;
+}
 
 static void ProcessCommand(MGBTCommandData* command)
 {
-	lastResponseSent = 0U;
+    lastResponseSent = 0U;
     switch(command->cmdType)
     {
         case AddAllowedDevice:
@@ -412,18 +428,7 @@ static void ProcessCommand(MGBTCommandData* command)
         {
             ESP_LOGI(AppName, "Get closest device");
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
-            MGBTDeviceData* device = GetClosestDeviceFromList();
-            if(device != (MGBTDeviceData*)0)
-            {
-                memcpy(pendingResponse.data, &device->device, sizeof(MGBTDevice));
-                pendingResponse.dataLength = sizeof(MGBTDevice);
-                pendingResponse.status = 0U;
-            }
-            else
-            {
-                pendingResponse.status = 0xFFFFU;
-            }
-            lastResponseSent = 1U;
+            PrepareClosestDeviceData();
             break;
         }
         default:
@@ -435,41 +440,51 @@ static void ProcessCommand(MGBTCommandData* command)
 
 static void CleanUpDeviceList(void)
 {
-	uint8_t index;
-	        for(index = 0U; index < MAXDEVICES; index++)
-	        {
-	            MGBTDeviceData* device = &deviceList[index];
-	            if((IsDeviceEntryEmpty(device) == 0U) &&
-	            		(device->millisLastSeen > 0U))
-	            {
-	                if(IsDeviceActive(device) == 0U)
-	                {
-	                	esp_log_buffer_hex("Cleaning device:", device->device.address, ESP_BD_ADDR_LEN);
-	                    ResetDeviceEntry(device);
-	                }
-	                else
-	                {
-	                	esp_log_buffer_hex("Device still active:", device->device.address, ESP_BD_ADDR_LEN);
-	                }
-	            }
+    uint8_t index;
+    for(index = 0U; index < MAXDEVICES; index++)
+    {
+        MGBTDeviceData* device = &deviceList[index];
+        if((IsDeviceEntryEmpty(device) == 0U) &&
+           (device->millisLastSeen > 0U))
+        {
+            if(IsDeviceActive(device) == 0U)
+            {
+                esp_log_buffer_hex("Cleaning device:", device->device.address, ESP_BD_ADDR_LEN);
+                ResetDeviceEntry(device);
+            }
+            else
+            {
+                esp_log_buffer_hex("Device still active:", device->device.address, ESP_BD_ADDR_LEN);
+            }
+        }
 
-	        }
+    }
 }
 
 static void ManagerIdleWork(void)
 {
     if((GetTimestampMs() - lastTimeCleanup) >= DEVICELISTCLEANINTERVAL)
     {
-    	ESP_LOGI(AppName, "Running cleanup");
+        ESP_LOGI(AppName, "Running cleanup");
         lastTimeCleanup = GetTimestampMs();
         CleanUpDeviceList();
 
+    }
+    else if((GetTimestampMs() - lastTimeClosestDevice) >= CLOSESTDEVICEANNOUNCEINTERVAL)
+    {
+        if((CanSendResponse() == 1U) && (pendingResponse.cmdType == NoOperation))
+        {
+            pendingResponse.cmdType = GetClosestDevice;
+            PrepareClosestDeviceData();
+            lastResponseSent = 1U;
+            lastTimeClosestDevice = GetTimestampMs();
+        }
     }
 }
 
 static void ProcessManagerWork(void)
 {
-	//ESP_LOGI(AppName, "mState: %d", managerState);
+    //ESP_LOGI(AppName, "mState: %d", managerState);
     switch(managerState)
     {
         case MgBtMState_ListingAllowedDevices:
@@ -525,10 +540,8 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
     if(esp_ble_is_ibeacon_packet(scanResult->scan_rst.ble_adv, scanResult->scan_rst.adv_data_len))
     {
         esp_ble_ibeacon_t* ibeacon_data = (esp_ble_ibeacon_t*)(scanResult->scan_rst.ble_adv);
-        ESP_LOGI(AppName, "----------iBeacon Found----------");
+        ESP_LOGI(AppName, "iBeacon Found, P1m: %d, R: %d", ibeacon_data->ibeacon_vendor.measured_power, scanResult->scan_rst.rssi);
         esp_log_buffer_hex("Device address:", scanResult->scan_rst.bda, ESP_BD_ADDR_LEN);
-        ESP_LOGI(AppName, "Measured power (RSSI at a 1m distance):%d dbm", ibeacon_data->ibeacon_vendor.measured_power);
-        ESP_LOGI(AppName, "RSSI of packet:%d dbm", scanResult->scan_rst.rssi);
 
         uint16_t index = MAXDEVICES;
         uint16_t firstIndex = MAXDEVICES;
@@ -538,12 +551,10 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
         if(index != MAXDEVICES)
         {
             UpdateDeviceData(&deviceList[index], scanResult, ibeacon_data);
-            uint16_t dist = GetDistance(&deviceList[index]);
-            ESP_LOGI(AppName, "Device is at distance of %d dm", dist);
         }
         else
         {
-            ESP_LOGI(AppName, "Device is NOT allowed");
+            //ESP_LOGI(AppName, "Device is NOT allowed");
             if(GetFilterAllowedDevices() == 0U)
             {
                 AddDeviceToListAtIndex(firstIndex, scanResult->scan_rst.bda, 0U);

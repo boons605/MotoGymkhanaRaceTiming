@@ -114,7 +114,7 @@ uint16_t GetCommandDataSize(MGBTCommandData* data)
 uint8_t CanSendResponse(void)
 {
     uint8_t retVal = 0U;
-    if((state == CommProtoSending) || (state == CommProtoWaiting))
+    if((state != CommProtoReceiving))
     {
         retVal = 1U;
     }
