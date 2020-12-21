@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -25,6 +26,7 @@ namespace MGRDTesting
 
         private bool addingMultiple = false;
         private int multiIndex = 0;
+        private string[] multiAddresList;
 
         public Form1()
         {
@@ -210,7 +212,7 @@ namespace MGRDTesting
             {
                 for (int i = 0; i < data.Length; i++)
                 {
-                    builder.AppendFormat("0x{0:X2}", data[i]);
+                    builder.AppendFormat("{0:X2}", data[i]);
                     if (i < (data.Length - 1))
                     {
                         builder.Append(":");
@@ -294,11 +296,9 @@ namespace MGRDTesting
             MGBTCommandData data = new MGBTCommandData();
             data.Status = 0x0000;
             data.CommandType = 0x0001;
-            data.data = new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x00 };
-            data.data[5] = (byte)(multiIndex << 4);
-            data.data[5] |= (byte)multiIndex;
+            data.data = TextToMacBytes(multiAddresList[multiIndex]);
             multiIndex++;
-            if (multiIndex >= 16)
+            if (multiIndex >= multiAddresList.Length)
             {
                 addingMultiple = false;
             }
@@ -373,9 +373,30 @@ namespace MGRDTesting
 
         private void button3_Click(object sender, EventArgs e)
         {
-            multiIndex = 0;
-            addingMultiple = true;
-            SendNextMultiAdd();
+            OpenFileDialog openDialog = new OpenFileDialog();
+
+            if (openDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    multiAddresList = File.ReadAllLines(openDialog.FileName);
+                    multiIndex = 0;
+                    addingMultiple = true;
+                    SendNextMultiAdd();
+                }
+                catch (Exception ex)
+                {
+                    AddLineToStatus("Can not read lines from file " + openDialog.FileName + Environment.NewLine + ex);
+                }
+            }
+
+
+            
+        }
+
+        private void closestDeviceLbl_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

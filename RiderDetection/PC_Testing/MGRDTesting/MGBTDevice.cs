@@ -14,7 +14,7 @@ namespace MGRDTesting
         private Int16 rssi;
         private Int16 measuredPower;
 
-        private const double distEnvFactor = 2.0;
+        private const double distEnvFactor = 4.0;
 
         public double Distance
         {
@@ -57,7 +57,7 @@ namespace MGRDTesting
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < address.Length; i++)
             {
-                builder.AppendFormat("0x{0:X2}", address[i]);
+                builder.AppendFormat("{0:X2}", address[i]);
                 if (i < (address.Length-1))
                 {
                     builder.Append(":");
