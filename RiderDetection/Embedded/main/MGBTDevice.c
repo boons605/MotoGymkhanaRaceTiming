@@ -122,7 +122,7 @@ void UpdateDeviceData(MGBTDeviceData* device, esp_ble_gap_cb_param_t* scanResult
 {
     if((device != (MGBTDeviceData*)0) && (scanResult != (esp_ble_gap_cb_param_t*)0) && (ibeacon_data != (esp_ble_ibeacon_t*)0))
     {
-        device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power;
+        device->device.measuredPower = ibeacon_data->ibeacon_vendor.measured_power - device->device.measuredPowerCorrection;
 
         device->lastRssi = (int16_t)scanResult->scan_rst.rssi;
         if(device->averageRssi > (device->device.measuredPower / 2))

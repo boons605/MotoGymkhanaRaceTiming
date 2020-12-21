@@ -49,7 +49,7 @@ namespace MGRDTesting
             if (proto == null)
             {
                 proto = new CommunicationProtocol(toolStripComboBox1.SelectedItem.ToString());
-                
+
             }
 
             if (proto.IsRunning)
@@ -66,14 +66,14 @@ namespace MGRDTesting
                 proto.ConnectionStateChanged += Proto_ConnectionStateChanged;
                 proto.Start();
             }
-            
+
 
         }
 
         private void Proto_NewDataArrived(object sender, EventArgs e)
         {
             //Not a pretty solution, too lazy to write a good one. This is a tester after all;
-           while (proto.HasData)
+            while (proto.HasData)
             {
                 MGBTCommandData cmd = proto.GetLatestData();
                 if (cmd != null)
@@ -106,7 +106,8 @@ namespace MGRDTesting
         {
             if (cmd.Status == 0)
             {
-                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
                     List<MGBTDevice> devices = MGBTDevice.FromArray(cmd.data);
                     if (devices.Count > 0)
                     {
@@ -116,7 +117,8 @@ namespace MGRDTesting
             }
             else
             {
-                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
                     AddLineToStatus(String.Format("Error response: {0}", cmd.Status));
                 }));
             }
@@ -130,7 +132,8 @@ namespace MGRDTesting
                     HandleListDetectedDevicesProgress(cmd.data);
                     break;
                 case 0:
-                    InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                    {
                         AddLineToStatus("Started listing all devices");
                     }));
                     break;
@@ -141,28 +144,32 @@ namespace MGRDTesting
                         Array.Copy(cmd.data, 2, devicesData, 0, devicesData.Length);
                         if (cmd.data[0] == 0)
                         {
-                            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                            {
                                 detectedDevicesLbx.Items.Clear();
                                 HandleListDetectedDevicesDeviceData(devicesData);
                             }));
                         }
                         else
                         {
-                            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                            {
                                 HandleListDetectedDevicesDeviceData(devicesData);
                             }));
                         }
-                        
+
                     }
                     else
                     {
-                        InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                        InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                        {
                             AddLineToStatus("Data not long enough");
                         }));
                     }
                     break;
                 default:
-                    InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                    InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                    {
                         AddLineToStatus(String.Format("Error response: {0}", cmd.Status));
                     }));
                     break;
@@ -177,7 +184,8 @@ namespace MGRDTesting
 
         private void HandleListDetectedDevicesProgress(byte[] data)
         {
-            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+            {
                 AddLineToStatus(String.Format("Detection progress: {0:D}%", data[0]));
             }));
         }
@@ -186,7 +194,8 @@ namespace MGRDTesting
         {
             if ((cmd.data.Length > 2) && (cmd.Status == 1))
             {
-                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
                     if (cmd.data[0] == 0)
                     {
                         AllowedDevicesLbx.Items.Clear();
@@ -199,7 +208,8 @@ namespace MGRDTesting
             }
             else
             {
-                InvocationHelper.InvokeIfRequired(this, new Action(() => {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
                     AddLineToStatus(String.Format("Data length or error response: {0}", cmd.Status));
                 }));
             }
@@ -224,7 +234,8 @@ namespace MGRDTesting
 
         private void HandleAddAllowedResponse(MGBTCommandData cmd)
         {
-            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+            {
 
                 AddLineToStatus("Added device: " + MacBytesToString(cmd.data) + ", status: " + cmd.Status);
                 if (addingMultiple)
@@ -236,14 +247,16 @@ namespace MGRDTesting
 
         private void HandleRemoveAllowedResponse(MGBTCommandData cmd)
         {
-            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+            {
                 AddLineToStatus("Removed device: " + MacBytesToString(cmd.data) + ", status: " + cmd.Status);
             }));
         }
 
         private void Proto_ConnectionStateChanged(object sender, EventArgs e)
         {
-            InvocationHelper.InvokeIfRequired(this, new Action(() => {
+            InvocationHelper.InvokeIfRequired(this, new Action(() =>
+            {
                 AddLineToStatus("Connection running: " + proto.IsRunning);
             }));
         }
@@ -259,6 +272,28 @@ namespace MGRDTesting
             }
         }
 
+        private byte[] GetCommandData(string line)
+        {
+            var stream = new MemoryStream();
+            var writer = new BinaryWriter(stream);
+
+            if (!string.IsNullOrEmpty(line))
+            {
+                string[] elements = line.Split(';');
+
+                writer.Write(TextToMacBytes(elements[0]));
+                if (elements.Length > 1)
+                {
+                    writer.Write(Convert.ToInt16(elements[1]));
+                }
+                else
+                {
+                    writer.Write(Convert.ToInt16(0));
+                }
+            }
+            return stream.ToArray();
+        }
+
         private string macRegEx = "([0-9a-fA-F]{2})(?:[-:]){0,1}";
 
         private byte[] TextToMacBytes(string text)
@@ -270,7 +305,7 @@ namespace MGRDTesting
                 if (Regex.IsMatch(text, macRegEx))
                 {
                     MatchCollection bytes = Regex.Matches(text, macRegEx);
-                    
+
                     if (bytes.Count == 6)
                     {
                         for (int i = 0; i < bytes.Count; i++)
@@ -296,7 +331,7 @@ namespace MGRDTesting
             MGBTCommandData data = new MGBTCommandData();
             data.Status = 0x0000;
             data.CommandType = 0x0001;
-            data.data = TextToMacBytes(multiAddresList[multiIndex]);
+            data.data = GetCommandData(multiAddresList[multiIndex]);
             multiIndex++;
             if (multiIndex >= multiAddresList.Length)
             {
@@ -311,9 +346,9 @@ namespace MGRDTesting
             MGBTCommandData data = new MGBTCommandData();
             data.Status = 0x0000;
             data.CommandType = 0x0001;
-            data.data = TextToMacBytes(macTbx.Text);
+            data.data = GetCommandData(macTbx.Text);
             SendCommand(data);
-           
+
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -391,7 +426,7 @@ namespace MGRDTesting
             }
 
 
-            
+
         }
 
         private void closestDeviceLbl_Click(object sender, EventArgs e)

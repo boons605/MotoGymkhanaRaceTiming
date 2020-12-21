@@ -131,30 +131,31 @@ static uint8_t CountAllowedDevices(void)
 
 
 
-static void AddDeviceToListAtIndex(uint16_t index, uint8_t* address, uint8_t allowed)
+static void AddDeviceToListAtIndex(uint16_t index, uint8_t* address, uint8_t allowed, int8_t mpCorrection)
 {
     if(index < MAXDEVICES)
     {
         MGBTDeviceData* device = &deviceList[index];
         memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
         device->allowed = allowed;
+        device->device.measuredPowerCorrection = mpCorrection;
     }
 }
 
-static void AddDeviceToList(uint8_t* address, uint8_t allowed)
+static void AddDeviceToList(MGBTAllowedDeviceEntry* entry, uint8_t allowed)
 {
     uint16_t firstFreeIndex = MAXDEVICES;
     uint16_t indexFound = MAXDEVICES;
 
-    FindDeviceOrFirstFreeIndex(address, &firstFreeIndex, &indexFound);
+    FindDeviceOrFirstFreeIndex(entry->address, &firstFreeIndex, &indexFound);
 
     if(indexFound == MAXDEVICES)
     {
         if(firstFreeIndex != MAXDEVICES)
         {
-            AddDeviceToListAtIndex(firstFreeIndex, address, allowed);
+            AddDeviceToListAtIndex(firstFreeIndex, entry->address, allowed, entry->measuredPowerCorrection);
             pendingResponse.status = 0U;
-            esp_log_buffer_hex("Added device:", address, ESP_BD_ADDR_LEN);
+            esp_log_buffer_hex("Added device:", entry->address, ESP_BD_ADDR_LEN);
         }
         else
         {
@@ -397,7 +398,14 @@ static void ProcessCommand(MGBTCommandData* command)
         {
             ESP_LOGI(AppName, "Add to allowed devices");
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
-            AddDeviceToList(command->data, 1U);
+            if (command->dataLength >= sizeof(MGBTAllowedDeviceEntry))
+            {
+            	AddDeviceToList((MGBTAllowedDeviceEntry*)command->data, 1U);
+            }
+            else
+            {
+            	pendingResponse.status = 0xFEFEU;
+            }
             lastResponseSent = 1U;
             break;
         }
@@ -557,7 +565,7 @@ void ProcessScanResult(esp_ble_gap_cb_param_t* scanResult)
             //ESP_LOGI(AppName, "Device is NOT allowed");
             if(GetFilterAllowedDevices() == 0U)
             {
-                AddDeviceToListAtIndex(firstIndex, scanResult->scan_rst.bda, 0U);
+                AddDeviceToListAtIndex(firstIndex, scanResult->scan_rst.bda, 0U, 0);
             }
         }
 

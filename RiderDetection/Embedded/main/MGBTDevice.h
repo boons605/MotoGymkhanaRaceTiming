@@ -16,6 +16,11 @@
 #define MAXDISTEXPONENT 0.85
 #define DISTANCEENVFACTOR 4
 
+typedef struct {
+	uint8_t address[ESP_BD_ADDR_LEN];
+	int16_t measuredPowerCorrection; //For cheap Chinese beacons that don't seem to provide the right MP
+} MGBTAllowedDeviceEntry;
+
 typedef struct
 {
     uint8_t address[ESP_BD_ADDR_LEN];
