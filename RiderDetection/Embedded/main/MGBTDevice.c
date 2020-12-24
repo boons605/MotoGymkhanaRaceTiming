@@ -179,9 +179,11 @@ void ResetDeviceEntry(MGBTDeviceData* device)
         else
         {
             uint8_t address[ESP_BD_ADDR_LEN] = {0};
+            uint16_t correction = device->device.measuredPowerCorrection;
             memcpy(address, device->device.address, ESP_BD_ADDR_LEN);
             ClearDeviceEntry(device);
             memcpy(device->device.address, address, ESP_BD_ADDR_LEN);
+            device->device.measuredPowerCorrection = correction;
             device->allowed = 1U;
         }
     }

@@ -82,33 +82,12 @@ static uint8_t CountDevices(uint8_t active, uint8_t allowed)
 
         if(IsDeviceEntryEmpty(device))
         {
-            if(active > 1U)
+            if((active > 1U) || (IsDeviceActive(device) == active))
             {
-                if(allowed > 1U)
-                {
-                    retVal++;
-                }
-                else
-                {
-                    if(device->allowed == allowed)
-                    {
-                        retVal++;
-                    }
-                }
-            }
-            else if(allowed > 1U)
-            {
-                if(IsDeviceActive(device) == active)
-                {
-                    retVal++;
-                }
-            }
-            else
-            {
-                if((device->allowed == allowed) && (IsDeviceActive(device) == active))
-                {
-                    retVal++;
-                }
+				if((device->allowed == allowed) || (allowed > 1U))
+				{
+					retVal++;
+				}
             }
         }
 
