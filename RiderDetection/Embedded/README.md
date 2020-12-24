@@ -41,3 +41,8 @@ See the Getting Started Guide for full steps to configure and use ESP-IDF to bui
 ###Test data
 
 0xFF 0x05 0x00 0xE6 0x63 0x01 0x00 0x12 0x34 0x01 0x02 0x03 0x04 0x05
+
+###Extra tools
+
+- SourceMonitor by Campwood Software: http://www.campwoodsw.com/sourcemonitor.html to measure the complexity of the code.
+- Artistic Style aka AStyle: http://astyle.sourceforge.net/ to automatically format code 
