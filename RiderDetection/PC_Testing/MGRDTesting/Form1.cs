@@ -27,6 +27,7 @@ namespace MGRDTesting
         private bool addingMultiple = false;
         private int multiIndex = 0;
         private string[] multiAddresList;
+        private Dictionary<string, string> riderNames = new Dictionary<string, string>();
 
         public Form1()
         {
@@ -111,7 +112,14 @@ namespace MGRDTesting
                     List<MGBTDevice> devices = MGBTDevice.FromArray(cmd.data);
                     if (devices.Count > 0)
                     {
-                        closestDeviceLbl.Text = devices[0].ToString();
+                        string riderName = "ILLEGAL";
+                        string address = MacBytesToString(devices[0].Address).ToUpperInvariant();
+                        if (riderNames.ContainsKey(address))
+                        {
+                            riderName = riderNames[address];
+                        }
+
+                        closestDeviceLbl.Text = devices[0].ToString() + "; " + riderName;
                     }
                 }));
             }
@@ -289,6 +297,16 @@ namespace MGRDTesting
                 else
                 {
                     writer.Write(Convert.ToInt16(0));
+                }
+
+                if (elements.Length > 2)
+                {
+                    if (riderNames.ContainsKey(elements[0].ToUpperInvariant()))
+                    {
+                        riderNames.Remove(elements[0].ToUpperInvariant());
+                    }
+
+                    riderNames.Add(elements[0].ToUpperInvariant(), elements[2]);
                 }
             }
             return stream.ToArray();

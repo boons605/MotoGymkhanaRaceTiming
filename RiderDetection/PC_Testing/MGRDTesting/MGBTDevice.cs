@@ -24,6 +24,14 @@ namespace MGRDTesting
                 return Math.Pow(10, (((double)measuredPower-(double)rssi)/(10.0*distEnvFactor)));
             }
         }
+
+        public byte[] Address
+        {
+            get
+            {
+                return address;
+            }
+        }
         
         public static List<MGBTDevice> FromArray(byte[] data)
         {
