@@ -1,5 +1,0 @@
-(fp_lib_table
-  (lib (name footprints)(type KiCad)(uri C:/SVN/MotoGymkhanaRaceTiming/PCB/Library/footprints.pretty)(options "")(descr ""))
-  (lib (name Library)(type KiCad)(uri C:/SVN/MotoGymkhanaRaceTiming/PCB/Library.pretty)(options "")(descr ""))
-  (lib (name MotoGymkhanaRaceTiming)(type KiCad)(uri C:/SVN/MotoGymkhanaRaceTiming/PCB/Library/MotoGymkhanaRaceTiming.pretty)(options "")(descr ""))
-)
