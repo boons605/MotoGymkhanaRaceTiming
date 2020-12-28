@@ -1,0 +1,15 @@
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.exe
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.deps.json
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.runtimeconfig.json
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.runtimeconfig.dev.json
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\CLI.pdb
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\McMaster.Extensions.CommandLineUtils.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.csprojAssemblyReference.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.AssemblyInfoInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.AssemblyInfo.cs
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.csproj.CoreCompileInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.csproj.CopyComplete
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.pdb
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.genruntimeconfig.cache

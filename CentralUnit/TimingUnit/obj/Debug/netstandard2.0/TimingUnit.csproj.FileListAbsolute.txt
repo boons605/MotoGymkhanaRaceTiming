@@ -1,0 +1,9 @@
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\bin\Debug\netstandard2.0\TimingUnit.deps.json
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\bin\Debug\netstandard2.0\TimingUnit.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\bin\Debug\netstandard2.0\TimingUnit.pdb
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.csprojAssemblyReference.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.AssemblyInfoInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.AssemblyInfo.cs
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.csproj.CoreCompileInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\TimingUnit\obj\Debug\netstandard2.0\TimingUnit.pdb

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "WW1Tau58/bYIGAe72UPxRJot79epjVC3LusubYoKE75xms9nx5wkCM3cy1o7SouJdx0RoyiA74PPb8khAxfRGw==",
+  "success": true,
+  "projectFilePath": "D:\\repos\\MotoGymkhanaRaceTiming\\CentralUnit\\CLI\\CLI.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\mcmaster.extensions.commandlineutils\\3.0.0\\mcmaster.extensions.commandlineutils.3.0.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.componentmodel.annotations\\4.7.0\\system.componentmodel.annotations.4.7.0.nupkg.sha512"
+  ],
+  "logs": []
+}
