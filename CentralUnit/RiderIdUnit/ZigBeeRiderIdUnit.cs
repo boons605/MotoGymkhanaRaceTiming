@@ -23,7 +23,7 @@ namespace RiderIdUnit
                 // Initialise the network
                 networkManager.Initialize();
 
-                networkManager.AddSupportedCluster(0x06);
+                networkManager.AddSupportedClientCluster(0x06);
 
                 ZigBeeStatus startupSucceded = networkManager.Startup(false);
 
