@@ -1,11 +1,25 @@
 {
   "version": 2,
-  "dgSpecHash": "WW1Tau58/bYIGAe72UPxRJot79epjVC3LusubYoKE75xms9nx5wkCM3cy1o7SouJdx0RoyiA74PPb8khAxfRGw==",
+  "dgSpecHash": "xgGBoAR6koLFbnD+6TzHz7nUw1JnvCEYfUo6QBbA5u12VkBZMCJpHqhZ9mP89Fxzpw+LZX8pSDKP8z25IMOZ2Q==",
   "success": true,
   "projectFilePath": "D:\\repos\\MotoGymkhanaRaceTiming\\CentralUnit\\CLI\\CLI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\CptMalfunction\\.nuget\\packages\\mcmaster.extensions.commandlineutils\\3.0.0\\mcmaster.extensions.commandlineutils.3.0.0.nupkg.sha512",
-    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.componentmodel.annotations\\4.7.0\\system.componentmodel.annotations.4.7.0.nupkg.sha512"
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\microsoft.netcore.platforms\\3.0.0\\microsoft.netcore.platforms.3.0.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\microsoft.win32.registry\\4.6.0\\microsoft.win32.registry.4.6.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\runtime.linux-arm.runtime.native.system.io.ports\\4.6.0-rc2.19462.14\\runtime.linux-arm.runtime.native.system.io.ports.4.6.0-rc2.19462.14.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\runtime.linux-arm64.runtime.native.system.io.ports\\4.6.0-rc2.19462.14\\runtime.linux-arm64.runtime.native.system.io.ports.4.6.0-rc2.19462.14.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\runtime.linux-x64.runtime.native.system.io.ports\\4.6.0-rc2.19462.14\\runtime.linux-x64.runtime.native.system.io.ports.4.6.0-rc2.19462.14.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\runtime.native.system.io.ports\\4.6.0\\runtime.native.system.io.ports.4.6.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\runtime.osx-x64.runtime.native.system.io.ports\\4.6.0-rc2.19462.14\\runtime.osx-x64.runtime.native.system.io.ports.4.6.0-rc2.19462.14.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\serilog\\2.9.0\\serilog.2.9.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.componentmodel.annotations\\4.7.0\\system.componentmodel.annotations.4.7.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.io.ports\\4.6.0\\system.io.ports.4.6.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.security.accesscontrol\\4.6.0\\system.security.accesscontrol.4.6.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\system.security.principal.windows\\4.6.0\\system.security.principal.windows.4.6.0.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\zigbeenet\\1.3.3\\zigbeenet.1.3.3.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\zigbeenet.hardware.digi.xbee\\1.1.2\\zigbeenet.hardware.digi.xbee.1.1.2.nupkg.sha512",
+    "C:\\Users\\CptMalfunction\\.nuget\\packages\\zigbeenet.transport.serialport\\1.1.1\\zigbeenet.transport.serialport.1.1.1.nupkg.sha512"
   ],
   "logs": []
 }

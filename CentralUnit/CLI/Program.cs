@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using McMaster.Extensions.CommandLineUtils;
+using RiderIdUnit;
 
 namespace CLI
 {

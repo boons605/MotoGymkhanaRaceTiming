@@ -1,0 +1,8 @@
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\bin\Debug\netstandard2.0\Communication.deps.json
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\bin\Debug\netstandard2.0\Communication.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\bin\Debug\netstandard2.0\Communication.pdb
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\obj\Debug\netstandard2.0\Communication.AssemblyInfoInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\obj\Debug\netstandard2.0\Communication.AssemblyInfo.cs
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\obj\Debug\netstandard2.0\Communication.csproj.CoreCompileInputs.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\obj\Debug\netstandard2.0\Communication.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\Communication\obj\Debug\netstandard2.0\Communication.pdb

@@ -13,3 +13,17 @@ D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.cspr
 D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.dll
 D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.pdb
 D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\obj\Debug\netcoreapp3.1\CLI.genruntimeconfig.cache
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\Serilog.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\System.IO.Ports.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\ZigBeeNet.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\ZigBeeNet.Hardware.Digi.XBee.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\ZigBeeNet.Transport.SerialPort.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\linux-arm\native\System.IO.Ports.Native.so
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\linux-arm64\native\System.IO.Ports.Native.so
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\linux-x64\native\System.IO.Ports.Native.so
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\osx-x64\native\System.IO.Ports.Native.dylib
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\linux\lib\netstandard2.0\System.IO.Ports.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\osx\lib\netstandard2.0\System.IO.Ports.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\runtimes\win\lib\netstandard2.0\System.IO.Ports.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\RiderIdUnit.dll
+D:\repos\MotoGymkhanaRaceTiming\CentralUnit\CLI\bin\Debug\netcoreapp3.1\RiderIdUnit.pdb
