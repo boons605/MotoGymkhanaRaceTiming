@@ -1,9 +1,0 @@
-{
-  "runtimeOptions": {
-    "additionalProbingPaths": [
-      "C:\\Users\\CptMalfunction\\.dotnet\\store\\|arch|\\|tfm|",
-      "C:\\Users\\CptMalfunction\\.nuget\\packages",
-      "C:\\Microsoft\\Xamarin\\NuGet"
-    ]
-  }
-}

@@ -1,8 +1,0 @@
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\bin\Debug\netstandard2.0\RiderIdUnit.deps.json
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\bin\Debug\netstandard2.0\RiderIdUnit.dll
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\bin\Debug\netstandard2.0\RiderIdUnit.pdb
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\obj\Debug\netstandard2.0\RiderIdUnit.AssemblyInfoInputs.cache
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\obj\Debug\netstandard2.0\RiderIdUnit.AssemblyInfo.cs
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\obj\Debug\netstandard2.0\RiderIdUnit.csproj.CoreCompileInputs.cache
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\obj\Debug\netstandard2.0\RiderIdUnit.dll
-D:\repos\MotoGymkhanaRaceTiming\CentralUnit\RiderIdUnit\obj\Debug\netstandard2.0\RiderIdUnit.pdb
