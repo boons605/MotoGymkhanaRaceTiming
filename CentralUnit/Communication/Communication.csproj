@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.12" />
     <PackageReference Include="System.IO.Ports" Version="5.0.0" />
+    <PackageReference Include="ZigBeeNet.Hardware.Digi.XBee" Version="1.1.2" />
   </ItemGroup>
 
 </Project>
