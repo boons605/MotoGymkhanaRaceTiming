@@ -1,7 +1,13 @@
-﻿using System;
-
+﻿// <copyright file="ISerialCommunication.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
 namespace Communication
 {
+    using System;
+
+    /// <summary>
+    /// Interface specifies the interface of a communication device.
+    /// </summary>
     public interface ISerialCommunication
     {
         /// <summary>
@@ -20,7 +26,7 @@ namespace Communication
         event EventHandler ConnectionStateChanged;
 
         /// <summary>
-        /// Indicates if the connection is opened or not.
+        /// Gets a value indicating whether the connection is opened or not.
         /// </summary>
         bool Connected { get; }
 

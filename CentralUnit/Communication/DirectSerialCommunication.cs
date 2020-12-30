@@ -1,18 +1,20 @@
-﻿using log4net;
-using System;
-using System.Collections.Generic;
-using System.IO.Ports;
-using System.Text;
-using System.Threading;
-
+﻿// <copyright file="DirectSerialCommunication.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
 namespace Communication
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO.Ports;
+    using System.Text;
+    using System.Threading;
+    using log4net;
+
     /// <summary>
     /// Implementation of ISerialCommunication for direct serial communication.
     /// </summary>
     public class DirectSerialCommunication : ISerialCommunication
     {
-
         /// <summary>
         /// Logger object used to display data in a console or file.
         /// </summary>
@@ -29,66 +31,32 @@ namespace Communication
         private Thread commThread;
 
         /// <summary>
-        /// Is the port opened?
-        /// </summary>
-        public bool Connected => serialPort.IsOpen;
-
-        public event EventHandler<DataReceivedEventArgs> DataReceived;
-        public event EventHandler Failure;
-        public event EventHandler ConnectionStateChanged;
-
-        /// <summary>
-        /// Open the serial port specificed by portName.
+        /// Initializes a new instance of the <see cref="DirectSerialCommunication" /> class.
+        /// Open the serial port specified by <c>portName</c>.
         /// Start the serial communication thread.
         /// Port is opened at 115200/8/N/1.
         /// </summary>
-        /// <param name="portName">The serial port name, e.g. COM1 or /dev/ttyS0</param>
+        /// <param name="portName">The serial port name, e.g. <c>COM1</c> or <c>/dev/ttyS0</c></param>
         public DirectSerialCommunication(string portName)
         {
-            serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One);
-            commThread = new Thread(this.run) { IsBackground = true };
-            commThread.Start();
+            this.serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One);
+            this.commThread = new Thread(this.Run) { IsBackground = true };
+            this.commThread.Start();
         }
+
+        /// <inheritdoc/>
+        public event EventHandler<DataReceivedEventArgs> DataReceived;
+
+        /// <inheritdoc/>
+        public event EventHandler Failure;
+
+        /// <inheritdoc/>
+        public event EventHandler ConnectionStateChanged;
 
         /// <summary>
-        /// The thread body. Performs polling.
-        /// Reads data from the serial port and throws the DataReceived event.
-        /// Throws Failure event when an exception occurs.
+        /// Is the port opened?
         /// </summary>
-        /// <param name="obj">Not used</param>
-        private void run(object obj)
-        {
-            try 
-            {
-                serialPort.Open();
-
-                ConnectionStateChanged?.Invoke(this, new EventArgs());
-
-                while (serialPort.IsOpen)
-                {
-
-                    int bytesToRead = serialPort.BytesToRead;
-
-                    if (bytesToRead > 0)
-                    {
-                        byte[] receivedData = new byte[bytesToRead];
-                        serialPort.Read(receivedData, 0, bytesToRead);
-                        DataReceived?.Invoke(this, new DataReceivedEventArgs(receivedData));
-                    }
-
-                    Thread.Sleep(10);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Serial port failure: " + serialPort.PortName, ex);
-                Failure?.Invoke(this, new EventArgs());
-            }
-            finally
-            {
-                ConnectionStateChanged?.Invoke(this, new EventArgs());
-            }
-        }
+        public bool Connected => this.serialPort.IsOpen;
 
         /// <summary>
         /// Write data to the serial port.
@@ -109,15 +77,14 @@ namespace Communication
                 throw new ArgumentException("Length of byte array to be sent may not be 0", "input");
             }
 
-            try 
+            try
             {
-
-                serialPort.Write(input, 0, input.Length);
+                this.serialPort.Write(input, 0, input.Length);
             }
             catch (Exception ex)
             {
-                Log.Error("Unable to write data to the serial port: " + serialPort.PortName, ex);
-                Failure?.Invoke(this, new EventArgs());
+                Log.Error("Unable to write data to the serial port: " + this.serialPort.PortName, ex);
+                this.Failure?.Invoke(this, new EventArgs());
             }
         }
 
@@ -128,14 +95,52 @@ namespace Communication
         {
             try
             {
-                serialPort.Close();
+                this.serialPort.Close();
             }
             catch (Exception ex)
             {
-                Log.Error("Unable to close the serial port: " + serialPort.PortName, ex);
-                Failure?.Invoke(this, new EventArgs());
+                Log.Error("Unable to close the serial port: " + this.serialPort.PortName, ex);
+                this.Failure?.Invoke(this, new EventArgs());
             }
+        }
 
+        /// <summary>
+        /// The thread body. Performs polling.
+        /// Reads data from the serial port and throws the DataReceived event.
+        /// Throws Failure event when an exception occurs.
+        /// </summary>
+        /// <param name="obj">Not used</param>
+        private void Run(object obj)
+        {
+            try 
+            {
+                this.serialPort.Open();
+
+                this.ConnectionStateChanged?.Invoke(this, new EventArgs());
+
+                while (this.serialPort.IsOpen)
+                {
+                    int bytesToRead = this.serialPort.BytesToRead;
+
+                    if (bytesToRead > 0)
+                    {
+                        byte[] receivedData = new byte[bytesToRead];
+                        this.serialPort.Read(receivedData, 0, bytesToRead);
+                        this.DataReceived?.Invoke(this, new DataReceivedEventArgs(receivedData));
+                    }
+
+                    Thread.Sleep(10);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Serial port failure: " + this.serialPort.PortName, ex);
+                this.Failure?.Invoke(this, new EventArgs());
+            }
+            finally
+            {
+                this.ConnectionStateChanged?.Invoke(this, new EventArgs());
+            }
         }
     }
 }
