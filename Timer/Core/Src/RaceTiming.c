@@ -36,43 +36,54 @@ static uint8_t GetPreviousBufferedResult(void)
     return retVal;
 }
 
+static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
+{
+	if (currentDisplayedLap != (Lap*)0)
+	{
+		if(currentDisplayedLap->endTimeStamp != 0U)
+		    {
+		        if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
+		        {
+		            UpdateDisplay(GetLapTimestampMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION);
+		        }
+		        else
+		        {
+		        	UpdateDisplay(currentBufferDisplayIndex + 1, 0U);
+		        }
+
+		    }
+		    else
+		    {
+		        displayBufferResult = 0U;
+		    }
+	}
+}
+
+static void HandleBufferedDisplayButtonRisingEdge(void)
+{
+	if(currentBufferDisplayIndex == MAXLAPCOUNT)
+	{
+		currentBufferDisplayIndex = GetCurrentLapIndex();
+	}
+
+	currentBufferDisplayIndex = GetPreviousBufferedResult();
+	uint8_t step = 0U;
+	while((laps[currentBufferDisplayIndex].endTimeStamp == 0) && (step < MAXLAPCOUNT))
+	{
+		currentBufferDisplayIndex = GetPreviousBufferedResult();
+		step++;
+	}
+	lastBufferDisplayChange = GetSystemTimeStampMs();
+}
+
 static void DisplayBufferResult(void)
 {
     if((lastCycleButtonState == 0U) && (InputGetState(buttonInput) == 1U))
     {
-        if(currentBufferDisplayIndex == MAXLAPCOUNT)
-        {
-            currentBufferDisplayIndex = GetCurrentLapIndex();
-        }
-
-        currentBufferDisplayIndex = GetPreviousBufferedResult();
-        uint8_t step = 0U;
-        while((laps[currentBufferDisplayIndex].endTimeStamp == 0) && (step < MAXLAPCOUNT))
-        {
-            currentBufferDisplayIndex = GetPreviousBufferedResult();
-            step++;
-        }
-        lastBufferDisplayChange = GetSystemTimeStampMs();
-
+    	HandleBufferedDisplayButtonRisingEdge();
     }
 
-    Lap* currentDisplayedLap = &laps[currentBufferDisplayIndex];
-    if(currentDisplayedLap->endTimeStamp != 0U)
-    {
-        if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
-        {
-            UpdateDisplay(GetLapTimestampMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION);
-        }
-        else
-        {
-        	UpdateDisplay(currentBufferDisplayIndex + 1, 0U);
-        }
-
-    }
-    else
-    {
-        displayBufferResult = 0U;
-    }
+    UpdateDisplayWithBufferedLap(&laps[currentBufferDisplayIndex]);
 
 }
 
