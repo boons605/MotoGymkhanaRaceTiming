@@ -76,7 +76,7 @@ namespace RaceManagement
         /// <summary>
         /// A DNF happens when a driver who started later finished before this driver did
         /// </summary>
-        LeftEvent OtherDriver;
+        FinishedEvent OtherDriver;
 
         /// <summary>
         /// The event where this driver was picked up at the start gate
