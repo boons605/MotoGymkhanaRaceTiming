@@ -18,7 +18,7 @@ namespace TimingUnit
         /// <summary>
         /// Milliseconds since units was switched on when sensor was triggered
         /// </summary>
-        public readonly long Milliseconds;
+        public readonly long Microseconds;
         /// <summary>
         /// Identifier for timing unit
         /// </summary>

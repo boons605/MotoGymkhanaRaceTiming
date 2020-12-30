@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TimingUnit", "TimingUnit\Ti
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RiderIdUnit", "RiderIdUnit\RiderIdUnit.csproj", "{16C724C3-4487-4FC0-9BF9-C7698027347C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Communication", "Communication\Communication.csproj", "{FCA294F4-4051-4D8B-8091-D9B414EC8837}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Communication", "Communication\Communication.csproj", "{FCA294F4-4051-4D8B-8091-D9B414EC8837}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaceManagement", "RaceManagement\RaceManagement.csproj", "{DE73F6C9-CF4F-425F-904F-B0E936CFE057}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{FCA294F4-4051-4D8B-8091-D9B414EC8837}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCA294F4-4051-4D8B-8091-D9B414EC8837}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCA294F4-4051-4D8B-8091-D9B414EC8837}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE73F6C9-CF4F-425F-904F-B0E936CFE057}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE73F6C9-CF4F-425F-904F-B0E936CFE057}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE73F6C9-CF4F-425F-904F-B0E936CFE057}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE73F6C9-CF4F-425F-904F-B0E936CFE057}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
