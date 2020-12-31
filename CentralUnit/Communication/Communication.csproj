@@ -11,7 +11,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.IO.Ports" Version="5.0.0" />
-    <PackageReference Include="ZigBeeNet.Hardware.Digi.XBee" Version="1.1.2" />
+    <PackageReference Include="XBeeLibrary.Core" Version="1.0.1" />
   </ItemGroup>
 
 </Project>
