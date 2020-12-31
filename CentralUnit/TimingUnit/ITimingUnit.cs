@@ -29,5 +29,13 @@ namespace TimingUnit
         public readonly int GateId;
 
         public DateTime Received;
+
+        public TimingTriggeredEventArgs(long microseconds, string unitId, int gateId, DateTime received)
+        {
+            Microseconds = microseconds;
+            UnitId = unitId;
+            GateId = gateId;
+            Received = received;
+        }
     }
 }

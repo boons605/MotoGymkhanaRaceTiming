@@ -35,6 +35,13 @@ namespace RaceManagement
         }
 
         /// <summary>
+        /// Gives you an overview of the current state of the race
+        /// Do not modify the returned objects
+        /// </summary>
+        public (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState =>
+            (WaitingRiders.ToList(), OnTrackRiders.ToList(), EndIds.ToList(), EndTimes.ToList());
+
+        /// <summary>
         /// Run a task that communicates with the timing and rider units to track the state of a race
         /// </summary>
         /// <param name="token"></param>
@@ -42,7 +49,24 @@ namespace RaceManagement
         public async Task<RaceSummary> Run(CancellationToken token)
         {
             RegisterEvents();
-            throw new NotImplementedException();
+
+            //run forever unless cancellation is requested
+            //this class is just receiving events, no code required to actually drive any actions here
+            await WaitForToken(token);
+
+            return new RaceSummary(RaceState.ToList());
+        }
+
+        /// <summary>
+        /// Turns a cancellation token into an awaitable task, this lets us avoid a loop to check the token and sleep
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        private Task WaitForToken(CancellationToken token)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            token.Register(s => ((TaskCompletionSource<bool>)s).SetResult(true), tcs);
+            return tcs.Task;
         }
 
         private void RegisterEvents()
@@ -76,7 +100,7 @@ namespace RaceManagement
 
                 RaceState.Enqueue(newEvent);
 
-                TimingEvent closest = EndTimes.First();
+                TimingEvent closest = EndTimes.FirstOrDefault();
 
                 //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
                 if (closest == null)
@@ -124,12 +148,16 @@ namespace RaceManagement
                 {
                     //we dont know the rider yet
                     TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
+                    RaceState.Enqueue(newEvent);
 
-                    LeftEvent closest = EndIds.First();
+                    LeftEvent closest = EndIds.FirstOrDefault();
 
                     //if the rider id unit's range is smaller than the stop box, we may receive the rider id later
                     if (closest == null)
+                    {
                         EndTimes.Add(newEvent);
+                        return;
+                    }
 
                     foreach (LeftEvent e in EndIds)
                         if (e.Time - args.Received < closest.Time - args.Received)

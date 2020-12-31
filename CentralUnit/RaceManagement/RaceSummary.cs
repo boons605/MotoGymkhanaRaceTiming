@@ -7,7 +7,12 @@ namespace RaceManagement
 {
     public class RaceSummary
     {
-        List<RaceEvent> Events = new List<RaceEvent>();
+        public List<RaceEvent> Events { get; private set; }
+
+        public RaceSummary(List<RaceEvent> events)
+        {
+            Events = events;
+        }
 
         public void WriteSummary(Stream output)
         {
@@ -69,7 +74,7 @@ namespace RaceManagement
         /// <summary>
         /// Id reported to the sensor that registered the rider
         /// </summary>
-        byte[] SensorId;
+        public byte[] SensorId { get; private set; }
 
         public EnteredEvent(DateTime time, string rider, byte[] sensorId)
             :base(time, rider)

@@ -54,5 +54,13 @@ namespace RiderIdUnit
         /// idebtifier for the unit that throws the event
         /// </summary>
         public readonly string UnitId;
+
+        public RiderIdEventArgs(string riderName, byte[] sensorId, DateTime received, string unitId)
+        {
+            RiderName = riderName;
+            SensorId = sensorId;
+            Received = received;
+            UnitId = unitId;
+        }
     }
 }
