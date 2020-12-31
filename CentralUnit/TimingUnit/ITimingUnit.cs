@@ -13,7 +13,7 @@ namespace TimingUnit
         event EventHandler<TimingTriggeredEventArgs> OnTrigger;
     }
 
-    public class TimingTriggeredEventArgs
+    public class TimingTriggeredEventArgs : EventArgs
     {
         /// <summary>
         /// Milliseconds since units was switched on when sensor was triggered
@@ -27,5 +27,7 @@ namespace TimingUnit
         /// Which gate the sensor was triggered for (start or stop gate for example)
         /// </summary>
         public readonly int GateId;
+
+        public DateTime Received;
     }
 }

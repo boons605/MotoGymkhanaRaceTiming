@@ -20,6 +20,20 @@ namespace RaceManagement
         public readonly DateTime Time;
         public string Rider {get; protected set; }
         public readonly Guid EventId;
+
+        public RaceEvent(DateTime time, string rider, Guid eventId)
+        {
+            Time = time;
+            Rider = rider;
+            EventId = eventId;
+        }
+
+        public RaceEvent(DateTime time, string rider)
+            :this(time, rider, Guid.NewGuid())
+        {
+            Time = time;
+            Rider = rider;
+        }
     }
 
     public class FinishedEvent : RaceEvent
@@ -27,15 +41,24 @@ namespace RaceManagement
         /// <summary>
         /// Lap time in microseconds
         /// </summary>
-        long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
+        public long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
 
         /// <summary>
         /// A racer finishes when their id is picked up at the start gate, with a timing event and then their id is picked up at the end gate with a timing event
         /// </summary>
-        EnteredEvent Entered;
-        TimingEvent TimeStart;
-        TimingEvent TimeEnd;
-        LeftEvent Left;
+        readonly EnteredEvent Entered;
+        readonly TimingEvent TimeStart;
+        readonly TimingEvent TimeEnd;
+        readonly LeftEvent Left;
+
+        public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
+            :base(timeEnd.Time, timeEnd.Rider)
+        {
+            Entered = entered;
+            TimeStart = timeStart;
+            TimeEnd = timeEnd;
+            Left = left;
+        }
     }
 
     /// <summary>
@@ -47,6 +70,12 @@ namespace RaceManagement
         /// Id reported to the sensor that registered the rider
         /// </summary>
         byte[] SensorId;
+
+        public EnteredEvent(DateTime time, string rider, byte[] sensorId)
+            :base(time, rider)
+        {
+            SensorId = sensorId;
+        }
     }
 
     /// <summary>
@@ -58,9 +87,15 @@ namespace RaceManagement
         /// Id reported to the sensor that registered the rider
         /// </summary>
         byte[] SensorId;
+
+        public LeftEvent(DateTime time, string rider, byte[] sensorId)
+         : base(time, rider)
+        {
+            SensorId = sensorId;
+        }
     }
 
-    public class TimingEvent
+    public class TimingEvent : RaceEvent
     {
         /// <summary>
         /// Microseconds reported by the timer
@@ -68,7 +103,23 @@ namespace RaceManagement
         public readonly long Microseconds;
 
         //Which timing gate this event happened for
-        int gateId;
+        public readonly int GateId;
+
+        public TimingEvent(DateTime time, string rider, long microseconds, int gateId) : base(time, rider)
+        {
+            Microseconds = microseconds;
+            GateId = gateId;
+        }
+
+        /// <summary>
+        /// For the end timing gate we may receive a timing event before a rider id
+        /// So we might have to set this field after we've matched it
+        /// </summary>
+        /// <param name="rider"></param>
+        public void SetRider(string rider)
+        {
+            Rider = rider;
+        }
     }
 
     public class DNFEvent : RaceEvent
@@ -76,11 +127,18 @@ namespace RaceManagement
         /// <summary>
         /// A DNF happens when a driver who started later finished before this driver did
         /// </summary>
-        FinishedEvent OtherDriver;
+        FinishedEvent OtherRider;
 
         /// <summary>
         /// The event where this driver was picked up at the start gate
         /// </summary>
-        EnteredEvent ThisDriver;
+        EnteredEvent RiderDriver;
+
+        public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
+            :base(otherRider.Time, thisRider.Rider)
+        {
+            OtherRider = otherRider;
+            this.RiderDriver = thisRider;
+        }
     }
 }
