@@ -4,9 +4,11 @@
 namespace Communication
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using XBeeLibrary.Core.Models;
 
     /// <summary>
@@ -25,6 +27,16 @@ namespace Communication
         private ISerialCommunication communicationChannel;
 
         /// <summary>
+        /// Queue for outgoing messages.
+        /// </summary>
+        private ConcurrentQueue<byte[]> transmitQueue;
+
+        /// <summary>
+        /// Communication thread.
+        /// </summary>
+        private Thread commThread;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="XbeeNetwork" /> class.
         /// </summary>
         /// <param name="communication">The serial communication channel utilized by this network</param>
@@ -34,6 +46,8 @@ namespace Communication
             this.communicationChannel.ConnectionStateChanged += this.CommunicationChannel_ConnectionStateChanged;
             this.communicationChannel.DataReceived += this.CommunicationChannel_DataReceived;
             this.communicationChannel.Failure += this.CommunicationChannel_Failure;
+            this.transmitQueue = new ConcurrentQueue<byte[]>();
+            this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
         }
 
         /// <summary>
@@ -64,7 +78,7 @@ namespace Communication
         /// <param name="data">The <c>Xbee</c> API data to write to the serial communication channel.</param>
         internal void Write(byte[] data)
         {
-            throw new NotImplementedException();
+            this.transmitQueue.Enqueue(data);
         }
 
         /// <summary>
@@ -113,6 +127,45 @@ namespace Communication
             foreach (XbeeSerialCommunication xbee in this.devices)
             {
                 xbee.OnConnectionStateChanged(this.communicationChannel.Connected);
+            }
+        }
+
+        /// <summary>
+        /// Thread main method.
+        /// </summary>
+        private void RunXbeeNetwork()
+        {
+            DateTime threadStartTime = DateTime.Now;
+
+            // Wait for up to 10 seconds for a connection. This happens on another thread.
+            while ((!this.communicationChannel.Connected) &&
+                    (DateTime.Now.Subtract(threadStartTime).TotalMilliseconds < 10000))
+            {
+                Thread.Sleep(100);
+            }
+
+            while (this.communicationChannel.Connected)
+            {
+                this.ManageTxQueue();
+
+                Thread.Sleep(10);
+            }
+        }
+
+        /// <summary>
+        /// Sends the message in front of the queue.
+        /// Only sends one message to ensure that the network load remains within reasonable limits.
+        /// Called every thread operation cycle, which is at most once every 10 milliseconds, variations depend on scheduling.
+        /// </summary>
+        private void ManageTxQueue()
+        {
+            if (!this.transmitQueue.IsEmpty)
+            {
+                byte[] transmitData;
+                if (this.transmitQueue.TryDequeue(out transmitData))
+                {
+                    this.communicationChannel.Write(transmitData);
+                }
             }
         }
     }
