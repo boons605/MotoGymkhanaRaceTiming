@@ -9,7 +9,10 @@ namespace Communication
     using System.Linq;
     using System.Text;
     using System.Threading;
+    using log4net;
     using XBeeLibrary.Core.Models;
+    using XBeeLibrary.Core.Packet;
+    using XBeeLibrary.Core.Packet.Common;
 
     /// <summary>
     /// A network of <c>Xbee</c> devices accessed through a single serial communication channel.
@@ -17,9 +20,19 @@ namespace Communication
     public class XbeeNetwork
     {
         /// <summary>
+        /// Logger object used to display data in a console or file.
+        /// </summary>
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        /// <summary>
         /// List of <c>Xbee</c> devices registered with this network.
         /// </summary>
         private List<XbeeSerialCommunication> devices = new List<XbeeSerialCommunication>();
+
+        /// <summary>
+        /// The highest frame ID assigned to devices.
+        /// </summary>
+        private byte highestFrameID;
 
         /// <summary>
         /// The serial communication channel utilized by this network.
@@ -32,9 +45,34 @@ namespace Communication
         private ConcurrentQueue<byte[]> transmitQueue;
 
         /// <summary>
+        /// Queue for incoming messages.
+        /// </summary>
+        private ConcurrentQueue<byte[]> receiveQueue;
+
+        /// <summary>
+        /// The current packet.
+        /// </summary>
+        private byte[] currentPacket = null;
+
+        /// <summary>
+        /// Buffer position in current packet.
+        /// </summary>
+        private int currentPacketPosition = 0;
+
+        /// <summary>
+        /// Object to lock on.
+        /// </summary>
+        private object packetLock = new object();
+
+        /// <summary>
         /// Communication thread.
         /// </summary>
         private Thread commThread;
+
+        /// <summary>
+        /// Packet parser.
+        /// </summary>
+        private XBeePacketParser parser;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XbeeNetwork" /> class.
@@ -47,7 +85,10 @@ namespace Communication
             this.communicationChannel.DataReceived += this.CommunicationChannel_DataReceived;
             this.communicationChannel.Failure += this.CommunicationChannel_Failure;
             this.transmitQueue = new ConcurrentQueue<byte[]>();
+            this.receiveQueue = new ConcurrentQueue<byte[]>();
             this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
+            this.commThread.Start();
+            this.parser = new XBeePacketParser();
         }
 
         /// <summary>
@@ -58,6 +99,16 @@ namespace Communication
         public XbeeSerialCommunication GetDevice(string address64bit)
         {
             XBee64BitAddress address = new XBee64BitAddress(address64bit);
+            return this.GetDevice(address);
+        }
+
+        /// <summary>
+        /// Gets a device from the network or adds this device to the network.
+        /// </summary>
+        /// <param name="address">The 64-bit address to identify the device</param>
+        /// <returns>An <see cref="XbeeSerialCommunication"/> communication channel</returns>
+        public XbeeSerialCommunication GetDevice(XBee64BitAddress address)
+        {
             XbeeSerialCommunication device = null;
             if (this.devices.Any(dev => dev.Xbee64address.Equals(address)))
             {
@@ -65,7 +116,8 @@ namespace Communication
             }
             else
             {
-                device = new XbeeSerialCommunication(address, this);
+                this.highestFrameID++;
+                device = new XbeeSerialCommunication(address, this, this.highestFrameID);
                 this.devices.Add(device);
             }
 
@@ -110,10 +162,78 @@ namespace Communication
         /// Processes data received from the communication channel.
         /// </summary>
         /// <param name="sender">The sender of the event</param>
-        /// <param name="e">EventArgs supplied with the event</param>
+        /// <param name="e">EventArgs supplied with the event contains a byte array with data</param>
         private void CommunicationChannel_DataReceived(object sender, DataReceivedEventArgs e)
         {
-            throw new NotImplementedException();
+            lock (this.packetLock)
+            {
+                if (this.currentPacket == null)
+                {
+                    this.StartNewPacket();
+                }
+
+                for (int index = 0; index < e.Data.Length; index++)
+                {
+                    if (e.Data[index] == (byte)SpecialByte.HEADER_BYTE)
+                    {
+                        this.StartNewPacket();
+                    }
+
+                    this.currentPacket[this.currentPacketPosition] = e.Data[index];
+                    this.currentPacketPosition++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Check if the packet in the buffer is complete.
+        /// First check is done based on length, since the <c>Xbee</c> library contains a long timeout.
+        /// </summary>
+        /// <param name="buffer">The buffer to check</param>
+        /// <param name="position">The buffer position if it is the current receive buffer to be checked, buffer length if it is a queued buffer</param>
+        /// <returns>An <see cref="XBeePacket"/> or null if the packet is incomplete</returns>
+        private XBeePacket CheckPacketComplete(byte[] buffer, int position)
+        {
+            XBeePacket packet = null;
+            if (buffer.Length > 3)
+            {
+                ushort packetLength = (ushort)(((ushort)buffer[1]) << 8);
+                packetLength |= (ushort)buffer[2];
+
+                if (position >= packetLength)
+                {
+                    try
+                    {
+                        packet = this.parser.ParsePacket(buffer, OperatingMode.API_ESCAPE);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Error while parsing packet: ", ex);
+                    }
+                }
+            }
+
+            if (packet == null)
+            {
+                Log.ErrorFormat("Packet in queue was invalid, data: {0}", BitConverter.ToString(buffer));
+            }
+
+            return packet;
+        }
+
+        /// <summary>
+        /// Starts a new packet by allocating a new buffer and resetting the index to 0.
+        /// If index is greater than 0, enqueues the current packet to be processed and distributed among devices.
+        /// </summary>
+        private void StartNewPacket()
+        {
+            if (this.currentPacketPosition > 0)
+            {
+                this.receiveQueue.Enqueue(this.currentPacket);
+            }
+
+            this.currentPacket = new byte[1024];
+            this.currentPacketPosition = 0;
         }
 
         /// <summary>
@@ -135,20 +255,111 @@ namespace Communication
         /// </summary>
         private void RunXbeeNetwork()
         {
-            DateTime threadStartTime = DateTime.Now;
-
-            // Wait for up to 10 seconds for a connection. This happens on another thread.
-            while ((!this.communicationChannel.Connected) &&
-                    (DateTime.Now.Subtract(threadStartTime).TotalMilliseconds < 10000))
+            try
             {
-                Thread.Sleep(100);
+                DateTime threadStartTime = DateTime.Now;
+
+                // Wait for up to 10 seconds for a connection. This happens on another thread.
+                while ((!this.communicationChannel.Connected) &&
+                        (DateTime.Now.Subtract(threadStartTime).TotalMilliseconds < 10000))
+                {
+                    Thread.Sleep(100);
+                }
+
+                while (this.communicationChannel.Connected)
+                {
+                    this.ManageTxQueue();
+
+                    lock (this.packetLock)
+                    {
+                        this.ManageRxQueue();
+                    }
+
+                    Thread.Sleep(10);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Exception on XbeeNetwork thread", ex);
+            }
+        }
+
+        /// <summary>
+        /// Process a received <see cref="XBeePacket"/>
+        /// </summary>
+        /// <param name="packet">The <see cref="XBeePacket"/> to process.</param>
+        private void ProcessXbeePacket(XBeePacket packet)
+        {
+            if (packet != null)
+            {
+                if (packet.GetType() == typeof(ExplicitRxIndicatorPacket))
+                {
+                    ExplicitRxIndicatorPacket eriPacket = (ExplicitRxIndicatorPacket)packet;
+                    XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
+                    deviceForPacket.OnDataReceived(eriPacket.RFData);
+                }
+                else if (packet.GetType() == typeof(TransmitStatusPacket))
+                {
+                    TransmitStatusPacket txsPacket = (TransmitStatusPacket)packet;
+                    if (this.devices.Any(dev => dev.FrameID == txsPacket.FrameID))
+                    {
+                        XbeeSerialCommunication deviceForPacket = this.devices.First(dev => dev.FrameID == txsPacket.FrameID);
+
+                        if (txsPacket.TransmitStatus == XBeeLibrary.Core.Models.XBeeTransmitStatus.SUCCESS)
+                        {
+                            if (Log.IsDebugEnabled)
+                            {
+                                Log.DebugFormat("Transmit succeeded to {0}", deviceForPacket.Xbee64address.ToString());
+                            }
+                        }
+                        else
+                        {
+                            Log.WarnFormat("Got TX status {0} for device {1}", txsPacket.TransmitStatus, deviceForPacket.Xbee64address.ToString());
+                            deviceForPacket.OnFailure();
+                        }
+                    }
+                    else
+                    {
+                        Log.WarnFormat("Got TX Status {0} for unknown frame ID {1}", txsPacket.TransmitStatus, txsPacket.FrameID);
+                    }
+                }
+                else
+                {
+                    Log.InfoFormat("Got unknown packet of type {0}", packet.GetType().Name);
+                    if (Log.IsDebugEnabled)
+                    {
+                        Log.Debug(packet.ToPrettyString());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Parse packets in the receive queue and distribute them among the devices in the network.
+        /// </summary>
+        private void ManageRxQueue()
+        {
+            while (!this.receiveQueue.IsEmpty)
+            {
+                byte[] buffer;
+                if (this.receiveQueue.TryDequeue(out buffer))
+                {
+                    XBeePacket packet = this.CheckPacketComplete(buffer, buffer.Length);
+                    if (packet != null)
+                    {
+                        this.ProcessXbeePacket(packet);
+                    }
+                }
             }
 
-            while (this.communicationChannel.Connected)
+            if (this.currentPacketPosition > 0)
             {
-                this.ManageTxQueue();
-
-                Thread.Sleep(10);
+                XBeePacket packet = this.CheckPacketComplete(this.currentPacket, this.currentPacketPosition);
+                if (packet != null)
+                {
+                    this.StartNewPacket();
+                    this.ProcessXbeePacket(packet);
+                }
             }
         }
 

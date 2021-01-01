@@ -25,6 +25,11 @@ namespace Communication
         private bool connected;
 
         /// <summary>
+        /// The transmit frame ID to be used by this device.
+        /// </summary>
+        private byte frameId;
+
+        /// <summary>
         /// The <see cref="XbeeNetwork" /> this devices belongs to.
         /// </summary>
         private XbeeNetwork network;
@@ -35,10 +40,12 @@ namespace Communication
         /// </summary>
         /// <param name="address">The 64-bit address of this device.</param>
         /// <param name="xbeeNetwork">The network this devices belongs to.</param>
-        internal XbeeSerialCommunication(XBee64BitAddress address, XbeeNetwork xbeeNetwork)
+        /// <param name="transmitFrameId">The frame ID to be used by this device</param>
+        internal XbeeSerialCommunication(XBee64BitAddress address, XbeeNetwork xbeeNetwork, byte transmitFrameId)
         {
             this.xbee64address = address;
             this.network = xbeeNetwork;
+            this.frameId = transmitFrameId;
         }
 
         /// <inheritdoc/>
@@ -52,6 +59,9 @@ namespace Communication
 
         /// <inheritdoc/>
         public bool Connected { get => this.connected; }
+
+        /// <inheritdoc/>
+        public byte FrameID { get => this.frameId; }
 
         /// <summary>
         /// Gets the 64-bit address of the device.
@@ -74,13 +84,13 @@ namespace Communication
             // We don't care about the 16-bit address here, since we use the 64-bit address, which is hardware-bound.
             XBee16BitAddress x16a = new XBee16BitAddress("FFFE");
             /*
-             Arg 1: Frame ID 0x01 = We do want feedback about the transmission
+             Arg 1: Frame ID > 0x01 = We do want feedback about the transmission, assigned at initialization.
              Arg 2 and 3: The 64-bit address and the 16-bit dummy address
              Arg 4: Broadcast radius. Set to 0, but irrelevant because we are not sending broadcast messages.
              Arg 5: Transmit options. Set to 0, irrelevant.
              Arg 6: The actual data to transmit.
             */
-            TransmitPacket tp = new TransmitPacket(0x01, this.xbee64address, x16a, 0x0, 0x0, input);
+            TransmitPacket tp = new TransmitPacket(this.frameId, this.xbee64address, x16a, 0x0, 0x0, input);
             this.network.Write(tp.GenerateByteArrayEscaped());
         }
 
