@@ -324,27 +324,7 @@ namespace Communication
                 else if (packet.GetType() == typeof(TransmitStatusPacket))
                 {
                     TransmitStatusPacket txsPacket = (TransmitStatusPacket)packet;
-                    if (this.devices.Any(dev => dev.FrameID == txsPacket.FrameID))
-                    {
-                        XbeeSerialCommunication deviceForPacket = this.devices.First(dev => dev.FrameID == txsPacket.FrameID);
-
-                        if (txsPacket.TransmitStatus == XBeeLibrary.Core.Models.XBeeTransmitStatus.SUCCESS)
-                        {
-                            if (Log.IsDebugEnabled)
-                            {
-                                Log.DebugFormat("Transmit succeeded to {0}", deviceForPacket.Xbee64address.ToString());
-                            }
-                        }
-                        else
-                        {
-                            Log.WarnFormat("Got TX status {0} for device {1}", txsPacket.TransmitStatus, deviceForPacket.Xbee64address.ToString());
-                            deviceForPacket.OnFailure();
-                        }
-                    }
-                    else
-                    {
-                        Log.WarnFormat("Got TX Status {0} for unknown frame ID {1}", txsPacket.TransmitStatus, txsPacket.FrameID);
-                    }
+                    this.ProcessTransmitStatusPacket(txsPacket);
                 }
                 else
                 {
@@ -358,10 +338,50 @@ namespace Communication
         }
 
         /// <summary>
+        /// Process a received <see cref="TransmitStatusPacket"/>.
+        /// On success, only debug logging occurs.
+        /// When transmission is indicated as not successful, a failure is reported for the device that sent the frame identified in the <see cref="TransmitStatusPacket"/>
+        /// </summary>
+        /// <param name="txsPacket">The <see cref="TransmitStatusPacket"/> parsed from the byte array.</param>
+        private void ProcessTransmitStatusPacket(TransmitStatusPacket txsPacket)
+        {
+            if (this.devices.Any(dev => dev.FrameID == txsPacket.FrameID))
+            {
+                XbeeSerialCommunication deviceForPacket = this.devices.First(dev => dev.FrameID == txsPacket.FrameID);
+
+                if (txsPacket.TransmitStatus == XBeeLibrary.Core.Models.XBeeTransmitStatus.SUCCESS)
+                {
+                    if (Log.IsDebugEnabled)
+                    {
+                        Log.DebugFormat("Transmit succeeded to {0}", deviceForPacket.Xbee64address.ToString());
+                    }
+                }
+                else
+                {
+                    Log.WarnFormat("Got TX status {0} for device {1}", txsPacket.TransmitStatus, deviceForPacket.Xbee64address.ToString());
+                    deviceForPacket.OnFailure();
+                }
+            }
+            else
+            {
+                Log.WarnFormat("Got TX Status {0} for unknown frame ID {1}", txsPacket.TransmitStatus, txsPacket.FrameID);
+            }
+        }
+
+        /// <summary>
         /// Parse packets in the receive queue and distribute them among the devices in the network.
         /// </summary>
         private void ManageRxQueue()
         {
+            if (this.currentPacketPosition > 0)
+            {
+                XBeePacket packet = this.CheckPacketComplete(this.currentPacket, this.currentPacketPosition);
+                if (packet != null)
+                {
+                    this.StartNewPacket();
+                }
+            }
+
             while (!this.receiveQueue.IsEmpty)
             {
                 byte[] buffer;
@@ -372,16 +392,6 @@ namespace Communication
                     {
                         this.ProcessXbeePacket(packet);
                     }
-                }
-            }
-
-            if (this.currentPacketPosition > 0)
-            {
-                XBeePacket packet = this.CheckPacketComplete(this.currentPacket, this.currentPacketPosition);
-                if (packet != null)
-                {
-                    this.StartNewPacket();
-                    this.ProcessXbeePacket(packet);
                 }
             }
         }

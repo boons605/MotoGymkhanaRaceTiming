@@ -62,24 +62,24 @@ namespace Communication
 
             ISerialCommunication communicationDevice = null;
 
-            if (identifierParts.Count > 1)
+            if (identifierParts.Count > 2)
             {
-                string communicationType = identifierParts[0].Value;
+                string communicationType = identifierParts[1].Value;
                 switch (communicationType)
                 {
                     case "xbee":
-                        if (identifierParts.Count != 3)
+                        if (identifierParts.Count != 4)
                         {
                             throw new ArgumentException(string.Format("Not enough argument supplied for communication type xbee: {0}", identifier));
                         }
                         else
                         {
-                            communicationDevice = this.GetXbeeDevice(identifierParts[1].Value, identifierParts[2].Value);
+                            communicationDevice = this.GetXbeeDevice(identifierParts[2].Value, identifierParts[3].Value);
                         }
 
                         break;
                     case "directserial":
-                        communicationDevice = this.GetSerialDevice(identifierParts[1].Value);
+                        communicationDevice = this.GetSerialDevice(identifierParts[2].Value);
                         break;
                     default:
                         throw new ArgumentException(string.Format("Invalid communication type: {0} in identifier {1}", communicationType, identifier));
