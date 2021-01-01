@@ -63,6 +63,9 @@ namespace Communication
         /// <inheritdoc/>
         public byte FrameID { get => this.frameId; }
 
+        /// <inheritdoc/>
+        public string Name => this.network.Name + ":" + this.xbee64address.ToString();
+
         /// <summary>
         /// Gets the 64-bit address of the device.
         /// </summary>

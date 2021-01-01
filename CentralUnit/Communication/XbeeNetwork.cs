@@ -77,19 +77,25 @@ namespace Communication
         /// <summary>
         /// Initializes a new instance of the <see cref="XbeeNetwork" /> class.
         /// </summary>
+        /// <param name="portName">The name of the serial port to use</param>
+        public XbeeNetwork(string portName)
+        {
+            this.Initialize(new DirectSerialCommunication(portName));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="XbeeNetwork" /> class.
+        /// </summary>
         /// <param name="communication">The serial communication channel utilized by this network</param>
         public XbeeNetwork(ISerialCommunication communication)
         {
-            this.communicationChannel = communication;
-            this.communicationChannel.ConnectionStateChanged += this.CommunicationChannel_ConnectionStateChanged;
-            this.communicationChannel.DataReceived += this.CommunicationChannel_DataReceived;
-            this.communicationChannel.Failure += this.CommunicationChannel_Failure;
-            this.transmitQueue = new ConcurrentQueue<byte[]>();
-            this.receiveQueue = new ConcurrentQueue<byte[]>();
-            this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
-            this.commThread.Start();
-            this.parser = new XBeePacketParser();
+            this.Initialize(communication);
         }
+
+        /// <summary>
+        /// Gets the name of this network.
+        /// </summary>
+        public string Name { get => this.communicationChannel.Name; }
 
         /// <summary>
         /// Gets a device from the network or adds this device to the network.
@@ -143,6 +149,23 @@ namespace Communication
             {
                 this.devices.Remove(this.devices.First(dev => dev.Xbee64address.Equals(address)));
             }
+        }
+
+        /// <summary>
+        /// Performs initialization tasks.
+        /// </summary>
+        /// <param name="communication">The communication channel to work with.</param>
+        private void Initialize(ISerialCommunication communication)
+        {
+            this.communicationChannel = communication;
+            this.communicationChannel.ConnectionStateChanged += this.CommunicationChannel_ConnectionStateChanged;
+            this.communicationChannel.DataReceived += this.CommunicationChannel_DataReceived;
+            this.communicationChannel.Failure += this.CommunicationChannel_Failure;
+            this.transmitQueue = new ConcurrentQueue<byte[]>();
+            this.receiveQueue = new ConcurrentQueue<byte[]>();
+            this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
+            this.commThread.Start();
+            this.parser = new XBeePacketParser();
         }
 
         /// <summary>

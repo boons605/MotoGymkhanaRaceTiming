@@ -58,6 +58,9 @@ namespace Communication
         /// </summary>
         public bool Connected => this.serialPort.IsOpen;
 
+        /// <inheritdoc/>
+        public string Name => this.serialPort.PortName;
+
         /// <summary>
         /// Write data to the serial port.
         /// Files a failure event when this fails.

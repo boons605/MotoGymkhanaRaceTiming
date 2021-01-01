@@ -31,6 +31,11 @@ namespace Communication
         bool Connected { get; }
 
         /// <summary>
+        /// Gets the name of this serial connection
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Close the communication channel
         /// </summary>
         void Close();
