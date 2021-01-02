@@ -54,8 +54,7 @@ namespace Communication
 
             if (!Regex.IsMatch(identifier, IdentifierRegex))
             {
-                string exceptionTextFormat = "Channel identifier {0} does not match the format type:port(:address) or regex {1}";
-                throw new ArgumentException(string.Format(exceptionTextFormat, identifier, IdentifierRegex), "identifier");
+                throw new ArgumentException($"Channel identifier {identifier} does not match the format type:port(:address) or regex {IdentifierRegex}", "identifier");
             }
 
             GroupCollection identifierParts = Regex.Match(identifier, IdentifierRegex).Groups;
@@ -70,7 +69,7 @@ namespace Communication
                     case "xbee":
                         if (identifierParts.Count != 4)
                         {
-                            throw new ArgumentException(string.Format("Not enough argument supplied for communication type xbee: {0}", identifier));
+                            throw new ArgumentException($"Not enough argument supplied for communication type xbee: {identifier}");
                         }
                         else
                         {
@@ -82,7 +81,7 @@ namespace Communication
                         communicationDevice = this.GetSerialDevice(identifierParts[2].Value);
                         break;
                     default:
-                        throw new ArgumentException(string.Format("Invalid communication type: {0} in identifier {1}", communicationType, identifier));
+                        throw new ArgumentException($"Invalid communication type: {communicationType} in identifier {identifier}");
                 }
             }
 

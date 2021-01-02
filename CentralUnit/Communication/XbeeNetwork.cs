@@ -17,7 +17,7 @@ namespace Communication
     /// <summary>
     /// A network of <c>Xbee</c> devices accessed through a single serial communication channel.
     /// </summary>
-    public class XbeeNetwork
+    public class XbeeNetwork : IDisposable
     {
         /// <summary>
         /// Logger object used to display data in a console or file.
@@ -131,6 +131,15 @@ namespace Communication
         }
 
         /// <summary>
+        /// Clean up the devices and close the serial channel.
+        /// </summary>
+        public void Dispose()
+        {
+            this.devices.Clear();
+            this.communicationChannel.Close();
+        }
+
+        /// <summary>
         /// Write data, to be used by <see cref="XbeeSerialCommunication"/> devices.
         /// </summary>
         /// <param name="data">The <c>Xbee</c> API data to write to the serial communication channel.</param>
@@ -238,7 +247,7 @@ namespace Communication
 
             if (packet == null)
             {
-                Log.ErrorFormat("Packet in queue was invalid, data: {0}", BitConverter.ToString(buffer));
+                Log.Error($"Packet in queue was invalid, data: {BitConverter.ToString(buffer)}");
             }
 
             return packet;
@@ -315,20 +324,18 @@ namespace Communication
         {
             if (packet != null)
             {
-                if (packet.GetType() == typeof(ExplicitRxIndicatorPacket))
+                if (packet is ExplicitRxIndicatorPacket eriPacket)
                 {
-                    ExplicitRxIndicatorPacket eriPacket = (ExplicitRxIndicatorPacket)packet;
                     XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
                     deviceForPacket.OnDataReceived(eriPacket.RFData);
                 }
-                else if (packet.GetType() == typeof(TransmitStatusPacket))
+                else if (packet is TransmitStatusPacket txsPacket)
                 {
-                    TransmitStatusPacket txsPacket = (TransmitStatusPacket)packet;
                     this.ProcessTransmitStatusPacket(txsPacket);
                 }
                 else
                 {
-                    Log.InfoFormat("Got unknown packet of type {0}", packet.GetType().Name);
+                    Log.Info($"Got unknown packet of type {packet.GetType().Name}");
                     if (Log.IsDebugEnabled)
                     {
                         Log.Debug(packet.ToPrettyString());
@@ -353,18 +360,18 @@ namespace Communication
                 {
                     if (Log.IsDebugEnabled)
                     {
-                        Log.DebugFormat("Transmit succeeded to {0}", deviceForPacket.Xbee64address.ToString());
+                        Log.Debug($"Transmit succeeded to {deviceForPacket.Xbee64address.ToString()}");
                     }
                 }
                 else
                 {
-                    Log.WarnFormat("Got TX status {0} for device {1}", txsPacket.TransmitStatus, deviceForPacket.Xbee64address.ToString());
+                    Log.WarnFormat($"Got TX status {txsPacket.TransmitStatus} for device {deviceForPacket.Xbee64address}");
                     deviceForPacket.OnFailure();
                 }
             }
             else
             {
-                Log.WarnFormat("Got TX Status {0} for unknown frame ID {1}", txsPacket.TransmitStatus, txsPacket.FrameID);
+                Log.WarnFormat($"Got TX Status {txsPacket.TransmitStatus} for unknown frame ID {txsPacket.FrameID}");
             }
         }
 
@@ -403,13 +410,10 @@ namespace Communication
         /// </summary>
         private void ManageTxQueue()
         {
-            if (!this.transmitQueue.IsEmpty)
+            byte[] transmitData;
+            if (this.transmitQueue.TryDequeue(out transmitData))
             {
-                byte[] transmitData;
-                if (this.transmitQueue.TryDequeue(out transmitData))
-                {
-                    this.communicationChannel.Write(transmitData);
-                }
+                this.communicationChannel.Write(transmitData);
             }
         }
     }
