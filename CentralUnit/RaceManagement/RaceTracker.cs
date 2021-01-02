@@ -110,17 +110,18 @@ namespace RaceManagement
                 }
 
                 foreach (TimingEvent e in EndTimes)
-                    if (e.Time - args.Received < closest.Time - args.Received)
+                    if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
                         closest = e;
 
-                if ((closest.Time - args.Received).TotalSeconds <= 10)
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
                 {
-                    //filter out all older events that can never be matched
-                    EndTimes = EndTimes.Where(e => e.Time > closest.Time).ToList();
-
                     closest.SetRider(newEvent.Rider);
+                    EndTimes.Remove(closest);
+
                     MatchLapEnd(newEvent, closest);
                 }
+                else
+                    EndIds.Add(newEvent);
             }
         }
 
@@ -160,19 +161,18 @@ namespace RaceManagement
                     }
 
                     foreach (LeftEvent e in EndIds)
-                        if (e.Time - args.Received < closest.Time - args.Received)
+                        if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
                             closest = e;
 
-                    if ((closest.Time - args.Received).TotalSeconds <= 10)
+                    if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
                     {
-                        //filter out all older events that can never be matched
-                        EndIds = EndIds.Where(e => e.Time > closest.Time).ToList();
-
                         newEvent.SetRider(closest.Rider);
-                        RaceState.Enqueue(newEvent);
+                        EndIds.Remove(closest);
 
                         MatchLapEnd(closest, newEvent);
                     }
+                    else
+                        EndTimes.Add(newEvent);
                 }
             }
             else
@@ -213,6 +213,11 @@ namespace RaceManagement
             {
                 RaceState.Enqueue(new DNFEvent(finish, startId));
             }
+
+            //filter out all older events that can never be matched
+            //if an event is more than 10 seconds older than its mos recently finished counterpart it will never be matched
+            EndIds = EndIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
+            EndTimes = EndTimes.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
         }
     }
 }

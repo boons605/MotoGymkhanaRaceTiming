@@ -51,10 +51,10 @@ namespace RaceManagement
         /// <summary>
         /// A racer finishes when their id is picked up at the start gate, with a timing event and then their id is picked up at the end gate with a timing event
         /// </summary>
-        readonly EnteredEvent Entered;
-        readonly TimingEvent TimeStart;
-        readonly TimingEvent TimeEnd;
-        readonly LeftEvent Left;
+        public readonly EnteredEvent Entered;
+        public readonly TimingEvent TimeStart;
+        public readonly TimingEvent TimeEnd;
+        public readonly LeftEvent Left;
 
         public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
             :base(timeEnd.Time, timeEnd.Rider)
