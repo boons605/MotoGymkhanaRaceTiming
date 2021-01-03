@@ -12,25 +12,40 @@ namespace RaceManagementTests
     [TestClass]
     public class RaceTrackerTests
     {
+        MockRiderIdUnit StartId;
+        MockRiderIdUnit EndId;
+        MockTimingUnit Timer;
+
+        CancellationTokenSource Source;
+
+        RaceTracker Subject;
+
+        Task<RaceSummary> Race;
+
+        [TestInitialize]
+        public void Init()
+        {
+            StartId = new MockRiderIdUnit();
+            EndId = new MockRiderIdUnit();
+            Timer = new MockTimingUnit();
+
+            Source = new CancellationTokenSource();
+
+            Subject = new RaceTracker(Timer, StartId, EndId, 0, 1);
+
+            Race = Subject.Run(Source.Token);
+        }
+
+
         [TestMethod]
         public void OnStartId_ShouldSaveEvent()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
 
-            CancellationTokenSource source = new CancellationTokenSource();
+            Source.Cancel();
 
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
-            startId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
-
-            source.Cancel();
-
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             Assert.AreEqual(1, summary.Events.Count);
 
@@ -45,23 +60,13 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnTimer_ForStart_WithoutWaitingRider_ShouldIgnoreEvent()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
             //0 is the start gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000,1,1,1,1,1));
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000,1,1,1,1,1));
 
-            source.Cancel();
+            Source.Cancel();
 
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             Assert.AreEqual(0, summary.Events.Count);
             Assert.AreEqual(0, state.onTrack.Count);
@@ -71,25 +76,15 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnTimer_ForStart_WitWaitingRider_ShouldMatchWithRider()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
             //rider enters start box
-            startId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
             //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
 
-            source.Cancel();
+            Source.Cancel();
 
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             //we expect an EnteredEvent and a TimingEvent, in that order
             Assert.AreEqual(2, summary.Events.Count);
@@ -100,7 +95,7 @@ namespace RaceManagementTests
             Assert.AreEqual(state.onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider);
-            Assert.AreEqual(100l, start.Microseconds);
+            Assert.AreEqual(100L, start.Microseconds);
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), start.Time);
 
             Assert.AreEqual(0, state.waiting.Count);
@@ -111,23 +106,13 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnTimer_ForEnd_WithoutRiderLeft_ShouldSaveEvent()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
             //1 is the end gate
-            timer.EmitTriggerEvent(100, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
+            Timer.EmitTriggerEvent(100, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
 
-            source.Cancel();
+            Source.Cancel();
 
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             //It is possible for the end timing gate to be triggered before the rider id is caught be the end id unit
             //save the timer event for later matching
@@ -145,22 +130,12 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnEndId_WithoutRiderOnTrack_ShouldIgnoreEvent()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
 
-            CancellationTokenSource source = new CancellationTokenSource();
+            Source.Cancel();
 
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
-            endId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
-
-            source.Cancel();
-
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             Assert.AreEqual(0, summary.Events.Count);
             Assert.AreEqual(0, state.onTrack.Count);
@@ -172,28 +147,18 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnEndId_WithDifferentRiderOnTrack_ShouldIgnoreEvent()
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
             //rider enters start box
-            startId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
             //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider not on track triggers end id
-            endId.EmitIdEvent("Richard", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            EndId.EmitIdEvent("Richard", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
 
-            source.Cancel();
+            Source.Cancel();
 
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
             //we expect only the events for Martijn tto be recorded
             Assert.AreEqual(2, summary.Events.Count);
@@ -204,7 +169,7 @@ namespace RaceManagementTests
             Assert.AreEqual(state.onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider);
-            Assert.AreEqual(100l, start.Microseconds);
+            Assert.AreEqual(100L, start.Microseconds);
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), start.Time);
 
             //no riders should be waiting at the start.
@@ -225,35 +190,25 @@ namespace RaceManagementTests
         [DataRow(false, true, true)]
         public void OnEndId_WithMatchingTiming_ShouldCompleteLap(bool includeUnmatchedTime, bool includeUnmatchedId, bool flipEndEvents)
         {
-            MockRiderIdUnit startId = new MockRiderIdUnit();
-            MockRiderIdUnit endId = new MockRiderIdUnit();
-            MockTimingUnit timer = new MockTimingUnit();
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            RaceTracker subject = new RaceTracker(timer, startId, endId, 0, 1);
-
-            Task<RaceSummary> race = subject.Run(source.Token);
-
             //rider enters start box
-            startId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
             //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 2));
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 2));
 
             //somebody walks through end timing gate 10 secs after rider has started
             if (includeUnmatchedTime)
-                timer.EmitTriggerEvent(400, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 12));
+                Timer.EmitTriggerEvent(400, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 12));
 
             //a different rider gets too close to the stop box
             if (includeUnmatchedId)
-                endId.EmitIdEvent("Richard", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 1, 30), "EndId");
+                EndId.EmitIdEvent("Richard", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 1, 30), "EndId");
 
             List<Action> endEvents = new List<Action>
             { 
                 //rider triggers id in stop box
-                () => endId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 1), "EndId"),
+                () => EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 1), "EndId"),
                 //rider triggers timing in stop box
-                () => timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 2))
+                () => Timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 2))
             };
 
             if (flipEndEvents)
@@ -261,11 +216,11 @@ namespace RaceManagementTests
             foreach (Action a in endEvents)
                 a.Invoke();
 
-            source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
 
-            FinishedEvent finish = race.Result.Events.Last() as FinishedEvent;
+            FinishedEvent finish = Race.Result.Events.Last() as FinishedEvent;
 
             //Martijn should have done a lightning fast 400 microsecond lap
             Assert.AreEqual("Martijn", finish.Rider);
@@ -276,6 +231,194 @@ namespace RaceManagementTests
             Assert.AreEqual(0, state.unmatchedIds.Count);
             Assert.AreEqual(0, state.unmatchedTimes.Count);
             Assert.AreEqual(0, state.onTrack.Count);
+        }
+
+        [TestMethod]
+        [DataRow(10)]
+        [DataRow(-10)]
+        public void OnEndId_ShouldRespectTimeout(int timeDifference)
+        {
+            //rider enters start box
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            //rider triggers timing gate
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
+
+            //rider triggers timing in stop box
+            Timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20));
+
+            //end id is triggered 11 seconds apart, should not match
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)), "EndId");
+
+            //end id is triggered 10 seconds apart, should match
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference), "EndId");
+
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
+
+            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
+
+            Assert.AreEqual(20+timeDifference, finish.Left.Time.Second);
+
+            //There should be nothing going on in the race at this point
+            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
+            Assert.AreEqual(0, state.onTrack.Count);
+
+            //depending on whether the timeDifference is negative or positive the unmatched time should be cleared
+            //on positive timeDifference the unmatched time is not old enough to be cleared
+            if(timeDifference > 0)
+                Assert.AreEqual(1, state.unmatchedIds.Count);
+            else
+                Assert.AreEqual(0, state.unmatchedIds.Count);
+        }
+
+        [TestMethod]
+        [DataRow(10)]
+        [DataRow(-10)]
+        public void OnTimer_ForEnd_ShouldRespectTimeout(int timeDifference)
+        {
+            //rider enters start box
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            //rider triggers timing gate
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
+
+            //rider triggers id in stop box
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 20), "EndId");
+
+            //end timer triggered 11 seconds apart, should not match
+            Timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)));
+
+            //end timer triggered 10 seconds apart, should match
+            Timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference));
+
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
+
+            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
+
+            Assert.AreEqual(20 + timeDifference, finish.TimeEnd.Time.Second);
+
+            //There should be nothing going on in the race at this point
+            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, state.unmatchedIds.Count);
+            Assert.AreEqual(0, state.onTrack.Count);
+
+            //depending on whether the timeDifference is negative or positive the unmatched id should be cleared
+            //on positive timeDifference the unmatched time is not old enough to be cleared
+            if (timeDifference > 0)
+                Assert.AreEqual(1, state.unmatchedTimes.Count);
+            else
+                Assert.AreEqual(0, state.unmatchedTimes.Count);
+        }
+
+        [TestMethod]
+        public void RaceWithMultipleOnTrack_AndDNF_ShouldWork()
+        {
+            DateTime start = new DateTime(2000, 1, 1, 1, 1, 1);
+
+            (string name, byte[] id) martijn = ("Martijn", new byte[] { 0, 1 });
+            (string name, byte[] id) richard = ("Richard", new byte[] { 0, 2 });
+            (string name, byte[] id) bert = ("Bert", new byte[] { 0, 3 });
+
+            MakeStartEvents(martijn.name, martijn.id, start, StartId, Timer);
+
+            start = start.AddSeconds(30);
+
+            MakeStartEvents(richard.name, richard.id, start, StartId, Timer);
+
+            start = start.AddSeconds(30);
+
+            MakeStartEvents(bert.name, bert.id, start, StartId, Timer);
+
+            //all riders have started. Martijn and bert will finsh, this will mark Richard as DNF
+            start = start.AddSeconds(30);
+
+            MakeEndEvents(martijn.name, martijn.id, start, EndId, Timer);
+
+            start = start.AddSeconds(30);
+
+            MakeEndEvents(bert.name, bert.id, start, EndId, Timer);
+
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
+
+            List<FinishedEvent> finishes = summary.Events.Where(e => e is FinishedEvent).Select(e => e as FinishedEvent).ToList();
+            DNFEvent dnf = summary.Events.Last() as DNFEvent;
+
+            Assert.AreEqual("Martijn", finishes[0].Rider);
+            Assert.AreEqual("Bert", finishes[1].Rider);
+
+            Assert.AreEqual("Richard", dnf.Rider);
+            Assert.AreEqual("Bert", dnf.OtherRider.Rider);
+
+            //There should be nothing going on in the race at this point
+            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, state.unmatchedIds.Count);
+            Assert.AreEqual(0, state.onTrack.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
+        }
+
+        [TestMethod]
+        public void OnEndId_WithAccidentalEndId_ShouldMatch()
+        {
+            //rider enters start box
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            //rider triggers timing gate
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //rider triggers id in stop box accidentally (maybe the track was constructed to pass too close to stop box
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 20), "EndId");
+
+            //rider triggers id in stop box for real five seconds later
+            EndId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 2, 25), "EndId");
+
+            //end timer triggered 1 second later
+            Timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 26));
+
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
+
+            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
+            Assert.AreEqual(25, finish.Left.Time.Second);
+
+            //There should be nothing going on in the race at this point, except for the lingering end id event
+            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, state.onTrack.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
+
+            Assert.AreEqual(1, state.unmatchedIds.Count);
+        }
+
+        /// <summary>
+        /// Makes events for a lap begin at start
+        /// </summary>
+        /// <param name="riderName"></param>
+        /// <param name="sensorId"></param>
+        /// <param name="start"></param>
+        /// <param name="id"></param>
+        /// <param name="time"></param>
+        private void MakeStartEvents(string riderName, byte[] sensorId, DateTime start, MockRiderIdUnit id, MockTimingUnit time)
+        {
+            id.EmitIdEvent(riderName, sensorId, start, "StartId");
+            time.EmitTriggerEvent(100, "Timer", 0, start);
+        }
+
+        /// <summary>
+        /// Makes events for a lap finish at start + 1 minute
+        /// </summary>
+        /// <param name="riderName"></param>
+        /// <param name="sensorId"></param>
+        /// <param name="end"></param>
+        /// <param name="id"></param>
+        /// <param name="time"></param>
+        private void MakeEndEvents(string riderName, byte[] sensorId, DateTime end, MockRiderIdUnit id, MockTimingUnit time)
+        {
+            id.EmitIdEvent(riderName, sensorId, end, "EndId");
+            time.EmitTriggerEvent(100, "Timer", 1, end);
         }
     }
 }

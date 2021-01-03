@@ -132,18 +132,18 @@ namespace RaceManagement
         /// <summary>
         /// A DNF happens when a driver who started later finished before this driver did
         /// </summary>
-        FinishedEvent OtherRider;
+        public readonly FinishedEvent OtherRider;
 
         /// <summary>
         /// The event where this driver was picked up at the start gate
         /// </summary>
-        EnteredEvent RiderDriver;
+        public readonly EnteredEvent thisRider;
 
         public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
             :base(otherRider.Time, thisRider.Rider)
         {
             OtherRider = otherRider;
-            this.RiderDriver = thisRider;
+            this.thisRider = thisRider;
         }
     }
 }

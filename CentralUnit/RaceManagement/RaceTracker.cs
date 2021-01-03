@@ -215,9 +215,9 @@ namespace RaceManagement
             }
 
             //filter out all older events that can never be matched
-            //if an event is more than 10 seconds older than its mos recently finished counterpart it will never be matched
+            //if an event is more than 10 seconds older than its most recently finished counterpart it will never be matched
             EndIds = EndIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
-            EndTimes = EndTimes.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
+            EndTimes = EndTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
         }
     }
 }
