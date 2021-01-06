@@ -5,11 +5,13 @@ namespace Models
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Text;
 
     /// <summary>
     /// This class represents a BLE Beacon used for identifying riders.
     /// </summary>
+    [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1121:UseBuiltInTypeAlias", Justification = "Used for communication, exact sizing required.")]
     public class Beacon
     {
         /// <summary>
@@ -42,7 +44,7 @@ namespace Models
         /// The correction factor for the <see cref="measuredPower"/>, since manufacturers of cheap Chinese iBeacons don't always put the correct
         /// data in the beacon broadcast message.
         /// </summary>
-        private int correctionFactor;
+        private UInt16 correctionFactor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Beacon" /> class based on an identifier and a correction factor for 
@@ -51,7 +53,7 @@ namespace Models
         /// <param name="correctionFactor">The correction factor for cheap Chinese iBeacons</param>
         /// <exception cref="ArgumentNullException">When the <paramref name="identifier"/> is null</exception>
         /// <exception cref="ArgumentException">When the <paramref name="identifier"/> is not exactly 6 bytes long</exception>
-        public Beacon(byte[] identifier, int correctionFactor)
+        public Beacon(byte[] identifier, UInt16 correctionFactor)
         {
             if (identifier == null)
             {
@@ -84,6 +86,16 @@ namespace Models
         }
 
         /// <summary>
+        /// Gets the correction factor for chinese beacons.
+        /// </summary>
+        public UInt16 CorrectionFactor { get => this.correctionFactor; }
+
+        /// <summary>
+        /// Gets the identifier for this beacon.
+        /// </summary>
+        public byte[] Identifier { get => this.identifier; }
+
+        /// <summary>
         /// Gets or sets the Received Signal Strength Indicator for this beacon.
         /// </summary>
         public int Rssi { get => this.rssi; set => this.rssi = value; }
@@ -114,5 +126,39 @@ namespace Models
 
             return output.ToString();
         }
+
+        /// <inheritdoc/>
+        public override int GetHashCode()
+        {
+            return this.identifier.GetHashCode() ^ this.correctionFactor.GetHashCode() ^ this.measuredPower.GetHashCode() ^ this.rssi.GetHashCode();
+        }
+
+        /// <summary>
+        /// Checks if this Beacon is equal to another object, based on the identifier.
+        /// </summary>
+        /// <param name="obj">The other Beacon object.</param>
+        /// <returns>true if identifiers match. false if <paramref name="obj"/> is not a Beacon or the identifiers don't match.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj != null)
+            {
+                if (obj is Beacon)
+                {
+                    Beacon otherBeacon = (Beacon)obj;
+                    for (int i = 0; i < this.identifier.Length; i++)
+                    {
+                        if (this.identifier[i] != otherBeacon.Identifier[i])
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
     }
 }

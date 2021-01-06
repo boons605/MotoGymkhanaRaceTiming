@@ -22,7 +22,14 @@ namespace CommProtoTesting
 
             CommunicationManager cm = new CommunicationManager();
 
-            serialPort = cm.GetCommunicationDevice("directserial:COM5");
+            string comPort = "directserial:COM5";
+
+            if (args.Length == 1)
+            {
+                comPort = args[0];
+            }
+
+            serialPort = cm.GetCommunicationDevice(comPort);
 
             proto = new CommunicationProtocol(serialPort);
             proto.NewDataArrived += Proto_NewDataArrived;
@@ -48,7 +55,7 @@ namespace CommProtoTesting
                         cmd = new CommandData(0x0002, 0x0000, GetCommandData(Console.ReadLine()));
                         break;
                     case "getclosest":
-                        cmd = new CommandData(0x0004, 0x0000, new byte[2]);
+                        cmd = new CommandData(0x0005, 0x0000, new byte[2]);
                         break;
                     default:
                         break;
