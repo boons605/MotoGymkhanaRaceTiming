@@ -1,44 +1,105 @@
-﻿using RiderIdUnit;
+﻿// <copyright file="RaceTracker.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
+
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RiderIdUnit;
 using TimingUnit;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace RaceManagement
 {
+    /// <summary>
+    /// Class that keeps track of a race through events provided raised by timing and id units
+    /// </summary>
     public class RaceTracker
     {
-        private ITimingUnit Timing;
-        private IRiderIdUnit StartGate, EndGate;
-        private int TimingStartId, TimingEndId;
+        /// <summary>
+        /// The timing unit that contains the timing gates at the start and stop box
+        /// </summary>
+        private ITimingUnit timing;
 
-        private ConcurrentQueue<EnteredEvent> WaitingRiders = new ConcurrentQueue<EnteredEvent>();
-        private ConcurrentQueue<(EnteredEvent id, TimingEvent timer)> OnTrackRiders = new ConcurrentQueue<(EnteredEvent id, TimingEvent timer)>();
-        private ConcurrentQueue<RaceEvent> RaceState = new ConcurrentQueue<RaceEvent>();
+        /// <summary>
+        /// The id unit at the start box
+        /// </summary>
+        private IRiderIdUnit startGate;
 
-        private List<TimingEvent> EndTimes = new List<TimingEvent>();
-        private List<LeftEvent> EndIds = new List<LeftEvent>();
+        /// <summary>
+        /// The id unit at the stop box
+        /// </summary>
+        private IRiderIdUnit endGate;
 
-        //since we are using non-concurrent datastructures for the end events, we need this lock
-        private object EndLock = new object();
+        /// <summary>
+        /// The sensor id for the start timing gate connected to <see cref="timing"/>
+        /// </summary>
+        private int timingStartId;
 
-        //to prevent a race conditionn with the start id unit and the start timing gate triggereing events, we need this lock
-        private object WaitingLock = new object();
+        /// <summary>
+        /// The sensor id for the end timing gate connected to <see cref="timing"/>
+        /// </summary>
+        private int timingEndId;
 
+        /// <summary>
+        /// The events triggered by riders entering the start box. In FIFO order so the first rider to enter the box is the first to start
+        /// </summary>
+        private ConcurrentQueue<EnteredEvent> waitingRiders = new ConcurrentQueue<EnteredEvent>();
+
+        /// <summary>
+        /// The matched id and time events that indicate a driver has left the start box and is on track. in FIFO order so the first element in this queue represent the rider that entered the track first
+        /// </summary>
+        private ConcurrentQueue<(EnteredEvent id, TimingEvent timer)> onTrackRiders = new ConcurrentQueue<(EnteredEvent id, TimingEvent timer)>();
+
+        /// <summary>
+        /// The complete list of events in chronological order
+        /// </summary>
+        private ConcurrentQueue<RaceEvent> raceState = new ConcurrentQueue<RaceEvent>();
+
+        /// <summary>
+        /// List of timing events picked up by the end timing gate that have not been matched to an id from <see cref="endIds"/>. Oldest first
+        /// </summary>
+        private List<TimingEvent> endTimes = new List<TimingEvent>();
+
+        /// <summary>
+        /// List of id events picked up by the end id unit that have not been matched to a time from <see cref="endTimes"/>. Oldest first
+        /// </summary>
+        private List<LeftEvent> endIds = new List<LeftEvent>();
+
+        /// <summary>
+        /// Since we are using non-concurrent data structures for the end times and ids we need this lock to synchronize access by the end id and end timing event handlers
+        /// </summary>
+        private object endLock = new object();
+
+        /// <summary>
+        /// Even though we are using concurrent data structures for the start events, there may be a race condition regarding to the OnRiderWaiting and OnStartEmpty events, so we need to synchronize
+        /// </summary>
+        private object waitingLock = new object();
+
+        /// <summary>
+        /// Fired when the system is ready for the next rider to trigger the start timing gate
+        /// </summary>
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
+
+        /// <summary>
+        /// Fired when a rider's lap time is known
+        /// </summary>
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
+
+        /// <summary>
+        /// Fired when the system has no riders waiting to start
+        /// </summary>
         public event EventHandler OnStartEmpty;
 
         public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, int timingStartId, int timingEndId)
         {
-            Timing = timing;
-            StartGate = startGate;
-            EndGate = endGate;
-            TimingStartId = timingStartId;
-            TimingEndId = timingEndId;
+            this.timing = timing;
+            this.startGate = startGate;
+            this.endGate = endGate;
+            this.timingStartId = timingStartId;
+            this.timingEndId = timingEndId;
         }
 
         /// <summary>
@@ -46,7 +107,7 @@ namespace RaceManagement
         /// Do not modify the returned objects
         /// </summary>
         public (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState =>
-            (WaitingRiders.ToList(), OnTrackRiders.ToList(), EndIds.ToList(), EndTimes.ToList());
+            (waitingRiders.ToList(), onTrackRiders.ToList(), endIds.ToList(), endTimes.ToList());
 
         /// <summary>
         /// Run a task that communicates with the timing and rider units to track the state of a race
@@ -61,7 +122,7 @@ namespace RaceManagement
             //this class is just receiving events, no code required to actually drive any actions here
             await WaitForToken(token);
 
-            return new RaceSummary(RaceState.ToList());
+            return new RaceSummary(raceState.ToList());
         }
 
         /// <summary>
@@ -78,9 +139,9 @@ namespace RaceManagement
 
         private void RegisterEvents()
         {
-            Timing.OnTrigger += (_, args) => OnTimer(args);
-            StartGate.OnRiderId += (_, args) => OnStartId(args);
-            EndGate.OnRiderId += (_, args) => OnEndId(args);
+            timing.OnTrigger += (_, args) => OnTimer(args);
+            startGate.OnRiderId += (_, args) => OnStartId(args);
+            endGate.OnRiderId += (_, args) => OnEndId(args);
         }
 
         /// <summary>
@@ -90,116 +151,145 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnStartId(RiderIdEventArgs args)
         {
-            lock (WaitingLock)
+            lock (waitingLock)
             {
                 EnteredEvent newEvent = new EnteredEvent(args.Received, args.RiderName, args.SensorId);
-                WaitingRiders.Enqueue(newEvent);
-                RaceState.Enqueue(newEvent);
+                waitingRiders.Enqueue(newEvent);
+                raceState.Enqueue(newEvent);
 
-                if (WaitingRiders.Count == 1)
+                if (waitingRiders.Count == 1)
+                {
                     OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
+                }
             }
         }
 
+        /// <summary>
+        /// When a rider enters the stop box they will be recored as having finished a lap. It is possible the id unit's range is a bit too big so if there is no mtahcing timing event we will store the id event.
+        /// This method may register a rider as finished or dnf
+        /// </summary>
+        /// <param name="args"></param>
         private void OnEndId(RiderIdEventArgs args)
         {
-            lock (EndLock)
+            lock (endLock)
             {
                 LeftEvent newEvent = new LeftEvent(args.Received, args.RiderName, args.SensorId);
 
                 //if we receive an end id for a rider that is not on track ignore it
-                if (!OnTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
+                if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
+                {
                     return;
+                }
 
-                RaceState.Enqueue(newEvent);
+                raceState.Enqueue(newEvent);
 
-                TimingEvent closest = EndTimes.FirstOrDefault();
+                TimingEvent closest = endTimes.FirstOrDefault();
 
                 //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
                 if (closest == null)
                 {
-                    EndIds.Add(newEvent);
+                    endIds.Add(newEvent);
                     return;
                 }
 
-                foreach (TimingEvent e in EndTimes)
+                foreach (TimingEvent e in endTimes)
+                {
                     if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
+                    {
                         closest = e;
+                    }
+                }
 
                 if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
                 {
                     closest.SetRider(newEvent.Rider);
-                    EndTimes.Remove(closest);
+                    endTimes.Remove(closest);
 
                     MatchLapEnd(newEvent, closest);
                 }
                 else
-                    EndIds.Add(newEvent);
+                {
+                    endIds.Add(newEvent);
+                }
             }
         }
 
+        /// <summary>
+        /// When a gate of the timing unit is triggered. If its the start gate we will attempt to match it to a start id, if its the end gate we will attempt to match it to an end id.
+        /// This method may register a rider as finished, on track or dnf
+        /// </summary>
+        /// <param name="args"></param>
         private void OnTimer(TimingTriggeredEventArgs args)
         {
             //When a waiting rider triggers the start timing unit, they are recorded as on track
-            if(args.GateId == TimingStartId)
+            if (args.GateId == timingStartId)
             {
-                lock (WaitingLock)
+                lock (waitingLock)
                 {
-                    bool hasWaitingRider = WaitingRiders.TryDequeue(out EnteredEvent rider);
+                    bool hasWaitingRider = waitingRiders.TryDequeue(out EnteredEvent rider);
 
                     if (hasWaitingRider)
                     {
                         TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
 
-                        OnTrackRiders.Enqueue((rider, newEvent));
-                        RaceState.Enqueue(newEvent);
+                        onTrackRiders.Enqueue((rider, newEvent));
+                        raceState.Enqueue(newEvent);
 
-                        WaitingRiders.TryPeek(out EnteredEvent waiting);
+                        waitingRiders.TryPeek(out EnteredEvent waiting);
                         if (waiting != null)
+                        {
                             OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(waiting));
+                        }
                         else
+                        {
                             OnStartEmpty?.Invoke(this, EventArgs.Empty);
-                    }
-                    //if we dont have a waiting rider, disregard event somebody probably walked through the beam
+                        }
+                    } //if we dont have a waiting rider, disregard event somebody probably walked through the beam
                 }
             }
-            //when a rider triggers the end timing unit, that must be matched to an end id unit event
-            //if there is such a match, then it must be matched to an on track rider
-            else if(args.GateId == TimingEndId)
+            else if (args.GateId == timingEndId)
             {
-                lock (EndLock)
+                //when a rider triggers the end timing unit, that must be matched to an end id unit event
+                //if there is such a match, then it must be matched to an on track rider
+                lock (endLock)
                 {
                     //we dont know the rider yet
                     TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
-                    RaceState.Enqueue(newEvent);
+                    raceState.Enqueue(newEvent);
 
-                    LeftEvent closest = EndIds.FirstOrDefault();
+                    LeftEvent closest = endIds.FirstOrDefault();
 
                     //if the rider id unit's range is smaller than the stop box, we may receive the rider id later
                     if (closest == null)
                     {
-                        EndTimes.Add(newEvent);
+                        endTimes.Add(newEvent);
                         return;
                     }
 
-                    foreach (LeftEvent e in EndIds)
+                    foreach (LeftEvent e in endIds)
+                    {
                         if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
+                        {
                             closest = e;
+                        }
+                    }
 
                     if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
                     {
                         newEvent.SetRider(closest.Rider);
-                        EndIds.Remove(closest);
+                        endIds.Remove(closest);
 
                         MatchLapEnd(closest, newEvent);
                     }
                     else
-                        EndTimes.Add(newEvent);
+                    {
+                        endTimes.Add(newEvent);
+                    }
                 }
             }
             else
             {
-                throw new ArgumentException($"Found unkown gate id in timing event: {args.GateId}. Known gates are start: {TimingStartId}, end: {TimingEndId}");
+                throw new ArgumentException($"Found unkown gate id in timing event: {args.GateId}. Known gates are start: {timingStartId}, end: {timingEndId}");
             }
         }
 
@@ -215,12 +305,12 @@ namespace RaceManagement
             List<(EnteredEvent startId, TimingEvent startTime)> dnf = new List<(EnteredEvent startId, TimingEvent startTime)>();
 
             FinishedEvent finish = null;
-            while (OnTrackRiders.TryDequeue(out (EnteredEvent startId, TimingEvent startTime) onTrack))
+            while (onTrackRiders.TryDequeue(out (EnteredEvent startId, TimingEvent startTime) onTrack))
             {
-                if(onTrack.startId.Rider == endId.Rider)
+                if (onTrack.startId.Rider == endId.Rider)
                 {
                     finish = new FinishedEvent(onTrack.startId, onTrack.startTime, endTime, endId);
-                    RaceState.Enqueue(finish);
+                    raceState.Enqueue(finish);
                     OnRiderFinished?.Invoke(this, new FinishedRiderEventArgs(finish));
                     break;
                 }
@@ -232,21 +322,22 @@ namespace RaceManagement
                 }
             }
 
-            foreach((EnteredEvent startId, TimingEvent startTime) in dnf)
+            foreach ((EnteredEvent startId, TimingEvent startTime) in dnf)
             {
-                RaceState.Enqueue(new DNFEvent(finish, startId));
+                raceState.Enqueue(new DNFEvent(finish, startId));
             }
 
             //filter out all older events that can never be matched
             //if an event is more than 10 seconds older than its most recently finished counterpart it will never be matched
-            EndIds = EndIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
-            EndTimes = EndTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
+            endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
+            endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
         }
     }
 
     public class FinishedRiderEventArgs
     {
         public FinishedEvent Finish { get; private set; }
+
         public FinishedRiderEventArgs(FinishedEvent finish)
         {
             Finish = finish;

@@ -1,4 +1,8 @@
-﻿using System;
+﻿// <copyright file="IRiderIdUnit.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
 
 namespace RiderIdUnit
@@ -26,34 +30,40 @@ namespace RiderIdUnit
         /// <summary>
         /// Add new riders that the unit should report about.
         /// </summary>
-        /// <param name="riders">The new riders, Guid should match what the sensor receives. Both sensorId and name should be unkown to the unit</param>
+        /// <param name="riders">The new riders, Guid should match what the sensor receives. Both sensorId and name should be unknown to the unit</param>
         void AddKnownRiders(List<(byte[] sensorId, string name)> riders);
 
         /// <summary>
         /// Avoid further events for this rider. To resume events for this rider they should be added again
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">the name of the rider as reported by this unit in the exposed events</param>
         void RemoveKnownRider(string name);
     }
 
+    /// <summary>
+    /// Event that is triggered when a rider is picked up by an id unit
+    /// </summary>
     public class RiderIdEventArgs : EventArgs
     {
         /// <summary>
         /// Name associated with the received sensor id
         /// </summary>
         public readonly string RiderName;
+
         /// <summary>
         /// Date reported by the sensor
         /// </summary>
         public readonly byte[] SensorId;
+
+        /// <summary>
+        /// identifier for the unit that throws the event
+        /// </summary>
+        public readonly string UnitId;
+
         /// <summary>
         /// Date and time when this message was received
         /// </summary>
         public DateTime Received;
-        /// <summary>
-        /// idebtifier for the unit that throws the event
-        /// </summary>
-        public readonly string UnitId;
 
         public RiderIdEventArgs(string riderName, byte[] sensorId, DateTime received, string unitId)
         {

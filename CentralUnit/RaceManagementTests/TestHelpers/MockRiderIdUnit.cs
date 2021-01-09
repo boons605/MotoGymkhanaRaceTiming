@@ -1,7 +1,6 @@
-﻿using RiderIdUnit;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using RiderIdUnit;
 
 namespace RaceManagementTests.TestHelpers
 {
