@@ -434,6 +434,34 @@ namespace RaceManagementTests
         }
 
         [TestMethod]
+        public void OnStartEmpty_WhenLastRiderStart_ShouldFire()
+        {
+            bool isEmpty = false;
+
+            Subject.OnStartEmpty += (obj, args) => isEmpty = true;
+
+            //rider enters start box
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+
+            //event should not have fired
+            Assert.IsFalse(isEmpty);
+
+            //Second rider enters the queue to start
+            StartId.EmitIdEvent("Bert", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 2, 1), "StartId");
+
+            //event should not have fired
+            Assert.IsFalse(isEmpty);
+
+            //Martijn and Bert trigger timing gate
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 2));
+
+            Assert.IsTrue(isEmpty);
+
+            Source.Cancel();
+        }
+
+        [TestMethod]
         public void OnRiderFinished_WithFinishAndDNF_ShouldFireForFinish()
         {
             List<string> finished = new List<string>();

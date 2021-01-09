@@ -30,6 +30,7 @@ namespace RaceManagement
 
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
+        public event EventHandler OnStartEmpty;
 
         public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, int timingStartId, int timingEndId)
         {
@@ -156,6 +157,8 @@ namespace RaceManagement
                         WaitingRiders.TryPeek(out EnteredEvent waiting);
                         if (waiting != null)
                             OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(waiting));
+                        else
+                            OnStartEmpty?.Invoke(this, EventArgs.Empty);
                     }
                     //if we dont have a waiting rider, disregard event somebody probably walked through the beam
                 }
