@@ -25,6 +25,11 @@ namespace RaceManagement
         //since we are using non-concurrent datastructures for the end events, we need this lock
         private object EndLock = new object();
 
+        //to prevent a race conditionn with the start id unit and the start timing gate triggereing events, we need this lock
+        private object WaitingLock = new object();
+
+        public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
+
         public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, int timingStartId, int timingEndId)
         {
             Timing = timing;
@@ -83,9 +88,15 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnStartId(RiderIdEventArgs args)
         {
-            EnteredEvent newEvent = new EnteredEvent(args.Received, args.RiderName, args.SensorId);
-            WaitingRiders.Enqueue(newEvent);
-            RaceState.Enqueue(newEvent);
+            lock (WaitingLock)
+            {
+                EnteredEvent newEvent = new EnteredEvent(args.Received, args.RiderName, args.SensorId);
+                WaitingRiders.Enqueue(newEvent);
+                RaceState.Enqueue(newEvent);
+
+                if (WaitingRiders.Count == 1)
+                    OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(args.RiderName));
+            }
         }
 
         private void OnEndId(RiderIdEventArgs args)
@@ -130,16 +141,23 @@ namespace RaceManagement
             //When a waiting rider triggers the start timing unit, they are recorded as on track
             if(args.GateId == TimingStartId)
             {
-                bool hasWaitingRider = WaitingRiders.TryDequeue(out EnteredEvent rider);
-
-                if(hasWaitingRider)
+                lock (WaitingLock)
                 {
-                    TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
+                    bool hasWaitingRider = WaitingRiders.TryDequeue(out EnteredEvent rider);
 
-                    OnTrackRiders.Enqueue((rider, newEvent));
-                    RaceState.Enqueue(newEvent);
+                    if (hasWaitingRider)
+                    {
+                        TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
+
+                        OnTrackRiders.Enqueue((rider, newEvent));
+                        RaceState.Enqueue(newEvent);
+
+                        WaitingRiders.TryPeek(out EnteredEvent waiting);
+                        if (waiting != null)
+                            OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(waiting.Rider));
+                    }
+                    //if we dont have a waiting rider, disregard event somebody probably walked through the beam
                 }
-                //if we dont have a waiting rider, disregard event somebody probably walked through the beam
             }
             //when a rider triggers the end timing unit, that must be matched to an end id unit event
             //if there is such a match, then it must be matched to an on track rider
@@ -218,6 +236,16 @@ namespace RaceManagement
             //if an event is more than 10 seconds older than its most recently finished counterpart it will never be matched
             EndIds = EndIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
             EndTimes = EndTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
+        }
+    }
+
+    public class WaitingRiderEventArgs
+    {
+        public string Rider { get; private set; }
+
+        public WaitingRiderEventArgs(string rider)
+        {
+            Rider = rider;
         }
     }
 }

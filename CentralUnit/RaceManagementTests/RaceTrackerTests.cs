@@ -1,7 +1,11 @@
+// <copyright file="RaceTrackerTests.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
+
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RaceManagement;
 using RaceManagementTests.TestHelpers;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -391,6 +395,34 @@ namespace RaceManagementTests
             Assert.AreEqual(0, state.unmatchedTimes.Count);
 
             Assert.AreEqual(1, state.unmatchedIds.Count);
+        }
+
+        [TestMethod]
+        public void OnRiderWaiting_WithFirstAndSecondRider_ShouldFire()
+        {
+            string waiting = null;
+
+            Subject.OnRiderWaiting += (obj, args) => waiting = args.Rider;
+
+            //rider enters start box
+            StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+
+            //Martijn should be flagged as ready to start
+            Assert.AreEqual(waiting, "Martijn");
+
+            //Second rider enters the queue to start
+            StartId.EmitIdEvent("Bert", new byte[] { 0, 2 }, new DateTime(2000, 1, 1, 1, 2, 1), "StartId");
+
+            //OnRiderWaiting should not be fired since Martijn has not left
+            Assert.AreEqual(waiting, "Martijn");
+
+            //Martijn triggers timing gate
+            Timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            //Bert moves to the front of the waiting queue, so he is now ready to start
+            Assert.AreEqual(waiting, "Bert");
+
+            Source.Cancel();
         }
 
         /// <summary>
