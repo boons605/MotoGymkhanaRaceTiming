@@ -67,9 +67,10 @@ namespace RiderIdUnit
         /// </summary>
         /// <param name="status">The status.</param>
         /// <param name="data">The data to check</param>
-        /// <returns></returns>
+        /// <returns>A new <see cref="Beacon"/></returns>
         /// <exception cref="ArgumentException">Data is less than 8 bytes long</exception>
         /// <exception cref="ArgumentNullException">Data is null</exception>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1121:UseBuiltInTypeAlias", Justification = "Used for communication, exact sizing required.")]
         public static Beacon ParseAllowedDeviceOperationResponse(int status, byte[] data)
         {
             Beacon beacon = null;
@@ -85,7 +86,7 @@ namespace RiderIdUnit
                     byte[] address = reader.ReadBytes(Beacon.IdentifierLength);
                     Int16 measurePowerCorrection = reader.ReadInt16();
 
-                    beacon = new Beacon(address, (UInt16)measurePowerCorrection) ;
+                    beacon = new Beacon(address, (UInt16)measurePowerCorrection);
                 }
             }
             catch (Exception e)

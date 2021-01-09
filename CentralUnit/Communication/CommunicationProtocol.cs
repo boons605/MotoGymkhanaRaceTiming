@@ -85,7 +85,7 @@ namespace Communication
         /// <summary>
         /// Fires when the underlying connection state has changed.
         /// </summary>
-        public event EventHandler<EventArgs> ConnectionStateChanged;
+        public event EventHandler<ConnectionStateChangedEventArgs> ConnectionStateChanged;
 
         /// <summary>
         /// Fires when a new packet has arrived.
@@ -184,7 +184,7 @@ namespace Communication
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">The event data.</param>
-        private void CommunicationChannel_ConnectionStateChanged(object sender, EventArgs e)
+        private void CommunicationChannel_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
         {
             this.ConnectionStateChanged?.Invoke(this, e);
         }

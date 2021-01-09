@@ -189,6 +189,18 @@ namespace Communication
             return this.cRC == this.CalculateCRC(this.ToArray(true));
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            StringBuilder output = new StringBuilder();
+            output.AppendLine($"Command type {this.commandType};");
+            output.AppendLine($"Data length: {this.dataLength}");
+            output.AppendLine($"CRC: {this.cRC}");
+            output.AppendLine($"Data: {BitConverter.ToString(this.data)}");
+
+            return output.ToString();
+        }
+
         /// <summary>
         /// Calculates the CRC for the given byte buffer.
         /// Non-standard CRC, inspired by SparkFun code and ThingMagic RFID code, written in C++.

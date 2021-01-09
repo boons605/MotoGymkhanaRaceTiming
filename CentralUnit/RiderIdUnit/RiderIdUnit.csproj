@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ZigBeeNet" Version="1.3.3" />
-    <PackageReference Include="ZigBeeNet.Hardware.Digi.XBee" Version="1.1.2" />
-    <PackageReference Include="ZigBeeNet.Transport.SerialPort" Version="1.1.1" />
+    <PackageReference Include="StyleCop.MSBuild" Version="6.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Communication\Communication.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />

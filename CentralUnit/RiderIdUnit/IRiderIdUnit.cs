@@ -3,9 +3,9 @@
 // </copyright>
 namespace RiderIdUnit
 {
-    using Models;
     using System;
     using System.Collections.Generic;
+    using Models;
 
     /// <summary>
     /// A rider id unit will identify riders that are near its sensor. It cannot de precise timing, so an id unit will not report times with its events
