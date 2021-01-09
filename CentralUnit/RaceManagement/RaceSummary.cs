@@ -1,41 +1,111 @@
-﻿using System;
+﻿// <copyright file="RaceSummary.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
+
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace RaceManagement
 {
+    /// <summary>
+    /// This class lists all the events that happened during a race. In the future should also be able to save/load summaries and provide race statistics
+    /// </summary>
     public class RaceSummary
     {
-        List<RaceEvent> Events = new List<RaceEvent>();
+        /// <summary>
+        /// The events that happened in the race in the order that were processed
+        /// </summary>
+        public List<RaceEvent> Events { get; private set; }
 
+        public RaceSummary(List<RaceEvent> events)
+        {
+            Events = events;
+        }
+
+        /// <summary>
+        /// Writes a JSON to the stream that represents the race
+        /// </summary>
+        /// <param name="output">the stream to write to</param>
         public void WriteSummary(Stream output)
         {
             throw new NotImplementedException();
         }
     }
 
+    /// <summary>
+    /// Base class for representing things that happened during a race. Every event has three basic properties: event id, who the event applies to and when the event was recorded
+    /// </summary>
     public class RaceEvent
     {
+        /// <summary>
+        /// The moment the event was processed
+        /// </summary>
         public readonly DateTime Time;
-        public string Rider {get; protected set; }
+
+        /// <summary>
+        /// Unique id to refer to this event
+        /// </summary>
         public readonly Guid EventId;
+
+        /// <summary>
+        /// The rider this event happened to
+        /// </summary>
+        public string Rider { get; protected set; }
+
+        public RaceEvent(DateTime time, string rider, Guid eventId)
+        {
+            Time = time;
+            Rider = rider;
+            EventId = eventId;
+        }
+
+        public RaceEvent(DateTime time, string rider)
+            : this(time, rider, Guid.NewGuid())
+        {
+            Time = time;
+            Rider = rider;
+        }
     }
 
+    /// <summary>
+    /// Event to mark when a rider has finished. A rider is finished when we have recorded 4 essential events: id at start box, timing at start box, id at end box and timing at end box
+    /// </summary>
     public class FinishedEvent : RaceEvent
     {
         /// <summary>
         /// Lap time in microseconds
         /// </summary>
-        long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
+        public long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
 
         /// <summary>
-        /// A racer finishes when their id is picked up at the start gate, with a timing event and then their id is picked up at the end gate with a timing event
+        /// The event where the id unit at the start box picks up the rider
         /// </summary>
-        EnteredEvent Entered;
-        TimingEvent TimeStart;
-        TimingEvent TimeEnd;
-        LeftEvent Left;
+        public readonly EnteredEvent Entered;
+
+        /// <summary>
+        /// The event where the start timing gate is triggered by the rider
+        /// </summary>
+        public readonly TimingEvent TimeStart;
+
+        /// <summary>
+        /// The event where the end timing gate is triggered by the rider
+        /// </summary>
+        public readonly TimingEvent TimeEnd;
+
+        /// <summary>
+        /// The event where the id unit at the stop box picks up the rider
+        /// </summary>
+        public readonly LeftEvent Left;
+
+        public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
+            : base(timeEnd.Time, timeEnd.Rider)
+        {
+            Entered = entered;
+            TimeStart = timeStart;
+            TimeEnd = timeEnd;
+            Left = left;
+        }
     }
 
     /// <summary>
@@ -46,7 +116,13 @@ namespace RaceManagement
         /// <summary>
         /// Id reported to the sensor that registered the rider
         /// </summary>
-        byte[] SensorId;
+        public byte[] SensorId { get; private set; }
+
+        public EnteredEvent(DateTime time, string rider, byte[] sensorId)
+            : base(time, rider)
+        {
+            SensorId = sensorId;
+        }
     }
 
     /// <summary>
@@ -57,30 +133,67 @@ namespace RaceManagement
         /// <summary>
         /// Id reported to the sensor that registered the rider
         /// </summary>
-        byte[] SensorId;
+        public readonly byte[] SensorId;
+
+        public LeftEvent(DateTime time, string rider, byte[] sensorId)
+         : base(time, rider)
+        {
+            SensorId = sensorId;
+        }
     }
 
-    public class TimingEvent
+    /// <summary>
+    /// Event when a rider triggers a timing gate
+    /// </summary>
+    public class TimingEvent : RaceEvent
     {
         /// <summary>
         /// Microseconds reported by the timer
         /// </summary>
         public readonly long Microseconds;
 
-        //Which timing gate this event happened for
-        int gateId;
+        /// <summary>
+        /// Which timing gate this event happened for
+        /// </summary>
+        public readonly int GateId;
+
+        public TimingEvent(DateTime time, string rider, long microseconds, int gateId) : base(time, rider)
+        {
+            Microseconds = microseconds;
+            GateId = gateId;
+        }
+
+        /// <summary>
+        /// For the end timing gate we may receive a timing event before a rider id
+        /// So we might have to set this field after we've matched it
+        /// </summary>
+        /// <param name="rider"></param>
+        public void SetRider(string rider)
+        {
+            Rider = rider;
+        }
     }
 
+    /// <summary>
+    /// Event when a rider does not finish their lap. This is detected when a rider that started after them finished earlier
+    /// </summary>
     public class DNFEvent : RaceEvent
     {
         /// <summary>
         /// A DNF happens when a driver who started later finished before this driver did
         /// </summary>
-        FinishedEvent OtherDriver;
+        public readonly FinishedEvent OtherRider;
 
         /// <summary>
         /// The event where this driver was picked up at the start gate
         /// </summary>
-        EnteredEvent ThisDriver;
+        public readonly EnteredEvent ThisRider;
+
+        public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
+            : base(otherRider.Time, thisRider.Rider)
+        {
+            OtherRider = otherRider;
+            ThisRider = thisRider;
+        }
     }
 }

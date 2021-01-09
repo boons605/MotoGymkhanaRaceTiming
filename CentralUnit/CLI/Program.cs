@@ -1,19 +1,30 @@
-﻿using System;
+﻿// <copyright file="Program.cs" company="Moto Gymkhana">
+//     Copyright (c) Moto Gymkhana. All rights reserved.
+// </copyright>
+
+using System;
 using System.Reflection;
 using McMaster.Extensions.CommandLineUtils;
-using RiderIdUnit;
 
 namespace CLI
 {
-    class Program
+    public class Program
     {
         public static void Main(string[] args) => CommandLineApplication.Execute<RootCommand>(args);
     }
 
+    /// <summary>
+    /// Root command of the tool. For different modes of operation, make more command classes and put them in [SubCommand] attributes
+    /// </summary>
     [Command("mgk")]
     [VersionOptionFromMember("--version", MemberName = nameof(GetVersion))]
-    class RootCommand : CommandBase
+    public class RootCommand : CommandBase
     {
+        /// <summary>
+        /// All children of CommandBase must override this to implement their own behavior
+        /// </summary>
+        /// <param name="app">Class that contains all kinds of information about the way the program was started. Usually best not to touch</param>
+        /// <returns>the desired exit code of the tool</returns>
         protected override int OnExecute(CommandLineApplication app)
         {
             Console.WriteLine("This is the root command, it does not do anything");
@@ -21,13 +32,25 @@ namespace CLI
             return 1;
         }
 
+        /// <summary>
+        /// Returns the Informational version of this assembly
+        /// </summary>
+        /// <returns></returns>
         private static string GetVersion()
             => typeof(RootCommand).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
     }
 
+    /// <summary>
+    /// This class provides base behavior (such as the help option) for all following commands
+    /// </summary>
     [HelpOption("--help")]
-    abstract class CommandBase
+    public abstract class CommandBase
     {
+        /// <summary>
+        /// Override this to implement command behavior
+        /// </summary>
+        /// <param name="app">Class that contains all kinds of information about the way the program was started. Usually best not to touch</param>
+        /// <returns>the desired exit code of the tool</returns>
         protected abstract int OnExecute(CommandLineApplication app);
     }
 }
