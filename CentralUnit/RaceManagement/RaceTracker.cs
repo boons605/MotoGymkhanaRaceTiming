@@ -29,6 +29,7 @@ namespace RaceManagement
         private object WaitingLock = new object();
 
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
+        public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
 
         public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, int timingStartId, int timingEndId)
         {
@@ -95,7 +96,7 @@ namespace RaceManagement
                 RaceState.Enqueue(newEvent);
 
                 if (WaitingRiders.Count == 1)
-                    OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(args.RiderName));
+                    OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
             }
         }
 
@@ -154,7 +155,7 @@ namespace RaceManagement
 
                         WaitingRiders.TryPeek(out EnteredEvent waiting);
                         if (waiting != null)
-                            OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(waiting.Rider));
+                            OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(waiting));
                     }
                     //if we dont have a waiting rider, disregard event somebody probably walked through the beam
                 }
@@ -217,6 +218,7 @@ namespace RaceManagement
                 {
                     finish = new FinishedEvent(onTrack.startId, onTrack.startTime, endTime, endId);
                     RaceState.Enqueue(finish);
+                    OnRiderFinished?.Invoke(this, new FinishedRiderEventArgs(finish));
                     break;
                 }
                 else
@@ -239,11 +241,20 @@ namespace RaceManagement
         }
     }
 
+    public class FinishedRiderEventArgs
+    {
+        public FinishedEvent Finish { get; private set; }
+        public FinishedRiderEventArgs(FinishedEvent finish)
+        {
+            Finish = finish;
+        }
+    }
+
     public class WaitingRiderEventArgs
     {
-        public string Rider { get; private set; }
+        public EnteredEvent Rider { get; private set; }
 
-        public WaitingRiderEventArgs(string rider)
+        public WaitingRiderEventArgs(EnteredEvent rider)
         {
             Rider = rider;
         }

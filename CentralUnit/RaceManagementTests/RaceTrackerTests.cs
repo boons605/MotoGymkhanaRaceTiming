@@ -320,6 +320,33 @@ namespace RaceManagementTests
         [TestMethod]
         public void RaceWithMultipleOnTrack_AndDNF_ShouldWork()
         {
+            SimulateRaceWithDNF();
+
+            Source.Cancel();
+            RaceSummary summary = Race.Result;
+            var state = Subject.GetState;
+
+            List<FinishedEvent> finishes = summary.Events.Where(e => e is FinishedEvent).Select(e => e as FinishedEvent).ToList();
+            DNFEvent dnf = summary.Events.Last() as DNFEvent;
+
+            Assert.AreEqual("Martijn", finishes[0].Rider);
+            Assert.AreEqual("Bert", finishes[1].Rider);
+
+            Assert.AreEqual("Richard", dnf.Rider);
+            Assert.AreEqual("Bert", dnf.OtherRider.Rider);
+
+            //There should be nothing going on in the race at this point
+            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, state.unmatchedIds.Count);
+            Assert.AreEqual(0, state.onTrack.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
+        }
+
+        /// <summary>
+        /// Simulates a race where Martijn, Richard and Bert start, but only Martijn and Bert finish
+        /// </summary>
+        private void SimulateRaceWithDNF()
+        {
             DateTime start = new DateTime(2000, 1, 1, 1, 1, 1);
 
             (string name, byte[] id) martijn = ("Martijn", new byte[] { 0, 1 });
@@ -344,25 +371,6 @@ namespace RaceManagementTests
             start = start.AddSeconds(30);
 
             MakeEndEvents(bert.name, bert.id, start, EndId, Timer);
-
-            Source.Cancel();
-            RaceSummary summary = Race.Result;
-            var state = Subject.GetState;
-
-            List<FinishedEvent> finishes = summary.Events.Where(e => e is FinishedEvent).Select(e => e as FinishedEvent).ToList();
-            DNFEvent dnf = summary.Events.Last() as DNFEvent;
-
-            Assert.AreEqual("Martijn", finishes[0].Rider);
-            Assert.AreEqual("Bert", finishes[1].Rider);
-
-            Assert.AreEqual("Richard", dnf.Rider);
-            Assert.AreEqual("Bert", dnf.OtherRider.Rider);
-
-            //There should be nothing going on in the race at this point
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
         }
 
         [TestMethod]
@@ -402,7 +410,7 @@ namespace RaceManagementTests
         {
             string waiting = null;
 
-            Subject.OnRiderWaiting += (obj, args) => waiting = args.Rider;
+            Subject.OnRiderWaiting += (obj, args) => waiting = args.Rider.Rider;
 
             //rider enters start box
             StartId.EmitIdEvent("Martijn", new byte[] { 0, 1 }, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
@@ -423,6 +431,22 @@ namespace RaceManagementTests
             Assert.AreEqual(waiting, "Bert");
 
             Source.Cancel();
+        }
+
+        [TestMethod]
+        public void OnRiderFinished_WithFinishAndDNF_ShouldFireForFinish()
+        {
+            List<string> finished = new List<string>();
+
+            Subject.OnRiderFinished += (obj, args) => finished.Add(args.Finish.Rider);
+
+            SimulateRaceWithDNF();
+
+            Source.Cancel();
+
+            Assert.AreEqual(2, finished.Count);
+            Assert.AreEqual("Martijn", finished[0]);
+            Assert.AreEqual("Bert", finished[1]);
         }
 
         /// <summary>
