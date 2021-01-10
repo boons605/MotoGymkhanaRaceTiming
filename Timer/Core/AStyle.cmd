@@ -1,1 +1,1 @@
-..\Tools\Astyle\Astyle.exe --options="..\Tools\Astyle\Astyle.config" --recursive *.c *.h *.cpp
+..\..\Tools\Astyle\Astyle.exe --options="..\..\Tools\Astyle\Astyle.config" --recursive *.c *.h *.cpp

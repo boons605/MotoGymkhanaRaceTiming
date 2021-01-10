@@ -14,7 +14,7 @@
 
 #define RTC_SLAVE_ADDRESS 0x68
 
-OperationModes operationMode = NoOperation;
+OperationModes operationMode = NoTimerOperation;
 SensorModes sensorMode = NoSensors;
 uint8_t autoConfigurationDone = 0U;
 uint8_t displayLines = 2U;

@@ -16,7 +16,7 @@
 
 typedef enum
 {
-    NoOperation = 0U,
+    NoTimerOperation = 0U,
     LaptimerOperation = 1U,
     ConnectedTimestampCollector = 2U,
     SingleRunTimerOperation = 3U

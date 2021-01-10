@@ -362,3 +362,4 @@ MigrationBackup/
 FodyWeavers.xsd
 Timer/.settings/
 CentralUnit/XBeeLibraryTesting/
+RiderDetection/Embedded/build/

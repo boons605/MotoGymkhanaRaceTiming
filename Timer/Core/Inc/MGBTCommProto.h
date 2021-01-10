@@ -19,6 +19,10 @@
 #define MGBT_UART UART_NUM_1
 #define TXD_PIN (GPIO_NUM_4)
 #define RXD_PIN (GPIO_NUM_5)
+#else
+
+#define MGBT_UART 0
+
 #endif
 
 typedef enum
@@ -45,7 +49,7 @@ typedef struct
     uint16_t dataLength;
     uint16_t crc;
     uint16_t status;
-    MGBTCommandType cmdType : 16;
+    uint16_t cmdType;
     uint8_t data[COMMANDDATAMAXSIZE];
 } MGBTCommandData;
 
