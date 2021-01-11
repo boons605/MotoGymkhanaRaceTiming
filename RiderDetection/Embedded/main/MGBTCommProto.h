@@ -36,7 +36,8 @@ typedef enum
     RemoveAllowedDevice = 2U,
     ListAllowedDevices = 3U,
     ListDetectedDevices = 4U,
-    GetClosestDevice = 5U
+    GetClosestDevice = 5U,
+	GetIdentification = 255U
 
 } MGBTCommandType;
 

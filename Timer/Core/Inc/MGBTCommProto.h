@@ -40,7 +40,13 @@ typedef enum
     RemoveAllowedDevice = 2U,
     ListAllowedDevices = 3U,
     ListDetectedDevices = 4U,
-    GetClosestDevice = 5U
+    GetClosestDevice = 5U,
+
+    GetLatestTimeStamp = 101U,
+    GetAllLaps = 102U,
+    GetCurrentTime = 103U,
+    UpdateDisplayedTime = 104U,
+    GetIdentification = 255U
 
 } MGBTCommandType;
 

@@ -4,7 +4,7 @@
  *  Created on: 21 Nov 2020
  *      Author: cdromke
  */
-#include "MGBTCommProto.h"
+
 #ifdef CONFIG_IDF_TARGET_ESP
 #include "MGBTTimeMgmt.h"
 #else
@@ -22,6 +22,8 @@
 #include "UARTBuffer.h"
 
 #endif
+
+#include "MGBTCommProto.h"
 
 #define MAXWAITSTATETIME 1000U
 #define MAXSENDINGTIME 10000U

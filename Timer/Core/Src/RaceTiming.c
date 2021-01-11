@@ -11,8 +11,8 @@
 #include "Display.h"
 #include "Inputs.h"
 #include "TimeMgmt.h"
-#include "MGBTCommProto.h"
 #include "CommunicationManager.h"
+#include "ConnectedTimestampCollector.h"
 
 #define DISPLAYBUFFERINDEX 750U
 #define COMMPROTOPERIOD 10U
@@ -31,7 +31,6 @@ static void RunCommunication(void)
     if((timeStmp - lastCommunicationRun) > COMMPROTOPERIOD)
     {
         lastCommunicationRun = timeStmp;
-        RunCommProto();
         RunCommunicationManager();
     }
 
@@ -172,7 +171,7 @@ void RunRaceTiming(void)
         }
     }
 
-
+    RunCommunication();
 
     RunDisplay();
 }

@@ -5,6 +5,8 @@
  *      Author: cdromke
  */
 
+#include <string.h>
+
 #include "UARTBuffer.h"
 #include "stm32f1xx.h"
 #include "stm32f1xx_ll_usart.h"
@@ -123,6 +125,11 @@ void UARTBufferProcessTXData(UARTBuffer* buffer)
                     buffer->txBufferTxPosition = 0U;
                 }
             }
+            else
+            {
+                buffer->currentTxBufferPosition = 0U;
+                buffer->txBufferTxPosition = 0U;
+            }
         }
     }
 }
@@ -150,3 +157,17 @@ uint8_t UARTBufferTxBufferEmpty(UARTBuffer* buffer)
     return retVal;
 }
 
+void UARTBufferSendData(UARTBuffer* buffer, uint8_t* data, uint8_t length)
+{
+    if((buffer != (UARTBuffer*)0) &&
+       (data != (uint8_t*)0) &&
+       length > 0)
+    {
+        uint8_t bytesToCopy = length;
+        if((buffer->currentTxBufferPosition + bytesToCopy) >= UART_BUFFER_SIZE)
+        {
+            bytesToCopy = UART_BUFFER_SIZE - buffer->currentTxBufferPosition;
+        }
+        memcpy(&buffer->txBuffer[buffer->currentTxBufferPosition], data, bytesToCopy);
+    }
+}
