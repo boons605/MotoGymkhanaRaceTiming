@@ -445,8 +445,13 @@ static void MX_USART1_UART_Init(void)
     LL_USART_Init(USART1, &USART_InitStruct);
     LL_USART_ConfigAsyncMode(USART1);
     LL_USART_Enable(USART1);
-    /* USER CODE BEGIN USART1_Init 2 */
 
+    /* USER CODE BEGIN USART1_Init 2 */
+    UARTBuffer* buff = UARTBufferGetUART(0);
+    if(buff != (UARTBuffer*)0)
+    {
+        buff->uartHandle = USART1;
+    }
     /* USER CODE END USART1_Init 2 */
 
 }
@@ -503,6 +508,11 @@ static void MX_USART2_UART_Init(void)
     LL_USART_ConfigAsyncMode(USART2);
     LL_USART_Enable(USART2);
     /* USER CODE BEGIN USART2_Init 2 */
+    UARTBuffer* buff = UARTBufferGetUART(1);
+    if(buff != (UARTBuffer*)0)
+    {
+        buff->uartHandle = USART1;
+    }
 
     /* USER CODE END USART2_Init 2 */
 

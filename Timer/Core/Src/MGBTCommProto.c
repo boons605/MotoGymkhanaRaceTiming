@@ -169,7 +169,7 @@ void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
 #ifdef CONFIG_IDF_TARGET_ESP32
     uart_write_bytes(MGBT_UART, (char*)data, GetCommandDataSize(data));
 #else
-    UARTBufferSendData(UARTBufferGetUART(MGBT_UART), (uint8_t*)data, (data->dataLength + 4));
+    UARTBufferSendData(UARTBufferGetUART(MGBT_UART), (uint8_t*)data, (data->dataLength + 8));
 #endif
 
     lastResponseSending = lastResponse;

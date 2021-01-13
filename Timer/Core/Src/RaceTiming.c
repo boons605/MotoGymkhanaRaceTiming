@@ -28,7 +28,7 @@ static uint32_t lastCommunicationRun = 0U;
 static void RunCommunication(void)
 {
     uint32_t timeStmp = GetSystemTimeStampMs();
-    if((timeStmp - lastCommunicationRun) > COMMPROTOPERIOD)
+    if((timeStmp - lastCommunicationRun) >= COMMPROTOPERIOD)
     {
         lastCommunicationRun = timeStmp;
         RunCommunicationManager();

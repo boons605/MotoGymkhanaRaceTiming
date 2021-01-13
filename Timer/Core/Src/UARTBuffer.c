@@ -169,5 +169,6 @@ void UARTBufferSendData(UARTBuffer* buffer, uint8_t* data, uint8_t length)
             bytesToCopy = UART_BUFFER_SIZE - buffer->currentTxBufferPosition;
         }
         memcpy(&buffer->txBuffer[buffer->currentTxBufferPosition], data, bytesToCopy);
+        buffer->currentTxBufferPosition += bytesToCopy;
     }
 }

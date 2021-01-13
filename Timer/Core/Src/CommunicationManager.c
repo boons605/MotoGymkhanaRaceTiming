@@ -22,6 +22,7 @@ static void PutTimeInPendingResponse(CommTimeType timeType, uint32_t timeValue)
 {
     memcpy(pendingResponse.data, &timeValue, sizeof(timeValue));
     pendingResponse.data[sizeof(timeValue)] = (uint8_t)timeType;
+    pendingResponse.dataLength = 1 + sizeof(timeValue);
 }
 
 static void SendLatestTimestamp(void)
@@ -84,17 +85,19 @@ static void ProcessCommand(MGBTCommandData* command)
 static void ProcessManagerWork(void)
 {
     uint32_t sysTimeStamp = GetSystemTimeStampMs();
-    if(pendingResponse.cmdType != NoOperation)
+    if(pendingResponse.cmdType == NoOperation)
     {
         if(timeUpdated != 0U)
         {
             timeUpdated = 0U;
             SendLatestTimestamp();
+            lastResponseSent = 1U;
         }
-        else if((lastTimeTimeUpdate + TIMEUPDATEPERIOD) < sysTimeStamp)
+        else if((lastTimeTimeUpdate + TIMEUPDATEPERIOD) <= sysTimeStamp)
         {
             lastTimeTimeUpdate = sysTimeStamp;
             SendCurrentTime();
+            lastResponseSent = 1U;
         }
     }
 }

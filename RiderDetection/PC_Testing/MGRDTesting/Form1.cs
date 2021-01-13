@@ -96,10 +96,49 @@ namespace MGRDTesting
                         case 5:
                             HandleGetClosestDevice(cmd);
                             break;
+                        case 101:
+                            HandleGetCurrentTime(cmd);
+                            break;
+                        case 102:
+                            break;
+                        case 103:
+                            HandleGetCurrentTime(cmd);
+                            break;
+                        case 104:
+                            break;
+                        case 255:
+                            break;
                         default:
                             break;
                     }
                 }
+            }
+        }
+
+        private void HandleGetCurrentTime(MGBTCommandData cmd)
+        {
+            try
+            {
+                var reader = new BinaryReader(new MemoryStream(cmd.data));
+
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    UInt32 time = reader.ReadUInt32();
+                    byte timeType = reader.ReadByte();
+
+                    InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                    {
+                        AddLineToStatus($"Got time: {time}");
+                        AddLineToStatus($"Of type: {timeType}");
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
+                    AddLineToStatus($"Exception: {ex}");
+                }));
             }
         }
 
