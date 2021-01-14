@@ -28,5 +28,8 @@ typedef enum
 void RunCommunicationManager(void);
 void CommMgrSendTimeValue(CommTimeType timeType, uint32_t timeValue);
 uint8_t CommMgrIsReadyToSendNextTime(void);
+uint8_t CommMgrHasNewDisplayUpdate(void);
+uint32_t CommMgrGetNewDisplayValue(void);
+uint8_t CommMgrGetNewConfig(void);
 
 #endif /* INC_COMMUNICATIONMANAGER_H_ */

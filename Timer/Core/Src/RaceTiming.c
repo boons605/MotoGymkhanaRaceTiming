@@ -32,6 +32,12 @@ static void RunCommunication(void)
     {
         lastCommunicationRun = timeStmp;
         RunCommunicationManager();
+        uint8_t newConfig = CommMgrGetNewConfig();
+        if (newConfig != 0U)
+        {
+        	SetNewConfigMode(newConfig);
+        }
+
     }
 
 }
@@ -128,6 +134,42 @@ static void ManageDisplayButton(void)
     }
 }
 
+static void RunLocalTimer(void)
+{
+    RunStandAloneTimer();
+    if(lapFinished == 1U)
+    {
+        lapFinished = 0U;
+        uint32_t duration = 0U;
+        if(operationMode == LaptimerOperation)
+        {
+            duration = LAPTIMERDISPLAYDURATION;
+        }
+        CommMgrSendTimeValue(LastLapTime, GetPreviousLapTimeMs());
+        UpdateDisplay(GetPreviousLapTimeMs(), duration);
+        displayBufferResult = 0U;
+    }
+
+    if(newRunStarted == 1U)
+    {
+        newRunStarted = 0U;
+        ResetRunningDisplayTime(0U);
+    }
+
+    ManageDisplayButton();
+}
+
+static void RunConnectedTimer(void)
+{
+    RunConnectedTimestampCollector();
+
+    if (CommMgrHasNewDisplayUpdate() == 1U)
+    {
+    	UpdateDisplay(CommMgrGetNewDisplayValue(), LAPTIMERDISPLAYDURATION);
+    }
+
+}
+
 void RunRaceTiming(void)
 {
     switch(operationMode)
@@ -135,33 +177,13 @@ void RunRaceTiming(void)
         case SingleRunTimerOperation:
         case LaptimerOperation:
         {
-            RunStandAloneTimer();
-            if(lapFinished == 1U)
-            {
-                lapFinished = 0U;
-                uint32_t duration = 0U;
-                if(operationMode == LaptimerOperation)
-                {
-                    duration = LAPTIMERDISPLAYDURATION;
-                }
-                CommMgrSendTimeValue(LastLapTime, GetPreviousLapTimeMs());
-                UpdateDisplay(GetPreviousLapTimeMs(), duration);
-                displayBufferResult = 0U;
-            }
-
-            if(newRunStarted == 1U)
-            {
-                newRunStarted = 0U;
-                ResetRunningDisplayTime(0U);
-            }
-
-            ManageDisplayButton();
+            RunLocalTimer();
 
             break;
         }
         case ConnectedTimestampCollector:
         {
-            RunConnectedTimestampCollector();
+            RunConnectedTimer();
             break;
         }
         default:

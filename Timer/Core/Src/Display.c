@@ -7,7 +7,6 @@
 #include "Configuration.h"
 #include "Display.h"
 #include "TimeMgmt.h"
-#include "stm32f1xx_ll_usart.h"
 #include "Max7219Display.h"
 #include "Max7219DLDWDisplay.h"
 
@@ -25,16 +24,13 @@ static uint32_t lastDisplayUpdate = 0U;
 
 static uint8_t displayConfig = 1U;
 
-
-
-
 void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
 {
     if(displayedResult != newTimeInMs)
     {
         if(displayDurationInMs > 0U)
         {
-            displayResultUntil = GetMillisecondsFromTimeStamp(&systemTime) + displayDurationInMs;
+            displayResultUntil = GetSystemTimeStampMs() + displayDurationInMs;
             permanentResultDisplay = 0U;
         }
         else
@@ -54,7 +50,7 @@ void ResetRunningDisplayTime(uint32_t startTime)
 {
     if(startTime == 0U)
     {
-        runningTimeStartTime = GetMillisecondsFromTimeStamp(&systemTime);
+        runningTimeStartTime = GetSystemTimeStampMs();
     }
     else
     {
@@ -66,7 +62,7 @@ void ResetRunningDisplayTime(uint32_t startTime)
 
 void RunDisplay(void)
 {
-    uint32_t timeStamp = GetMillisecondsFromTimeStamp(&systemTime);
+    uint32_t timeStamp = GetSystemTimeStampMs();
 
     if((timeStamp < displayResultUntil) ||
        (permanentResultDisplay == 1U))
@@ -123,7 +119,7 @@ static void UpdateDisplayedTime(uint32_t milliseconds, uint8_t cutOffLastDigits)
     {
         UpdateMax7219Display(bcdDisplayData);
     }
-    lastDisplayUpdate = GetMillisecondsFromTimeStamp(&systemTime);
+    lastDisplayUpdate = GetSystemTimeStampMs();
 }
 
 static uint32_t CalculateMinutesComponent(uint32_t milliSeconds)
@@ -155,7 +151,6 @@ static uint32_t CalculateMillisecondsComponent(uint32_t milliSeconds)
     calc /= 10U;
     retVal -= (calc * 10U);
     retVal += (calc << 4U) + calc2;
-
 
     return retVal;
 }

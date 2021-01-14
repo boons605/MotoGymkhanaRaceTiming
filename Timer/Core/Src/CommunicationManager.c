@@ -6,8 +6,9 @@
  */
 
 #include <string.h>
-
+#include "Configuration.h"
 #include "TimeMgmt.h"
+#include "LapTimer.h"
 #include "MGBTCommProto.h"
 #include "CommunicationManager.h"
 
@@ -17,6 +18,9 @@ static uint32_t lastTimeTimeUpdate = 0U;
 static uint32_t latestTimestamp = 0U;
 static CommTimeType latestTimestampType = NoTimeType;
 static uint8_t timeUpdated = 0U;
+
+static uint32_t displayTime = 0U;
+static uint8_t newConfig = 0U;
 
 static void PutTimeInPendingResponse(CommTimeType timeType, uint32_t timeValue)
 {
@@ -39,6 +43,29 @@ static void SendCurrentTime(void)
     PutTimeInPendingResponse(NoTimeType, GetSystemTimeStampMs());
 }
 
+static void MoveAllLapsToResponsData(void)
+{
+    uint8_t currentLapIndex = 0U;
+    uint8_t currentDataIndex = 0U;
+
+    for(currentLapIndex = 0U; currentLapIndex < MAXLAPCOUNT; currentLapIndex++)
+    {
+        if(currentDataIndex < (COMMANDDATAMAXSIZE - 3U))
+        {
+            uint32_t lapTimeMs = GetLapTimestampMs(&laps[currentLapIndex]);
+            memcpy(&pendingResponse.data[currentDataIndex], &lapTimeMs, 3U);
+            currentDataIndex += 3U;
+            pendingResponse.dataLength = currentDataIndex;
+        }
+    }
+}
+
+static void UpdateDisplayedTimeValue(uint32_t* data)
+{
+    timeUpdated = 1U;
+    displayTime = (*data);
+}
+
 static void ProcessCommand(MGBTCommandData* command)
 {
     lastResponseSent = 0U;
@@ -54,6 +81,16 @@ static void ProcessCommand(MGBTCommandData* command)
         case GetAllLaps:
         {
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
+            if((operationMode == LaptimerOperation) ||
+               (operationMode == SingleRunTimerOperation))
+            {
+                MoveAllLapsToResponsData();
+                pendingResponse.status = 0U;
+            }
+            else
+            {
+                pendingResponse.status = 0xFFFFU;
+            }
             lastResponseSent = 1U;
             break;
         }
@@ -74,7 +111,24 @@ static void ProcessCommand(MGBTCommandData* command)
         {
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
             lastResponseSent = 1U;
+            if(command->dataLength >= sizeof(uint32_t))
+            {
+            	UpdateDisplayedTimeValue((uint32_t*)command->data);
+                pendingResponse.status = 0U;
+            }
+            else
+            {
+                pendingResponse.status = 0xFFFFU;
+            }
+            break;
         }
+        case UpdateOpMode:
+        {
+            memcpy(&pendingResponse, command, GetCommandDataSize(command));
+            lastResponseSent = 1U;
+            newConfig = command->data[0];
+        }
+
         default:
         {
             break;
@@ -143,4 +197,32 @@ uint8_t CommMgrIsReadyToSendNextTime(void)
         retVal = 1U;
     }
     return retVal;
+}
+
+uint8_t CommMgrHasNewDisplayUpdate(void)
+{
+    uint8_t retVal = 0U;
+    if(displayTime > 0U)
+    {
+        retVal = 1U;
+    }
+    return retVal;
+}
+
+uint32_t CommMgrGetNewDisplayValue(void)
+{
+    uint32_t retVal = displayTime;
+    displayTime = 0U;
+    return retVal;
+}
+
+uint8_t CommMgrGetNewConfig(void)
+{
+	uint8_t retVal = 0U;
+	if (newConfig != 0U)
+	{
+		retVal = newConfig;
+		newConfig = 0U;
+	}
+	return retVal;
 }

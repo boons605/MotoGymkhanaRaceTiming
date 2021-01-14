@@ -48,4 +48,5 @@ extern uint8_t displayLines;
 void RunAutoConfiguration(void);
 uint8_t RTCInitSuccesful(void);
 uint32_t GetConfigBCDDisplay(void);
+uint8_t SetNewConfigMode(uint8_t mode);
 #endif /* INC_CONFIGURATION_H_ */

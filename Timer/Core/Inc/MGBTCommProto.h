@@ -46,6 +46,7 @@ typedef enum
     GetAllLaps = 102U,
     GetCurrentTime = 103U,
     UpdateDisplayedTime = 104U,
+    UpdateOpMode = 105U,
     GetIdentification = 255U
 
 } MGBTCommandType;
