@@ -21,10 +21,11 @@ static uint8_t permanentResultDisplay = 0U;
 static uint32_t displayedResult = 0U;
 static uint32_t runningTimeStartTime = 0U;
 static uint32_t lastDisplayUpdate = 0U;
+static DisplayTimeExpiredAction timeExpiredAction = DTEA_ShowRunningTime;
 
 static uint8_t displayConfig = 1U;
 
-void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
+void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs, DisplayTimeExpiredAction whatsNext)
 {
     if(displayedResult != newTimeInMs)
     {
@@ -42,6 +43,7 @@ void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs)
         //Force display update
         lastDisplayUpdate = 0U;
         displayConfig = 0U;
+        timeExpiredAction = whatsNext;
     }
 
 }
@@ -58,6 +60,19 @@ void ResetRunningDisplayTime(uint32_t startTime)
     }
     permanentResultDisplay = 0U;
     displayConfig = 0U;
+}
+
+static void UpdateDisplayAfterTimeElapsed(uint32_t timeStamp)
+{
+	switch (timeExpiredAction)
+	{
+	case DTEA_ClearDisplay:
+		UpdateDisplayedTime(0, 0U);
+		break;
+	default:
+		UpdateDisplayedTime(timeStamp - runningTimeStartTime, 1U);
+		break;
+	}
 }
 
 void RunDisplay(void)
@@ -77,7 +92,7 @@ void RunDisplay(void)
     {
         if((lastDisplayUpdate + 100U) < timeStamp)
         {
-            UpdateDisplayedTime(timeStamp - runningTimeStartTime, 1U);
+        	UpdateDisplayAfterTimeElapsed(timeStamp);
         }
     }
 

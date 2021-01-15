@@ -100,6 +100,7 @@ namespace MGRDTesting
                             HandleGetCurrentTime(cmd);
                             break;
                         case 102:
+                            HandleGetLaps(cmd);
                             break;
                         case 103:
                             HandleGetCurrentTime(cmd);
@@ -107,11 +108,74 @@ namespace MGRDTesting
                         case 104:
                             break;
                         case 255:
+                            HandleGetID(cmd);
                             break;
                         default:
                             break;
                     }
                 }
+            }
+        }
+
+        private void HandleGetLaps(MGBTCommandData cmd)
+        {
+            try
+            {
+                var reader = new BinaryReader(new MemoryStream(cmd.data));
+                int byteIndex = 0;
+                int time = 0;
+                int lapIndex = 0;
+                StringBuilder lapLines = new StringBuilder();
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    byte aByte = reader.ReadByte();
+                    time |= aByte << (8 * byteIndex);
+
+                    byteIndex++;
+
+                    if (byteIndex >= 3)
+                    {
+                        byteIndex = 0;
+                        lapLines.AppendLine($"Got lap {lapIndex} with time {time}");
+                        lapIndex++;
+                    }
+                    
+                }
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
+                    AddLineToStatus(lapLines.ToString());
+                }));
+            }
+            catch (Exception ex)
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
+                    AddLineToStatus($"Exception: {ex}");
+                }));
+            }
+        }
+
+        private void HandleGetID(MGBTCommandData cmd)
+        {
+            try
+            {
+                var reader = new BinaryReader(new MemoryStream(cmd.data));
+
+                byte deviceType = reader.ReadByte();
+                byte[] idDate = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
+                    AddLineToStatus($"Got type: {deviceType} with data: {BitConverter.ToString(idDate)}");
+                }));
+
+            }
+            catch (Exception ex)
+            {
+                InvocationHelper.InvokeIfRequired(this, new Action(() =>
+                {
+                    AddLineToStatus($"Exception: {ex}");
+                }));
             }
         }
 
@@ -313,7 +377,7 @@ namespace MGRDTesting
             if (line != lastMessage)
             {
                 lastMessage = line;
-                statusLbx.Items.Add(line);
+                statusLbx.Items.AddRange(line.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries));
                 statusLbx.SelectedIndex = statusLbx.Items.Count - 1;
                 statusLbx.SelectedIndex = -1;
             }
@@ -489,6 +553,85 @@ namespace MGRDTesting
         private void closestDeviceLbl_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void IdentBtn_Click(object sender, EventArgs e)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 0x00FF;
+            data.data = new byte[2];
+            SendCommand(data);
+        }
+
+        private void SetTimeBtn_Click(object sender, EventArgs e)
+        {
+            int millis;
+            if (Int32.TryParse(macTbx.Text, out millis))
+            {
+                var stream = new MemoryStream();
+                var writer = new BinaryWriter(stream);
+                if (millis > 599999)
+                {
+                    millis = 599999;
+                }
+                writer.Write(millis);
+                MGBTCommandData data = new MGBTCommandData();
+                data.Status = 0x0000;
+                data.CommandType = 104;
+                data.data = stream.ToArray();
+                SendCommand(data);
+            }    
+            else
+            {
+                AddLineToStatus($"{macTbx.Text} is not an int");
+            }
+        }
+
+        private void SetOpMode(int opMode)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 105;
+            data.data = new byte[2];
+            data.data[0] = (byte)opMode;
+            SendCommand(data);
+        }
+
+        private void connectedRbtn_CheckedChanged(object sender, EventArgs e)
+        {
+            if (connectedRbtn.Checked)
+            {
+                SetOpMode(2);
+            }
+            
+        }
+
+        private void singleRunRbtn_CheckedChanged(object sender, EventArgs e)
+        {
+            if (singleRunRbtn.Checked)
+            {
+                SetOpMode(3);
+            }
+            
+        }
+
+        private void lapTimerRbtn_CheckedChanged(object sender, EventArgs e)
+        {
+            if (lapTimerRbtn.Checked)
+            {
+                SetOpMode(1);
+            }
+            
+        }
+
+        private void getLapsBtn_Click(object sender, EventArgs e)
+        {
+            MGBTCommandData data = new MGBTCommandData();
+            data.Status = 0x0000;
+            data.CommandType = 102;
+            data.data = new byte[2];
+            SendCommand(data);
         }
     }
 }

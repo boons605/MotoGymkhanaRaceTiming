@@ -66,6 +66,15 @@ static void UpdateDisplayedTimeValue(uint32_t* data)
     displayTime = (*data);
 }
 
+static void PrepareIDData(void)
+{
+	uint32_t bcdConfig = GetConfigBCDDisplay();
+	pendingResponse.data[0] = (uint8_t)(DeviceTypeTimer | DeviceTypeDisplay);
+	pendingResponse.dataLength = 1U;
+	memcpy(&pendingResponse.data[1], &bcdConfig, sizeof(uint32_t));
+	pendingResponse.dataLength += sizeof(uint32_t);
+}
+
 static void ProcessCommand(MGBTCommandData* command)
 {
     lastResponseSent = 0U;
@@ -105,6 +114,7 @@ static void ProcessCommand(MGBTCommandData* command)
         {
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
             lastResponseSent = 1U;
+            PrepareIDData();
             break;
         }
         case UpdateDisplayedTime:
@@ -127,6 +137,7 @@ static void ProcessCommand(MGBTCommandData* command)
             memcpy(&pendingResponse, command, GetCommandDataSize(command));
             lastResponseSent = 1U;
             newConfig = command->data[0];
+            break;
         }
 
         default:

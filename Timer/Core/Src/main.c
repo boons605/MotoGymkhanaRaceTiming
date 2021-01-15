@@ -451,6 +451,7 @@ static void MX_USART1_UART_Init(void)
     if(buff != (UARTBuffer*)0)
     {
         buff->uartHandle = USART1;
+        LL_USART_EnableIT_RXNE(buff->uartHandle);
     }
     /* USER CODE END USART1_Init 2 */
 
@@ -511,7 +512,8 @@ static void MX_USART2_UART_Init(void)
     UARTBuffer* buff = UARTBufferGetUART(1);
     if(buff != (UARTBuffer*)0)
     {
-        buff->uartHandle = USART1;
+        buff->uartHandle = USART2;
+        LL_USART_EnableIT_RXNE(buff->uartHandle);
     }
 
     /* USER CODE END USART2_Init 2 */

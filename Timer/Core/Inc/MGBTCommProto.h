@@ -60,6 +60,15 @@ typedef struct
     uint8_t data[COMMANDDATAMAXSIZE];
 } MGBTCommandData;
 
+typedef enum
+{
+	DeviceTypeNone = 0U,
+	DeviceTypeTimer = 1U,
+	DeviceTypeIdentifier = 2U,
+	DeviceTypeDisplay = 4U,
+	DeviceTypeStartRelease = 8U
+} DeviceTypes;
+
 uint8_t CommandAvailable(void);
 MGBTCommandData* GetAndClearCommand(void);
 uint8_t CanSendResponse(void);

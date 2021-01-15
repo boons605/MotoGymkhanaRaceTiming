@@ -65,11 +65,11 @@ static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
         {
             if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
             {
-                UpdateDisplay(GetLapTimestampMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION);
+                UpdateDisplay(GetLapTimestampMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ShowRunningTime);
             }
             else
             {
-                UpdateDisplay(currentBufferDisplayIndex + 1, 0U);
+                UpdateDisplay(currentBufferDisplayIndex + 1, 0U, DTEA_ClearDisplay);
             }
 
         }
@@ -146,7 +146,7 @@ static void RunLocalTimer(void)
             duration = LAPTIMERDISPLAYDURATION;
         }
         CommMgrSendTimeValue(LastLapTime, GetPreviousLapTimeMs());
-        UpdateDisplay(GetPreviousLapTimeMs(), duration);
+        UpdateDisplay(GetPreviousLapTimeMs(), duration, DTEA_ShowRunningTime);
         displayBufferResult = 0U;
     }
 
@@ -165,7 +165,7 @@ static void RunConnectedTimer(void)
 
     if (CommMgrHasNewDisplayUpdate() == 1U)
     {
-    	UpdateDisplay(CommMgrGetNewDisplayValue(), LAPTIMERDISPLAYDURATION);
+    	UpdateDisplay(CommMgrGetNewDisplayValue(), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
     }
 
 }
