@@ -341,6 +341,7 @@ namespace RiderIdUnit
                         this.HandleGetClosestDevice(packet);
                         break;
                     default:
+                        Log.Error($"Got invalid packet {packet}");
                         break;
                 }
             }
