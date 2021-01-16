@@ -22,20 +22,20 @@ namespace Communication
         /// <summary>
         /// List of <see cref="XbeeNetwork"/> objects.
         /// </summary>
-        private List<XbeeNetwork> xbeeNetworks;
+        private Dictionary<string, XbeeNetwork> xbeeNetworks;
 
         /// <summary>
         /// List of <see cref="ISerialCommunication"/> objects.
         /// </summary>
-        private List<ISerialCommunication> devices;
+        private Dictionary<string, ISerialCommunication> devices;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommunicationManager" /> class.
         /// </summary>
         public CommunicationManager()
         {
-            this.xbeeNetworks = new List<XbeeNetwork>();
-            this.devices = new List<ISerialCommunication>();
+            this.xbeeNetworks = new Dictionary<string, XbeeNetwork>();
+            this.devices = new Dictionary<string, ISerialCommunication>();
         }
 
         /// <summary>
@@ -95,12 +95,12 @@ namespace Communication
         /// <returns>The corresponding <see cref="DirectSerialCommunication"/> instance</returns>
         private ISerialCommunication GetSerialDevice(string portName)
         {
-            if (!this.devices.Any(dev => dev.Name == portName))
+            if (!this.devices.ContainsKey(portName))
             {
-                this.devices.Add(new DirectSerialCommunication(portName));
+                this.devices.Add(portName, new DirectSerialCommunication(portName));
             }
 
-            return this.devices.First(dev => dev.Name == portName);
+            return this.devices[portName];
         }
 
         /// <summary>
@@ -112,12 +112,12 @@ namespace Communication
         /// <returns>The corresponding <see cref="XbeeSerialCommunication"/> instance</returns>
         private ISerialCommunication GetXbeeDevice(string networkNameOrPort, string deviceName)
         {
-            if (!this.xbeeNetworks.Any(xnet => xnet.Name == networkNameOrPort))
+            if (!this.xbeeNetworks.ContainsKey(networkNameOrPort))
             {
-                this.xbeeNetworks.Add(new XbeeNetwork(networkNameOrPort));
+                this.xbeeNetworks.Add(networkNameOrPort, new XbeeNetwork(networkNameOrPort));
             }
 
-            XbeeNetwork xbeeNet = this.xbeeNetworks.First(xn => xn.Name == networkNameOrPort);
+            XbeeNetwork xbeeNet = this.xbeeNetworks[networkNameOrPort];
             return xbeeNet.GetDevice(deviceName);
         }
     }

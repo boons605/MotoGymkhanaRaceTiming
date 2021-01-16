@@ -97,10 +97,10 @@ namespace RiderIdUnit
         }
 
         /// <inheritdoc/>
-        public event EventHandler OnRiderId;
+        public event EventHandler<RiderIdEventArgs> OnRiderId;
 
         /// <inheritdoc/>
-        public event EventHandler OnRiderExit;
+        public event EventHandler<RiderIdEventArgs> OnRiderExit;
 
         /// <summary>
         /// Process state.
