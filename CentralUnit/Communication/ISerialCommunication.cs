@@ -23,7 +23,7 @@ namespace Communication
         /// <summary>
         /// Indicates the connection state has changed. Check the <c>Connected</c> property to check the state.
         /// </summary>
-        event EventHandler ConnectionStateChanged;
+        event EventHandler<ConnectionStateChangedEventArgs> ConnectionStateChanged;
 
         /// <summary>
         /// Gets a value indicating whether the connection is opened or not.

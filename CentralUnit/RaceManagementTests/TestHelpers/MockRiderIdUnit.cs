@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Models;
 using RiderIdUnit;
 
 namespace RaceManagementTests.TestHelpers
@@ -12,7 +13,7 @@ namespace RaceManagementTests.TestHelpers
         public event EventHandler<RiderIdEventArgs> OnRiderId;
         public event EventHandler<RiderIdEventArgs> OnRiderExit;
 
-        public void AddKnownRiders(List<(byte[] sensorId, string name)> riders)
+        public void AddKnownRiders(List<Rider> riders)
         {
             throw new NotImplementedException();
         }

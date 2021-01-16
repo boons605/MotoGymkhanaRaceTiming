@@ -51,7 +51,7 @@ namespace Communication
         public event EventHandler Failure;
 
         /// <inheritdoc/>
-        public event EventHandler ConnectionStateChanged;
+        public event EventHandler<ConnectionStateChangedEventArgs> ConnectionStateChanged;
 
         /// <summary>
         /// Is the port opened?
@@ -119,7 +119,7 @@ namespace Communication
             {
                 this.serialPort.Open();
 
-                this.ConnectionStateChanged?.Invoke(this, new EventArgs());
+                this.ConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs(this.serialPort.IsOpen, false));
 
                 while (this.serialPort.IsOpen)
                 {
@@ -134,15 +134,13 @@ namespace Communication
 
                     Thread.Sleep(10);
                 }
+
+                this.ConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs(false, false));
             }
             catch (Exception ex)
             {
                 Log.Error("Serial port failure: " + this.serialPort.PortName, ex);
-                this.Failure?.Invoke(this, new EventArgs());
-            }
-            finally
-            {
-                this.ConnectionStateChanged?.Invoke(this, new EventArgs());
+                this.ConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs(false, true));
             }
         }
     }
