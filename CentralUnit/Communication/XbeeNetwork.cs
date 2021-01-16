@@ -274,11 +274,11 @@ namespace Communication
         /// </summary>
         /// <param name="sender">The sender of the event</param>
         /// <param name="e">EventArgs supplied with the event</param>
-        private void CommunicationChannel_ConnectionStateChanged(object sender, EventArgs e)
+        private void CommunicationChannel_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
         {
             foreach (XbeeSerialCommunication xbee in this.devices)
             {
-                xbee.OnConnectionStateChanged(this.communicationChannel.Connected);
+                xbee.OnConnectionStateChanged(e);
             }
         }
 

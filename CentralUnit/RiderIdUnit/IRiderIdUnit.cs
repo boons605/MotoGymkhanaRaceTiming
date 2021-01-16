@@ -1,12 +1,15 @@
 ﻿// <copyright file="IRiderIdUnit.cs" company="Moto Gymkhana">
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
-
 using System;
 using System.Collections.Generic;
 
 namespace RiderIdUnit
 {
+    using System;
+    using System.Collections.Generic;
+    using Models;
+
     /// <summary>
     /// A rider id unit will identify riders that are near its sensor. It cannot de precise timing, so an id unit will not report times with its events
     /// </summary>
@@ -31,7 +34,7 @@ namespace RiderIdUnit
         /// Add new riders that the unit should report about.
         /// </summary>
         /// <param name="riders">The new riders, Guid should match what the sensor receives. Both sensorId and name should be unknown to the unit</param>
-        void AddKnownRiders(List<(byte[] sensorId, string name)> riders);
+        void AddKnownRiders(List<Rider> riders);
 
         /// <summary>
         /// Avoid further events for this rider. To resume events for this rider they should be added again

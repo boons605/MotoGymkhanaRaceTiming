@@ -55,7 +55,7 @@ namespace Communication
         public event EventHandler Failure;
 
         /// <inheritdoc/>
-        public event EventHandler ConnectionStateChanged;
+        public event EventHandler<ConnectionStateChangedEventArgs> ConnectionStateChanged;
 
         /// <inheritdoc/>
         public bool Connected { get => this.connected; }
@@ -112,10 +112,10 @@ namespace Communication
         /// from the network)
         /// </summary>
         /// <param name="connectionState">The connection state of the channel.</param>
-        internal void OnConnectionStateChanged(bool connectionState)
+        internal void OnConnectionStateChanged(ConnectionStateChangedEventArgs connectionState)
         {
-            this.ConnectionStateChanged?.Invoke(this, new EventArgs());
-            this.connected = connectionState;
+            this.connected = connectionState.Connected;
+            this.ConnectionStateChanged?.Invoke(this, connectionState);
         }
 
         /// <summary>
