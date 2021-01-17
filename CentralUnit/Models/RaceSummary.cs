@@ -2,9 +2,14 @@
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Models
 {
@@ -18,9 +23,30 @@ namespace Models
         /// </summary>
         public List<RaceEvent> Events { get; private set; }
 
+        /// <summary>
+        /// All the riders that participated in this race
+        /// </summary>
+        public List<Rider> Riders { get; private set; }
+
+        /// <summary>
+        /// For json (de)serialization.
+        /// </summary>
+        public RaceSummary()
+        {
+        }
+
+        /// <summary>
+        /// Constructor for general use. Riders will be collected from events
+        /// </summary>
+        /// <param name="events"></param>
         public RaceSummary(List<RaceEvent> events)
         {
             Events = events;
+
+            Riders = events
+                .Select(e => e.Rider)
+                .Distinct(new RiderNameEquality())
+                .ToList();
         }
 
         /// <summary>
@@ -29,155 +55,102 @@ namespace Models
         /// <param name="output">the stream to write to</param>
         public void WriteSummary(Stream output)
         {
-            throw new NotImplementedException();
-        }
-    }
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.Converters.Add(new EventRiderConverter(null));
+            settings.ContractResolver = new NonPublicPropertiesResolver();
+            settings.TypeNameHandling = TypeNameHandling.Auto;
 
-    /// <summary>
-    /// Base class for representing things that happened during a race. Every event has three basic properties: event id, who the event applies to and when the event was recorded
-    /// </summary>
-    public class RaceEvent
-    {
-        /// <summary>
-        /// The moment the event was processed
-        /// </summary>
-        public readonly DateTime Time;
-
-        /// <summary>
-        /// Unique id to refer to this event
-        /// </summary>
-        public readonly Guid EventId;
-
-        /// <summary>
-        /// The rider this event happened to
-        /// </summary>
-        public Rider Rider { get; protected set; }
-
-        public RaceEvent(DateTime time, Rider rider, Guid eventId)
-        {
-            Time = time;
-            Rider = rider;
-            EventId = eventId;
+            using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true))//we dont own the stream, so dont close it when the writer closes
+            {
+                writer.WriteLine(JsonConvert.SerializeObject(this, settings));
+            }
         }
 
-        public RaceEvent(DateTime time, Rider rider)
-            : this(time, rider, Guid.NewGuid())
+        public static RaceSummary ReadSummary(Stream input)
         {
-            Time = time;
-            Rider = rider;
-        }
-    }
+            using (StreamReader reader = new StreamReader(input, System.Text.Encoding.UTF8, false, 1024, true))
+            {
+                JObject intermediate = JObject.Parse(reader.ReadToEnd());
 
-    /// <summary>
-    /// Event to mark when a rider has finished. A rider is finished when we have recorded 4 essential events: id at start box, timing at start box, id at end box and timing at end box
-    /// </summary>
-    public class FinishedEvent : RaceEvent
-    {
-        /// <summary>
-        /// Lap time in microseconds
-        /// </summary>
-        public long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.ContractResolver = new NonPublicPropertiesResolver();
+                serializer.TypeNameHandling = TypeNameHandling.Auto;
 
-        /// <summary>
-        /// The event where the id unit at the start box picks up the rider
-        /// </summary>
-        public readonly EnteredEvent Entered;
+                List<Rider> riders = intermediate["Riders"].ToObject<List<Rider>>(serializer);
 
-        /// <summary>
-        /// The event where the start timing gate is triggered by the rider
-        /// </summary>
-        public readonly TimingEvent TimeStart;
+                serializer.Converters.Add(new EventRiderConverter(riders));
 
-        /// <summary>
-        /// The event where the end timing gate is triggered by the rider
-        /// </summary>
-        public readonly TimingEvent TimeEnd;
-
-        /// <summary>
-        /// The event where the id unit at the stop box picks up the rider
-        /// </summary>
-        public readonly LeftEvent Left;
-
-        public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
-            : base(timeEnd.Time, timeEnd.Rider)
-        {
-            Entered = entered;
-            TimeStart = timeStart;
-            TimeEnd = timeEnd;
-            Left = left;
-        }
-    }
-
-    /// <summary>
-    /// Event when the rider id is picked up at the start gate
-    /// </summary>
-    public class EnteredEvent : RaceEvent
-    {
-        public EnteredEvent(DateTime time, Rider rider)
-            : base(time, rider) { }
-    }
-
-    /// <summary>
-    /// Event when the rider id is picked up at the end gate
-    /// </summary>
-    public class LeftEvent : RaceEvent
-    {
-        public LeftEvent(DateTime time, Rider rider)
-         : base(time, rider) { }
-    }
-
-    /// <summary>
-    /// Event when a rider triggers a timing gate
-    /// </summary>
-    public class TimingEvent : RaceEvent
-    {
-        /// <summary>
-        /// Microseconds reported by the timer
-        /// </summary>
-        public readonly long Microseconds;
-
-        /// <summary>
-        /// Which timing gate this event happened for
-        /// </summary>
-        public readonly int GateId;
-
-        public TimingEvent(DateTime time, Rider rider, long microseconds, int gateId) : base(time, rider)
-        {
-            Microseconds = microseconds;
-            GateId = gateId;
+                return intermediate.ToObject<RaceSummary>(serializer);
+            }
         }
 
         /// <summary>
-        /// For the end timing gate we may receive a timing event before a rider id
-        /// So we might have to set this field after we've matched it
+        /// Often when serializing events you do not want to repeat all the information contained in the Rider for every events
+        /// This serializer simplifies it to just the name. If you want to preserve the beacon information you should either not use this serializer or serialize the full rider objects separately
         /// </summary>
-        /// <param name="rider"></param>
-        public void SetRider(Rider rider)
+        private class EventRiderConverter : JsonConverter<RaceEvent>
         {
-            Rider = rider;
+            private List<Rider> riders;
+            public EventRiderConverter(List<Rider> riders)
+            {
+                this.riders = riders;
+            }
+
+            public override RaceEvent ReadJson(JsonReader reader, Type objectType, [AllowNullAttribute] RaceEvent existingValue, bool hasExistingValue, JsonSerializer serializer)
+            {
+                JObject intermediate = JObject.Parse((string)reader.Value);
+
+                string name = intermediate["Rider"].ToString();
+
+                Rider replacement = riders.Find(r => r.Name == name);
+
+                if (replacement == null)
+                    throw new JsonReaderException($"Could not find rider {(string)reader.Value} in provided riders");
+
+                intermediate["Rider"] = JObject.FromObject(replacement);
+
+                JsonSerializer privateSerializer = new JsonSerializer();
+                serializer.ContractResolver = new NonPublicPropertiesResolver();
+                serializer.TypeNameHandling = TypeNameHandling.Auto;
+
+                return intermediate.ToObject<RaceEvent>(privateSerializer);
+            }
+
+            public override void WriteJson(JsonWriter writer, [AllowNullAttribute] RaceEvent value, JsonSerializer serializer)
+            {
+                JObject intermediate = JObject.FromObject(value);
+
+                intermediate["Rider"] = value.Rider.Name;
+
+                writer.WriteValue(intermediate.ToString());
+            }
         }
-    }
 
-    /// <summary>
-    /// Event when a rider does not finish their lap. This is detected when a rider that started after them finished earlier
-    /// </summary>
-    public class DNFEvent : RaceEvent
-    {
-        /// <summary>
-        /// A DNF happens when a driver who started later finished before this driver did
-        /// </summary>
-        public readonly FinishedEvent OtherRider;
-
-        /// <summary>
-        /// The event where this driver was picked up at the start gate
-        /// </summary>
-        public readonly EnteredEvent ThisRider;
-
-        public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
-            : base(otherRider.Time, thisRider.Rider)
+        private class NonPublicPropertiesResolver : DefaultContractResolver
         {
-            OtherRider = otherRider;
-            ThisRider = thisRider;
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            {
+                var prop = base.CreateProperty(member, memberSerialization);
+                if (member is PropertyInfo pi)
+                {
+                    prop.Readable = (pi.GetMethod != null);
+                    prop.Writable = (pi.SetMethod != null);
+                }
+                return prop;
+            }
+        }
+
+        private class RiderNameEquality : IEqualityComparer<Rider>
+        {
+            public bool Equals(Rider x, Rider y)
+            {
+                return x.Name == y.Name;
+            }
+
+            public int GetHashCode(Rider obj)
+            {
+                return obj.Name.GetHashCode();
+            }
         }
     }
 }
