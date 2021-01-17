@@ -26,18 +26,5 @@ namespace ModelsTests
 
             RaceSummary parsed = RaceSummary.ReadSummary(stream);
         }
-
-        [TestMethod]
-        public void Test()
-        {
-            List<A> subject = new List<A>();
-
-            subject.Add(new A { Field1 = "a" });
-            subject.Add(new B { Field1 = "b", Field2 = "b" });
-
-            string deserialized = JsonConvert.SerializeObject(subject);
-
-            List<A> parsed = JsonConvert.DeserializeObject<List<A>>(deserialized);
-        }
     }
 }
