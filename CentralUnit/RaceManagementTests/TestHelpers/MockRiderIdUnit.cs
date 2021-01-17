@@ -28,7 +28,7 @@ namespace RaceManagementTests.TestHelpers
             throw new NotImplementedException();
         }
 
-        public void EmitIdEvent(string riderName, byte[] sensorId, DateTime received, string unitId) => OnRiderId.Invoke(this, new RiderIdEventArgs(riderName, sensorId, received, unitId));
-        public void EmitExitEvent(string riderName, byte[] sensorId, DateTime received, string unitId) => OnRiderId.Invoke(this, new RiderIdEventArgs(riderName, sensorId, received, unitId));
+        public void EmitIdEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
+        public void EmitExitEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
     }
 }

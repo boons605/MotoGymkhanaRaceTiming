@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace RaceManagement
+namespace Models
 {
     /// <summary>
     /// This class lists all the events that happened during a race. In the future should also be able to save/load summaries and provide race statistics
@@ -51,16 +51,16 @@ namespace RaceManagement
         /// <summary>
         /// The rider this event happened to
         /// </summary>
-        public string Rider { get; protected set; }
+        public Rider Rider { get; protected set; }
 
-        public RaceEvent(DateTime time, string rider, Guid eventId)
+        public RaceEvent(DateTime time, Rider rider, Guid eventId)
         {
             Time = time;
             Rider = rider;
             EventId = eventId;
         }
 
-        public RaceEvent(DateTime time, string rider)
+        public RaceEvent(DateTime time, Rider rider)
             : this(time, rider, Guid.NewGuid())
         {
             Time = time;
@@ -113,16 +113,8 @@ namespace RaceManagement
     /// </summary>
     public class EnteredEvent : RaceEvent
     {
-        /// <summary>
-        /// Id reported to the sensor that registered the rider
-        /// </summary>
-        public byte[] SensorId { get; private set; }
-
-        public EnteredEvent(DateTime time, string rider, byte[] sensorId)
-            : base(time, rider)
-        {
-            SensorId = sensorId;
-        }
+        public EnteredEvent(DateTime time, Rider rider)
+            : base(time, rider) { }
     }
 
     /// <summary>
@@ -130,16 +122,8 @@ namespace RaceManagement
     /// </summary>
     public class LeftEvent : RaceEvent
     {
-        /// <summary>
-        /// Id reported to the sensor that registered the rider
-        /// </summary>
-        public readonly byte[] SensorId;
-
-        public LeftEvent(DateTime time, string rider, byte[] sensorId)
-         : base(time, rider)
-        {
-            SensorId = sensorId;
-        }
+        public LeftEvent(DateTime time, Rider rider)
+         : base(time, rider) { }
     }
 
     /// <summary>
@@ -157,7 +141,7 @@ namespace RaceManagement
         /// </summary>
         public readonly int GateId;
 
-        public TimingEvent(DateTime time, string rider, long microseconds, int gateId) : base(time, rider)
+        public TimingEvent(DateTime time, Rider rider, long microseconds, int gateId) : base(time, rider)
         {
             Microseconds = microseconds;
             GateId = gateId;
@@ -168,7 +152,7 @@ namespace RaceManagement
         /// So we might have to set this field after we've matched it
         /// </summary>
         /// <param name="rider"></param>
-        public void SetRider(string rider)
+        public void SetRider(Rider rider)
         {
             Rider = rider;
         }
