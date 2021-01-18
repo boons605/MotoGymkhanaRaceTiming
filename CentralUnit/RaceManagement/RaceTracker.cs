@@ -153,7 +153,7 @@ namespace RaceManagement
         {
             lock (waitingLock)
             {
-                EnteredEvent newEvent = new EnteredEvent(args.Received, args.RiderName, args.SensorId);
+                EnteredEvent newEvent = new EnteredEvent(args.Received, args.Rider.Name, args.Rider.Beacon.Identifier);
                 waitingRiders.Enqueue(newEvent);
                 raceState.Enqueue(newEvent);
 
@@ -173,7 +173,7 @@ namespace RaceManagement
         {
             lock (endLock)
             {
-                LeftEvent newEvent = new LeftEvent(args.Received, args.RiderName, args.SensorId);
+                LeftEvent newEvent = new LeftEvent(args.Received, args.Rider.Name, args.Rider.Beacon.Identifier);
 
                 //if we receive an end id for a rider that is not on track ignore it
                 if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))

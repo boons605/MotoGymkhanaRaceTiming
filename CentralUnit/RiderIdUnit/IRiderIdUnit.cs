@@ -42,38 +42,4 @@ namespace RiderIdUnit
         /// <param name="name">the name of the rider as reported by this unit in the exposed events</param>
         void RemoveKnownRider(string name);
     }
-
-    /// <summary>
-    /// Event that is triggered when a rider is picked up by an id unit
-    /// </summary>
-    public class RiderIdEventArgs : EventArgs
-    {
-        /// <summary>
-        /// Name associated with the received sensor id
-        /// </summary>
-        public readonly string RiderName;
-
-        /// <summary>
-        /// Date reported by the sensor
-        /// </summary>
-        public readonly byte[] SensorId;
-
-        /// <summary>
-        /// identifier for the unit that throws the event
-        /// </summary>
-        public readonly string UnitId;
-
-        /// <summary>
-        /// Date and time when this message was received
-        /// </summary>
-        public DateTime Received;
-
-        public RiderIdEventArgs(string riderName, byte[] sensorId, DateTime received, string unitId)
-        {
-            RiderName = riderName;
-            SensorId = sensorId;
-            Received = received;
-            UnitId = unitId;
-        }
-    }
 }
