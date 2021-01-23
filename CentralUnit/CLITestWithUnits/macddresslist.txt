@@ -1,0 +1,5 @@
+91:95:1b:06:bb:de;0;GreenBeacon1
+5f:cc:11:00:ed:c2;0;GreenBeacon2
+db:50:4c:5a:2e:da;15;Beacon2EDA
+ec:b9:a0:a5:86:4b;15;Beacon864B
+cf:82:4f:c2:20:a3;15;Beacon20A3

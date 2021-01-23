@@ -21,7 +21,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaceManagementTests", "Race
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XBeeLibraryTesting", "XBeeLibraryTesting\XBeeLibraryTesting.csproj", "{9B68C599-F25F-4415-91A2-F99D1E798C6C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DisplayUnit", "DisplayUnit\DisplayUnit.csproj", "{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisplayUnit", "DisplayUnit\DisplayUnit.csproj", "{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CLITestWithUnits", "CLITestWithUnits\CLITestWithUnits.csproj", "{26543DDE-CE42-4883-8311-791D62879F16}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +71,10 @@ Global
 		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

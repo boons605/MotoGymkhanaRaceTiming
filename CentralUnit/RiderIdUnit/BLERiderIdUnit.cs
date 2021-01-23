@@ -40,12 +40,31 @@ namespace RiderIdUnit
         private Beacon closestBeacon;
 
         /// <summary>
+        /// Queue of events.
+        /// </summary>
+        private ConcurrentQueue<RiderIDQueuedEvent> eventQueue;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
+        /// Using a defeault max detection distance of 4 meter.
+        /// </summary>
+        /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
+        /// <param name="unitId">The unit name</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId) : this(commInterface, unitId, 4.0)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public BLERiderIdUnit(ISerialCommunication commInterface) : base(commInterface)
+        /// <param name="unitId">The unit name</param>
+        /// <param name="distanceLimit">The distance in meter within which a beacon must be to be considered in range.</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, double distanceLimit) : base(commInterface, unitId)
         {
             this.knownRiders = new List<Rider>();
+            this.eventQueue = new ConcurrentQueue<RiderIDQueuedEvent>();
+            this.maxDetectionDistance = distanceLimit;
         }
 
         /// <inheritdoc/>
@@ -150,28 +169,49 @@ namespace RiderIdUnit
         /// </summary>
         protected override void RunEventThread()
         {
-            this.commTimeoutTimer.Start();
-            while (this.keepEventThreadAlive)
+            try
             {
-
-                //TODO: Move event dispatching to thread.
-
-                while (this.protocolHandler.ReadyToSend() &&
-                         (!this.commandQueue.IsEmpty))
+                while (this.keepEventThreadAlive)
                 {
-                    CommandData command;
-                    if (this.commandQueue.TryDequeue(out command))
+                    while (this.eventQueue.TryDequeue(out RiderIDQueuedEvent evt))
                     {
-                        if (command.CommandType == (ushort)BLERiderIDCommands.ListAllowed)
+                        if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Entered)
                         {
-                            this.foundBeacons = new List<Beacon>();
+                            this.OnRiderId?.Invoke(this, evt.EventArgs);
                         }
-
-                        this.protocolHandler.SendCommand(command);
+                        else if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Exit)
+                        {
+                            this.OnRiderExit?.Invoke(this, evt.EventArgs);
+                        }
+                        else
+                        {
+                            Log.Error($"Got illegal type of RiderIDQueuedEvent: {evt.Type}");
+                        }
                     }
-                }
 
-                Thread.Sleep(20);
+                    while (this.protocolHandler.ReadyToSend() &&
+                             (!this.commandQueue.IsEmpty))
+                    {
+                        CommandData command;
+                        if (this.commandQueue.TryDequeue(out command))
+                        {
+                            if (command.CommandType == (ushort)BLERiderIDCommands.ListAllowed)
+                            {
+                                this.foundBeacons = new List<Beacon>();
+                            }
+
+                            this.protocolHandler.SendCommand(command);
+                        }
+                    }
+
+                    Thread.Sleep(20);
+                }
+                Log.Info($"Event thread ended for unit {this.unitId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Exception on thread for {this.unitId}", ex);
+                this.OnThreadException(ex);
             }
         }
 
@@ -241,18 +281,26 @@ namespace RiderIdUnit
         /// <param name="b">The <see cref="Beacon"/></param>
         private void SetClosestBeacon(Beacon b)
         {
-            if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
+            if (knownRiders.Any(rid => rid.Beacon.Equals(b)))
             {
-                // Entered range
-                this.OnRiderId?.Invoke(this, null);
-            }
-            else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
-            {
-                // Left range
-                this.OnRiderExit?.Invoke(this, null);
-            }
+                if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
+                {
+                    // Entered range
 
-            this.closestBeacon = b;
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
+                }
+                else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
+                {
+                    // Left range
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+                }
+
+                this.closestBeacon = b;
+            }
         }
 
         /// <summary>
@@ -284,7 +332,7 @@ namespace RiderIdUnit
         {
             if (packet.Status != 0)
             {
-                Log.Info($"GetClosestDevice returned {packet.Status}");
+                Log.Debug($"GetClosestDevice returned {packet.Status}");
                 this.SetClosestBeacon(null);
             }
             else
@@ -292,7 +340,7 @@ namespace RiderIdUnit
                 List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(packet.Status, packet.Data);
                 foreach (Beacon b in beacons)
                 {
-                    Log.Info($"Got closest device: {b.ToString()}");
+                    Log.Info($"Got closest device: {b}");
                     this.SetClosestBeacon(b);
                 }
             }
@@ -315,7 +363,7 @@ namespace RiderIdUnit
                     {
                         foreach (Beacon b in this.foundBeacons)
                         {
-                            Log.Info($"Found beacon {b}");
+                            Log.Debug($"Found beacon {b}");
                         }
                     }
                 }

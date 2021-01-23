@@ -135,7 +135,7 @@ namespace Communication
             bool retVal = false;
             lock (this.lockObj)
             {
-                retVal = this.commandToSend == null;
+                retVal = (this.commandToSend == null) && communicationChannel.Connected;
             }
 
             return retVal;

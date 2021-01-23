@@ -50,5 +50,11 @@ namespace Models
         /// Gets or sets the <see cref="Beacon"/> belonging to this rider.
         /// </summary>
         public Beacon Beacon { get => this.beacon; set => this.beacon = value; }
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Rider: {this.name} with Beacon: {this.beacon}";
+        }
     }
 }

@@ -46,10 +46,15 @@ namespace Communication
         protected bool keepEventThreadAlive = true;
 
         /// <summary>
+        /// The unit ID.
+        /// </summary>
+        protected string unitId;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AbstractCommunicatingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public AbstractCommunicatingUnit(ISerialCommunication commInterface)
+        public AbstractCommunicatingUnit(ISerialCommunication commInterface, string unitId)
         {
             if (commInterface == null)
             {
@@ -62,6 +67,8 @@ namespace Communication
             this.eventThread = new Thread(this.RunEventThread);
             this.commandQueue = new ConcurrentQueue<CommandData>();
             this.commTimeoutTimer.Elapsed += this.CommTimeoutTimer_Elapsed;
+            this.unitId = unitId;
+            this.eventThread.Start();
         }
 
         /// <inheritdoc/>
@@ -77,6 +84,15 @@ namespace Communication
             this.protocolHandler.Dispose();
         }
         
+        /// <summary>
+        /// Passes an exception on the event thread as a failure.
+        /// </summary>
+        /// <param name="e">The exception to pass through as a failure.</param>
+        protected void OnThreadException(Exception e)
+        {
+            this.CommunicationFailure?.Invoke(this, new CommunicationFailureEventArgs(FailureType.Generic, $"{this.unitId} : {e}"));
+        }
+
         /// <summary>
         /// Event dispatcher and command thread method.
         /// </summary>
@@ -106,6 +122,11 @@ namespace Communication
                 }
 
                 this.CommunicationFailure?.Invoke(this, new CommunicationFailureEventArgs(FailureType.Disconnect, $"Device disconnected"));
+            }
+            else
+            {
+                this.commTimeoutTimer.Stop();
+                this.commTimeoutTimer.Start();
             }
         }
 

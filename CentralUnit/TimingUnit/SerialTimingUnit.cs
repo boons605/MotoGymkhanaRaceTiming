@@ -30,7 +30,7 @@ namespace TimingUnit
         /// Initializes a new instance of the <see cref="SerialTimingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public SerialTimingUnit(ISerialCommunication commInterface) : base(commInterface)
+        public SerialTimingUnit(ISerialCommunication commInterface, string unitId) : base(commInterface, unitId)
         {
             this.timingEvents = new ConcurrentQueue<TimingTriggeredEventArgs>();
         }
@@ -83,26 +83,35 @@ namespace TimingUnit
         /// <inheritdoc/>
         protected override void RunEventThread()
         {
-            this.commTimeoutTimer.Start();
-            while (this.keepEventThreadAlive)
+            try
             {
-                TimingTriggeredEventArgs timingEvent;
-                while (this.timingEvents.TryDequeue(out timingEvent))
+                while (this.keepEventThreadAlive)
                 {
-                    this.OnTrigger?.Invoke(this, timingEvent);
-                }
-
-                while (this.protocolHandler.ReadyToSend() &&
-                         (!this.commandQueue.IsEmpty))
-                {
-                    CommandData command;
-                    if (this.commandQueue.TryDequeue(out command))
+                    TimingTriggeredEventArgs timingEvent;
+                    while (this.timingEvents.TryDequeue(out timingEvent))
                     {
-                        this.protocolHandler.SendCommand(command);
+                        this.OnTrigger?.Invoke(this, timingEvent);
                     }
+
+                    while (this.protocolHandler.ReadyToSend() &&
+                             (!this.commandQueue.IsEmpty))
+                    {
+                        CommandData command;
+                        if (this.commandQueue.TryDequeue(out command))
+                        {
+                            this.protocolHandler.SendCommand(command);
+                        }
+                    }
+
+                    Thread.Sleep(20);
                 }
 
-                Thread.Sleep(20);
+                Log.Warn($"Event thread ended for unit {unitId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Exception on thread for {this.unitId}", ex);
+                this.OnThreadException(ex);
             }
         }
 
@@ -143,7 +152,7 @@ namespace TimingUnit
         /// <param name="packet">The packet with data.</param>
         private void HandleGetIdentification(CommandData packet)
         {
-            Log.Info($"Got ID packet for timer: {packet}");
+            Log.Debug($"Got ID packet for timer: {packet}");
         }
 
         /// <summary>
@@ -153,7 +162,7 @@ namespace TimingUnit
         /// <param name="packet">The packet with data.</param>
         private void HandleGetAllLaps(CommandData packet)
         {
-            Log.Info($"Got laps response for timer: {packet}");
+            Log.Debug($"Got laps response for timer: {packet}");
         }
 
         /// <summary>
@@ -163,7 +172,7 @@ namespace TimingUnit
         /// <param name="packet">The packet with data.</param>
         private void HandleUpdateOpMode(CommandData packet)
         {
-            Log.Info($"Got update op mode response for timer: {packet}");
+            Log.Debug($"Got update op mode response for timer: {packet}");
         }
 
         /// <summary>
@@ -173,7 +182,7 @@ namespace TimingUnit
         /// <param name="packet">The packet with data.</param>
         private void HandleUpdateDisplayedTime(CommandData packet)
         {
-            Log.Info($"Got update display response for timer: {packet}");
+            Log.Debug($"Got update display response for timer: {packet}");
         }
 
         /// <summary>
@@ -183,7 +192,7 @@ namespace TimingUnit
         /// <param name="packet">The packet with data.</param>
         private void HandleGetCurrentTime(CommandData packet)
         {
-            Log.Info($"Got current time for timer: {packet}");
+            Log.Debug($"Got current time for timer: {packet}");
         }
 
         /// <summary>

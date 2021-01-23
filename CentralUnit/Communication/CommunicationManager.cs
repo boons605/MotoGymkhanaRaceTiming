@@ -12,7 +12,7 @@ namespace Communication
     /// <summary>
     /// Management of communication devices.
     /// </summary>
-    public class CommunicationManager
+    public class CommunicationManager : IDisposable
     {
         /// <summary>
         /// Regular expression to verify identifiers and split them into groups.
@@ -36,6 +36,26 @@ namespace Communication
         {
             this.xbeeNetworks = new Dictionary<string, XbeeNetwork>();
             this.devices = new Dictionary<string, ISerialCommunication>();
+        }
+
+        /// <summary>
+        /// Closes all connections.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (XbeeNetwork net in this.xbeeNetworks.Values)
+            {
+                net.Dispose();
+            }
+
+            this.xbeeNetworks.Clear();
+
+            foreach(ISerialCommunication dev in this.devices.Values)
+            {
+                dev.Close();
+            }
+
+            this.devices.Clear();
         }
 
         /// <summary>
