@@ -26,7 +26,10 @@ namespace Models
         /// <summary>
         /// All the riders that participated in this race
         /// </summary>
-        public List<Rider> Riders { get; private set; }
+        public List<Rider> Riders => Events
+                .Select(e => e.Rider)
+                .Distinct(new RiderNameEquality())
+                .ToList();
 
         /// <summary>
         /// For json (de)serialization.
@@ -42,11 +45,6 @@ namespace Models
         public RaceSummary(List<RaceEvent> events)
         {
             Events = events;
-
-            Riders = events
-                .Select(e => e.Rider)
-                .Distinct(new RiderNameEquality())
-                .ToList();
         }
 
         /// <summary>
@@ -55,14 +53,21 @@ namespace Models
         /// <param name="output">the stream to write to</param>
         public void WriteSummary(Stream output)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.Converters.Add(new EventRiderConverter(null));
-            settings.ContractResolver = new NonPublicPropertiesResolver();
-            settings.TypeNameHandling = TypeNameHandling.Auto;
+            JArray riders = JArray.FromObject(this.Riders);
+
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new RiderConverter(null));
+            serializer.TypeNameHandling = TypeNameHandling.Auto;
+
+            JArray events = JArray.FromObject(this.Events, serializer);
+
+            JObject composite = new JObject();
+            composite.Add("Riders", riders);
+            composite.Add("Events", events);
 
             using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true))//we dont own the stream, so dont close it when the writer closes
             {
-                writer.WriteLine(JsonConvert.SerializeObject(this, settings));
+                writer.WriteLine(JsonConvert.SerializeObject(composite));
             }
         }
 
@@ -72,31 +77,31 @@ namespace Models
             {
                 JObject intermediate = JObject.Parse(reader.ReadToEnd());
 
+                List<Rider> riders = intermediate["Riders"].ToObject<List<Rider>>();
+
                 JsonSerializer serializer = new JsonSerializer();
-                serializer.ContractResolver = new NonPublicPropertiesResolver();
+                serializer.Converters.Add(new RiderConverter(riders));
                 serializer.TypeNameHandling = TypeNameHandling.Auto;
 
-                List<Rider> riders = intermediate["Riders"].ToObject<List<Rider>>(serializer);
+                List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
 
-                serializer.Converters.Add(new EventRiderConverter(riders));
-
-                return intermediate.ToObject<RaceSummary>(serializer);
+                return new RaceSummary(events);
             }
         }
 
         /// <summary>
         /// Often when serializing events you do not want to repeat all the information contained in the Rider for every events
-        /// This serializer simplifies it to just the name. If you want to preserve the beacon information you should either not use this serializer or serialize the full rider objects separately
+        /// This serializer simplifies it to just the name. Intended to be used when a separate list of riders is available to match names with on deserialization
         /// </summary>
-        private class EventRiderConverter : JsonConverter<RaceEvent>
+        private class RiderConverter : JsonConverter<Rider>
         {
-            private List<Rider> riders;
-            public EventRiderConverter(List<Rider> riders)
+            private readonly List<Rider> riders;
+            public RiderConverter(List<Rider> riders)
             {
                 this.riders = riders;
             }
 
-            public override RaceEvent ReadJson(JsonReader reader, Type objectType, [AllowNullAttribute] RaceEvent existingValue, bool hasExistingValue, JsonSerializer serializer)
+            public override Rider ReadJson(JsonReader reader, Type objectType, Rider existingValue, bool hasExistingValue, JsonSerializer serializer)
             {
                 JObject intermediate = JObject.Parse((string)reader.Value);
 
@@ -104,39 +109,16 @@ namespace Models
 
                 Rider replacement = riders.Find(r => r.Name == name);
 
-                if (replacement == null)
-                    throw new JsonReaderException($"Could not find rider {(string)reader.Value} in provided riders");
-
-                intermediate["Rider"] = JObject.FromObject(replacement);
-
-                JsonSerializer privateSerializer = new JsonSerializer();
-                serializer.ContractResolver = new NonPublicPropertiesResolver();
-                serializer.TypeNameHandling = TypeNameHandling.Auto;
-
-                return intermediate.ToObject<RaceEvent>(privateSerializer);
+                return replacement;
             }
 
-            public override void WriteJson(JsonWriter writer, [AllowNullAttribute] RaceEvent value, JsonSerializer serializer)
+            public override void WriteJson(JsonWriter writer, Rider value, JsonSerializer serializer)
             {
                 JObject intermediate = JObject.FromObject(value);
 
-                intermediate["Rider"] = value.Rider.Name;
+                intermediate["Rider"] = value.Name;
 
                 writer.WriteValue(intermediate.ToString());
-            }
-        }
-
-        private class NonPublicPropertiesResolver : DefaultContractResolver
-        {
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-            {
-                var prop = base.CreateProperty(member, memberSerialization);
-                if (member is PropertyInfo pi)
-                {
-                    prop.Readable = (pi.GetMethod != null);
-                    prop.Writable = (pi.SetMethod != null);
-                }
-                return prop;
             }
         }
 
