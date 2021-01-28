@@ -46,6 +46,11 @@ namespace Communication
         private System.Timers.Timer timeoutTimer;
 
         /// <summary>
+        /// Monitor response timeouts.
+        /// </summary>
+        private System.Timers.Timer responseTimeoutTimer;
+
+        /// <summary>
         /// The buffer to store data in until the entire command is received..
         /// </summary>
         private byte[] dataBuffer = new byte[256];
@@ -80,6 +85,9 @@ namespace Communication
             this.timeoutTimer = new System.Timers.Timer();
             this.timeoutTimer.Interval = 200;
             this.timeoutTimer.Elapsed += this.TimeoutTimer_Elapsed;
+            this.responseTimeoutTimer = new Timer(750);
+            this.responseTimeoutTimer.Elapsed += ResponseTimeoutTimer_Elapsed;
+            
         }
 
         /// <summary>
@@ -251,13 +259,13 @@ namespace Communication
                     {
                         this.commandToSend.UpdateCRC();
                         data = this.commandToSend.ToArray(false);
-                        this.commandToSend = null;
-                        this.state = State.Idle;
+                        
                     }
                 }
 
                 if (data != null)
                 {
+                    this.responseTimeoutTimer.Start();
                     this.communicationChannel.Write(data);
                 }
             }
@@ -293,6 +301,14 @@ namespace Communication
             if (data.VerifyCRC())
             {
                 this.receiveQueue.Enqueue(data);
+                if (this.commandToSend != null)
+                {
+                    if (data.CommandType == this.commandToSend.CommandType)
+                    {
+                        this.commandToSend = null;
+                        this.responseTimeoutTimer.Stop();
+                    }
+                }
                 this.NewDataArrived?.Invoke(this, null);
             }
             else
@@ -346,6 +362,18 @@ namespace Communication
             Log.Error($"Timeout on data reception, clearing buffer, discarding {bufferPosition} bytes");
             this.ClearBufferResetState();
             this.SendPendingCommand();
+        }
+
+        /// <summary>
+        /// Handles a timeout condition while waiting for a response.
+        /// Clears the command that is waiting for a response.
+        /// </summary>
+        /// <param name="sender">The sender of the event</param>
+        /// <param name="e">The event data.</param>
+        private void ResponseTimeoutTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            this.responseTimeoutTimer.Stop();
+            this.commandToSend = null;
         }
     }
 }

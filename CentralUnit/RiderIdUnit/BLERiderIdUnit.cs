@@ -332,7 +332,10 @@ namespace RiderIdUnit
         {
             if (packet.Status != 0)
             {
-                Log.Debug($"GetClosestDevice returned {packet.Status}");
+                if (this.closestBeacon != null)
+                {
+                    Log.Info($"GetClosestDevice returned {packet.Status}");
+                }
                 this.SetClosestBeacon(null);
             }
             else
@@ -340,7 +343,10 @@ namespace RiderIdUnit
                 List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(packet.Status, packet.Data);
                 foreach (Beacon b in beacons)
                 {
-                    Log.Info($"Got closest device: {b}");
+                    if (!b.Equals(this.closestBeacon))
+                    {
+                        Log.Info($"Got closest device: {b}");
+                    }
                     this.SetClosestBeacon(b);
                 }
             }
