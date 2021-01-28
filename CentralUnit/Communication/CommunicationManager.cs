@@ -50,7 +50,7 @@ namespace Communication
 
             this.xbeeNetworks.Clear();
 
-            foreach(ISerialCommunication dev in this.devices.Values)
+            foreach (ISerialCommunication dev in this.devices.Values)
             {
                 dev.Close();
             }

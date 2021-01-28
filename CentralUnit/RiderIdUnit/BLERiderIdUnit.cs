@@ -46,7 +46,7 @@ namespace RiderIdUnit
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
-        /// Using a defeault max detection distance of 4 meter.
+        /// Using a default max detection distance of 4 meter.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
         /// <param name="unitId">The unit name</param>
@@ -206,6 +206,7 @@ namespace RiderIdUnit
 
                     Thread.Sleep(20);
                 }
+
                 Log.Info($"Event thread ended for unit {this.unitId}");
             }
             catch (Exception ex)
@@ -286,7 +287,6 @@ namespace RiderIdUnit
                 if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
                 {
                     // Entered range
-
                     this.eventQueue.Enqueue(new RiderIDQueuedEvent(
                                                     new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
                                                     RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
@@ -336,6 +336,7 @@ namespace RiderIdUnit
                 {
                     Log.Info($"GetClosestDevice returned {packet.Status}");
                 }
+
                 this.SetClosestBeacon(null);
             }
             else
@@ -347,6 +348,7 @@ namespace RiderIdUnit
                     {
                         Log.Info($"Got closest device: {b}");
                     }
+
                     this.SetClosestBeacon(b);
                 }
             }

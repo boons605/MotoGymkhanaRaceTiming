@@ -86,8 +86,7 @@ namespace Communication
             this.timeoutTimer.Interval = 200;
             this.timeoutTimer.Elapsed += this.TimeoutTimer_Elapsed;
             this.responseTimeoutTimer = new Timer(750);
-            this.responseTimeoutTimer.Elapsed += ResponseTimeoutTimer_Elapsed;
-            
+            this.responseTimeoutTimer.Elapsed += this.ResponseTimeoutTimer_Elapsed;
         }
 
         /// <summary>
@@ -143,7 +142,7 @@ namespace Communication
             bool retVal = false;
             lock (this.lockObj)
             {
-                retVal = (this.commandToSend == null) && communicationChannel.Connected;
+                retVal = (this.commandToSend == null) && this.communicationChannel.Connected;
             }
 
             return retVal;
@@ -259,7 +258,6 @@ namespace Communication
                     {
                         this.commandToSend.UpdateCRC();
                         data = this.commandToSend.ToArray(false);
-                        
                     }
                 }
 
@@ -309,6 +307,7 @@ namespace Communication
                         this.responseTimeoutTimer.Stop();
                     }
                 }
+
                 this.NewDataArrived?.Invoke(this, null);
             }
             else

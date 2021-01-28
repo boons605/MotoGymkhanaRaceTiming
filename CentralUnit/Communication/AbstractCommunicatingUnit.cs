@@ -6,6 +6,7 @@ namespace Communication
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Text;
     using System.Threading;
     using log4net;
@@ -13,6 +14,7 @@ namespace Communication
     /// <summary>
     /// Base class for communicating units.
     /// </summary>
+    [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.")]
     public abstract class AbstractCommunicatingUnit : ICommunicatingUnit, IDisposable
     {
         /// <summary>
@@ -54,6 +56,7 @@ namespace Communication
         /// Initializes a new instance of the <see cref="AbstractCommunicatingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
+        /// <param name="unitId">The identifier for this unit</param>
         public AbstractCommunicatingUnit(ISerialCommunication commInterface, string unitId)
         {
             if (commInterface == null)

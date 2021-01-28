@@ -86,6 +86,7 @@ namespace Communication
                 {
                     Log.Debug($"Writing serial data {BitConverter.ToString(input)}");
                 }
+
                 this.serialPort.Write(input, 0, input.Length);
             }
             catch (Exception ex)
