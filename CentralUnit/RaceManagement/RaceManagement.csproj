@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RiderIdUnit\RiderIdUnit.csproj" />
-    <ProjectReference Include="..\TimingUnit\TimingUnit.csproj" />
+    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\SensorUnits\SensorUnits.csproj" />
   </ItemGroup>
 
   <ItemGroup>

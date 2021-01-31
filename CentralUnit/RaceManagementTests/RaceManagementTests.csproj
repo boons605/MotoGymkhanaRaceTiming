@@ -15,8 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaceManagement\RaceManagement.csproj" />
-    <ProjectReference Include="..\RiderIdUnit\RiderIdUnit.csproj" />
-    <ProjectReference Include="..\TimingUnit\TimingUnit.csproj" />
   </ItemGroup>
 
 </Project>

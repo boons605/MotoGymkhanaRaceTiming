@@ -9,8 +9,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
-using RiderIdUnit;
-using TimingUnit;
+using SensorUnits.RiderIdUnit;
+using SensorUnits.TimingUnit;
 
 namespace RaceManagement
 {

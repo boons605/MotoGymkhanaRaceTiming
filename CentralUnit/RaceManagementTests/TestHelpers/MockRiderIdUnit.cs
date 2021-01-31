@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Models;
-using RiderIdUnit;
+using SensorUnits.RiderIdUnit;
 
 namespace RaceManagementTests.TestHelpers
 {

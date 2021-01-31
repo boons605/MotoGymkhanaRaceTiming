@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using SensorUnits.RiderIdUnit;
 
 namespace CommProtoTesting
 {
@@ -195,7 +196,7 @@ namespace CommProtoTesting
             }
             else
             {
-                List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(latestData.Status, latestData.Data);
+                List<Beacon> beacons = RiderIDCommandDataParser.ParseClosestDeviceResponse(latestData.Status, latestData.Data);
                 foreach (Beacon b in beacons)
                 {
                     WriteLineToConsole($"Got closest device: {b.ToString()}");
@@ -234,7 +235,7 @@ namespace CommProtoTesting
 
         private static void HandleListDetectedDevicesDeviceData(byte[] devicesData)
         {
-            List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(0, devicesData);
+            List<Beacon> beacons = RiderIDCommandDataParser.ParseClosestDeviceResponse(0, devicesData);
             foreach (Beacon b in beacons)
             {
                 WriteLineToConsole($"Found device: {b.ToString()}");
@@ -257,7 +258,7 @@ namespace CommProtoTesting
                 }
                 byte[] devicesData = new byte[latestData.Data.Length - 2];
                 Array.Copy(latestData.Data, 2, devicesData, 0, devicesData.Length);
-                List<Beacon> devices = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(0, devicesData);
+                List<Beacon> devices = RiderIDCommandDataParser.ParseClosestDeviceResponse(0, devicesData);
                 foreach (Beacon b in devices)
                 {
                     WriteLineToConsole($"Got allowed device: {b.ToString()}");
