@@ -14,9 +14,16 @@ namespace ModelsTests
         [TestMethod]
         public void RaceSummary_ReadAndWrite_ShouldBeSymmetric()
         {
+            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
+            martijnBeacon.Rssi = 3;
+            martijnBeacon.MeasuredPower = 4;
 
-            EnteredEvent entered = new EnteredEvent(new DateTime(2000, 1, 1), new Rider("Martijn", new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 1)));
-            TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 2)),100, 1);
+            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 5 }, 6);
+            bertBeacon.Rssi = 7;
+            bertBeacon.MeasuredPower = 8;
+
+            EnteredEvent entered = new EnteredEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnBeacon));
+            TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", bertBeacon),100, 1);
 
             RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing });
 
