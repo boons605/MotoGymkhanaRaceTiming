@@ -5,6 +5,7 @@ namespace CLITestWithUnits
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Threading;
     using Communication;
     using log4net;
     using log4net.Config;
@@ -38,7 +39,9 @@ namespace CLITestWithUnits
         {
             XmlConfigurator.Configure(new System.IO.FileInfo("logConfig.xml"));
 
-            CommunicationManager = new CommunicationManager();
+            CancellationTokenSource source = new CancellationTokenSource();
+
+            CommunicationManager = new CommunicationManager(source.Token);
 
             if (args.Length < 3)
             {
@@ -57,7 +60,7 @@ namespace CLITestWithUnits
                 Environment.Exit(-2);
             }
 
-            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit");
+            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit", source.Token);
             timer.OnTrigger += Timer_OnTrigger;
 
             if (timer is AbstractCommunicatingUnit)
@@ -65,30 +68,25 @@ namespace CLITestWithUnits
                 //((AbstractCommunicatingUnit)timer).
             }
 
-            startIdUnit = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(args[2]), "startUnit", 2.0);
+            startIdUnit = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(args[2]), "startUnit", 2.0, source.Token);
             startIdUnit.OnRiderId += StartIdUnit_OnRiderId;
             startIdUnit.OnRiderExit += StartIdUnit_OnRiderExit;
 
-
             if (args.Length > 3)
             {
-                finishIdUnit = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(args[3]), "finishUnit", 2.0);
+                finishIdUnit = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(args[3]), "finishUnit", 2.0, source.Token);
                 unitsConnecting++;
             }
 
-
-
-
             startIdUnit.AddKnownRiders(riders);
-            
-
 
             Console.ReadLine();
+
+            source.Cancel();
 
             CommunicationManager.Dispose();
 
             Environment.Exit(0);
-
         }
 
         private static void StartIdUnit_OnRiderExit(object sender, RiderIdEventArgs e)

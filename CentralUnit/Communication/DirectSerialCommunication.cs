@@ -31,14 +31,21 @@ namespace Communication
         private Thread commThread;
 
         /// <summary>
+        /// The cancellation token for this unit.
+        /// </summary>
+        private CancellationToken cancellationToken;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DirectSerialCommunication" /> class.
         /// Open the serial port specified by <c>portName</c>.
         /// Start the serial communication thread.
         /// Port is opened at 115200/8/N/1.
         /// </summary>
         /// <param name="portName">The serial port name, e.g. <c>COM1</c> or <c>/dev/ttyS0</c></param>
-        public DirectSerialCommunication(string portName)
+        /// <param name="token">The cancellation token for this unit</param>
+        public DirectSerialCommunication(string portName, CancellationToken token)
         {
+            this.cancellationToken = token;
             this.serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One);
             this.commThread = new Thread(this.Run) { IsBackground = true };
             this.commThread.Start();
@@ -126,7 +133,7 @@ namespace Communication
 
                 this.ConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs(this.serialPort.IsOpen, false));
 
-                while (this.serialPort.IsOpen)
+                while (this.serialPort.IsOpen && (!this.cancellationToken.IsCancellationRequested))
                 {
                     int bytesToRead = this.serialPort.BytesToRead;
 
@@ -146,6 +153,11 @@ namespace Communication
             {
                 Log.Error("Serial port failure: " + this.serialPort.PortName, ex);
                 this.ConnectionStateChanged?.Invoke(this, new ConnectionStateChangedEventArgs(false, true));
+            }
+
+            if (this.serialPort.IsOpen)
+            {
+                this.Close();
             }
         }
     }

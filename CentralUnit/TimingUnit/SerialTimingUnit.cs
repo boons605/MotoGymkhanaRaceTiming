@@ -30,7 +30,9 @@ namespace TimingUnit
         /// Initializes a new instance of the <see cref="SerialTimingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public SerialTimingUnit(ISerialCommunication commInterface, string unitId) : base(commInterface, unitId)
+        /// <param name="unitId">The name of the timing unit</param>
+        /// <param name="token">The cancellation token for this unit</param>
+        public SerialTimingUnit(ISerialCommunication commInterface, string unitId, CancellationToken token) : base(commInterface, unitId, token)
         {
             this.timingEvents = new ConcurrentQueue<TimingTriggeredEventArgs>();
         }
@@ -85,7 +87,7 @@ namespace TimingUnit
         {
             try
             {
-                while (this.keepEventThreadAlive)
+                while (this.keepEventThreadAlive && (!this.cancellationToken.IsCancellationRequested))
                 {
                     TimingTriggeredEventArgs timingEvent;
                     while (this.timingEvents.TryDequeue(out timingEvent))

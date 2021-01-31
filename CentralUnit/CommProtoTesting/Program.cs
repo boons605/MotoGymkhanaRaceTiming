@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace CommProtoTesting
 {
@@ -20,7 +21,9 @@ namespace CommProtoTesting
         {
             Console.WriteLine("Hello World!");
 
-            CommunicationManager cm = new CommunicationManager();
+            CancellationTokenSource source = new CancellationTokenSource();
+
+            CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
 
             string comPort = "directserial:COM5";
 
@@ -29,7 +32,7 @@ namespace CommProtoTesting
                 comPort = args[0];
             }
 
-            serialPort = cm.GetCommunicationDevice(comPort);
+            serialPort = CommunicationManager.GetCommunicationDevice(comPort);
 
             proto = new CommunicationProtocol(serialPort);
             proto.NewDataArrived += Proto_NewDataArrived;

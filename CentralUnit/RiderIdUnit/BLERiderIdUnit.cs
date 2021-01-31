@@ -50,7 +50,8 @@ namespace RiderIdUnit
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
         /// <param name="unitId">The unit name</param>
-        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId) : this(commInterface, unitId, 4.0)
+        /// <param name="token">The cancellation token for this unit</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, CancellationToken token) : this(commInterface, unitId, 4.0, token)
         {
         }
 
@@ -60,7 +61,8 @@ namespace RiderIdUnit
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
         /// <param name="unitId">The unit name</param>
         /// <param name="distanceLimit">The distance in meter within which a beacon must be to be considered in range.</param>
-        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, double distanceLimit) : base(commInterface, unitId)
+        /// <param name="token">The cancellation token for this unit</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, double distanceLimit, CancellationToken token) : base(commInterface, unitId, token)
         {
             this.knownRiders = new List<Rider>();
             this.eventQueue = new ConcurrentQueue<RiderIDQueuedEvent>();
@@ -171,7 +173,7 @@ namespace RiderIdUnit
         {
             try
             {
-                while (this.keepEventThreadAlive)
+                while (this.keepEventThreadAlive && (!this.cancellationToken.IsCancellationRequested))
                 {
                     while (this.eventQueue.TryDequeue(out RiderIDQueuedEvent evt))
                     {

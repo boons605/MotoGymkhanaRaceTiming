@@ -53,11 +53,17 @@ namespace Communication
         protected string unitId;
 
         /// <summary>
+        /// The cancellation token for this unit.
+        /// </summary>
+        protected CancellationToken cancellationToken;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AbstractCommunicatingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
         /// <param name="unitId">The identifier for this unit</param>
-        public AbstractCommunicatingUnit(ISerialCommunication commInterface, string unitId)
+        /// <param name="token">The cancellation token for this unit</param>
+        public AbstractCommunicatingUnit(ISerialCommunication commInterface, string unitId, CancellationToken token)
         {
             if (commInterface == null)
             {
@@ -67,11 +73,13 @@ namespace Communication
             this.protocolHandler = new CommunicationProtocol(commInterface);
             this.protocolHandler.ConnectionStateChanged += this.ProtocolHandler_ConnectionStateChanged;
             this.protocolHandler.NewDataArrived += this.ProtocolHandler_NewDataArrived;
-            this.eventThread = new Thread(this.RunEventThread);
+            this.eventThread = new Thread(this.RunEventThread) { IsBackground = true };
             this.commandQueue = new ConcurrentQueue<CommandData>();
             this.commTimeoutTimer.Elapsed += this.CommTimeoutTimer_Elapsed;
             this.unitId = unitId;
             this.eventThread.Start();
+
+            this.cancellationToken = token;
         }
 
         /// <inheritdoc/>
