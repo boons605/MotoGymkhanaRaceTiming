@@ -51,29 +51,23 @@ namespace RiderIdUnit
         /// <summary>
         /// Name associated with the received sensor id
         /// </summary>
-        public readonly string RiderName;
-
-        /// <summary>
-        /// Date reported by the sensor
-        /// </summary>
-        public readonly byte[] SensorId;
-
-        /// <summary>
-        /// identifier for the unit that throws the event
-        /// </summary>
-        public readonly string UnitId;
+        public Rider Rider;
 
         /// <summary>
         /// Date and time when this message was received
         /// </summary>
         public DateTime Received;
 
-        public RiderIdEventArgs(string riderName, byte[] sensorId, DateTime received, string unitId)
+        /// <summary>
+        /// Name of the RiderIdUnit that picket this signal up
+        /// </summary>
+        public string SensorId;
+
+        public RiderIdEventArgs(Rider rider, DateTime received, string sensorId)
         {
-            RiderName = riderName;
-            SensorId = sensorId;
+            Rider = rider;
             Received = received;
-            UnitId = unitId;
+            SensorId = sensorId;
         }
     }
 }

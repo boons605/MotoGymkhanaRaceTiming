@@ -15,20 +15,12 @@ namespace Models
         /// <summary>
         /// The rider name.
         /// </summary>
-        private string name;
+        public string Name { get; private set; }
 
         /// <summary>
         /// The beacon that belongs to this rider.
         /// </summary>
-        private Beacon beacon;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Rider"/> class with a name an no beacon assigned yet.
-        /// </summary>
-        /// <param name="name">The rider name.</param>
-        public Rider(string name) : this(name, null)
-        {
-        }
+        public Beacon Beacon { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Rider"/> class with a name and a beacon to identify the rider.
@@ -37,18 +29,8 @@ namespace Models
         /// <param name="beacon">The <see cref="Beacon"/> belonging to the rider.</param>
         public Rider(string name, Beacon beacon)
         {
-            this.name = name;
-            this.beacon = beacon;
+            Name = name;
+            Beacon = beacon;
         }
-
-        /// <summary>
-        /// Gets the rider name.
-        /// </summary>
-        public string Name { get => this.name; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="Beacon"/> belonging to this rider.
-        /// </summary>
-        public Beacon Beacon { get => this.beacon; set => this.beacon = value; }
     }
 }
