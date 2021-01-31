@@ -71,7 +71,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void ProcessUARTByte(uint8_t uartId, uint8_t uartByte);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

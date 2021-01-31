@@ -1,6 +1,7 @@
 ﻿using Communication;
 using System;
 using System.Text;
+using System.Threading;
 using XBeeLibrary.Core.Models;
 using XBeeLibrary.Core.Packet;
 using XBeeLibrary.Core.Packet.Common;
@@ -17,9 +18,11 @@ namespace XBeeLibraryTesting
         {
             Console.WriteLine("Hello World!");
 
-            CommunicationManager cm = new CommunicationManager();
+            CancellationTokenSource source = new CancellationTokenSource();
 
-            serialPort = cm.GetCommunicationDevice("xbee:COM4:0013A20041BB64A6");
+            CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
+
+            serialPort = CommunicationManager.GetCommunicationDevice("xbee:COM4:0013A20041BB64A6");
             serialPort.Failure += SerialPort_Failure;
             serialPort.ConnectionStateChanged += SerialPort_ConnectionStateChanged;
             serialPort.DataReceived += SerialPort_DataReceived;

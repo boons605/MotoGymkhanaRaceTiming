@@ -155,6 +155,7 @@ namespace RaceManagement
             lock (waitingLock)
             {
                 EnteredEvent newEvent = new EnteredEvent(args.Received, args.Rider);
+
                 waitingRiders.Enqueue(newEvent);
                 raceState.Enqueue(newEvent);
 
@@ -174,6 +175,7 @@ namespace RaceManagement
         {
             lock (endLock)
             {
+
                 LeftEvent newEvent = new LeftEvent(args.Received, args.Rider);
 
                 //if we receive an end id for a rider that is not on track ignore it

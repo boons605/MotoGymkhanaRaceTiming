@@ -14,10 +14,11 @@
 
 #define RTC_SLAVE_ADDRESS 0x68
 
-OperationModes operationMode = NoOperation;
+OperationModes operationMode = NoTimerOperation;
 SensorModes sensorMode = NoSensors;
 uint8_t autoConfigurationDone = 0U;
 uint8_t displayLines = 2U;
+static OperationModes localOperationMode = NoTimerOperation;
 
 static RTCInitStates RTCInitState = RTCInit_SendStartCondition;
 
@@ -112,31 +113,33 @@ uint8_t RTCInitSuccesful(void)
 void RunAutoConfiguration(void)
 {
     InitRTC();
-
+    uint32_t sysTime = GetSystemTimeStampMs();
 
     //For now, this isn't anything exciting. Just finish auto configuration after 2000ms
-    if((GetMillisecondsFromTimeStamp(&systemTime) > 5000U)
+    if((sysTime > 5000U)
        || (RTCInitSuccesful() == 1U))
     {
         if(InputGetState(&UserInputs[JmpSensorCount]) == 1U)
         {
             sensorMode = DualSensor;
-            operationMode = SingleRunTimerOperation;
+            localOperationMode = SingleRunTimerOperation;
         }
         else
         {
             sensorMode = SingleSensor;
             if(InputGetState(&UserInputs[JmpOpMode]) == 1U)
             {
-                operationMode = SingleRunTimerOperation;
+                localOperationMode = SingleRunTimerOperation;
             }
             else
             {
-                operationMode = LaptimerOperation;
+                localOperationMode = LaptimerOperation;
             }
         }
+
+        operationMode = localOperationMode;
         //Wait for at least 1000ms after startup, to allow power supply to stabilize.
-        if(GetMillisecondsFromTimeStamp(&systemTime) > 1000U)
+        if(sysTime > 1000U)
         {
             autoConfigurationDone = 1U;
         }
@@ -160,4 +163,41 @@ uint32_t GetConfigBCDDisplay(void)
     return retVal;
 
 
+}
+
+uint8_t SetNewConfigMode(uint8_t mode)
+{
+    uint8_t retVal = 0U;
+    if(mode != 0U)
+    {
+        OperationModes newOpMode = (OperationModes)mode;
+        switch(newOpMode)
+        {
+            case ConnectedTimestampCollector:
+            {
+                operationMode = newOpMode;
+                retVal = 1U;
+                break;
+            }
+            case LaptimerOperation:
+            {
+                if(sensorMode == SingleSensor)
+                {
+                    operationMode = newOpMode;
+                    retVal = 1U;
+                }
+                break;
+            }
+            case SingleRunTimerOperation:
+            {
+                operationMode = newOpMode;
+                retVal = 1U;
+                break;
+            }
+            default:
+                //Invalid mode.
+                break;
+        }
+    }
+    return retVal;
 }

@@ -27,6 +27,7 @@
 #include "Configuration.h"
 #include "RaceTiming.h"
 #include "Inputs.h"
+#include "UARTBuffer.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -49,6 +50,7 @@
 /* USER CODE BEGIN PV */
 uint8_t uartData[14] = {0};
 volatile uint8_t uartTxIndex = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -122,6 +124,7 @@ int main(void)
     LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_12);
     LL_SPI_Enable(SPI2);
     LL_SPI_Enable(SPI1);
+    LL_USART_DisableIT_RXNE(USART2);
     InitInputs();
     //LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_11);
     //LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_8);
@@ -149,6 +152,9 @@ int main(void)
         else
         {
             RunRaceTiming();
+
+            UARTBufferRunTxWork();
+
         }
     }
     /* USER CODE END 3 */
@@ -422,10 +428,14 @@ static void MX_USART1_UART_Init(void)
     GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    /* USART1 interrupt Init */
+    NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 3, 0));
+    NVIC_EnableIRQ(USART1_IRQn);
+
     /* USER CODE BEGIN USART1_Init 1 */
 
     /* USER CODE END USART1_Init 1 */
-    USART_InitStruct.BaudRate = 9600;
+    USART_InitStruct.BaudRate = 115200;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -435,8 +445,14 @@ static void MX_USART1_UART_Init(void)
     LL_USART_Init(USART1, &USART_InitStruct);
     LL_USART_ConfigAsyncMode(USART1);
     LL_USART_Enable(USART1);
-    /* USER CODE BEGIN USART1_Init 2 */
 
+    /* USER CODE BEGIN USART1_Init 2 */
+    UARTBuffer* buff = UARTBufferGetUART(0);
+    if(buff != (UARTBuffer*)0)
+    {
+        buff->uartHandle = USART1;
+        LL_USART_EnableIT_RXNE(buff->uartHandle);
+    }
     /* USER CODE END USART1_Init 2 */
 
 }
@@ -475,6 +491,10 @@ static void MX_USART2_UART_Init(void)
     GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    /* USART2 interrupt Init */
+    NVIC_SetPriority(USART2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 3, 0));
+    NVIC_EnableIRQ(USART2_IRQn);
+
     /* USER CODE BEGIN USART2_Init 1 */
 
     /* USER CODE END USART2_Init 1 */
@@ -489,6 +509,12 @@ static void MX_USART2_UART_Init(void)
     LL_USART_ConfigAsyncMode(USART2);
     LL_USART_Enable(USART2);
     /* USER CODE BEGIN USART2_Init 2 */
+    UARTBuffer* buff = UARTBufferGetUART(1);
+    if(buff != (UARTBuffer*)0)
+    {
+        buff->uartHandle = USART2;
+        LL_USART_EnableIT_RXNE(buff->uartHandle);
+    }
 
     /* USER CODE END USART2_Init 2 */
 
@@ -610,6 +636,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void ProcessUARTByte(uint8_t uartId, uint8_t uartByte)
+{
+    UARTBufferProcessReceivedByte(UARTBufferGetUART(uartId), uartByte);
+}
 
 /* USER CODE END 4 */
 

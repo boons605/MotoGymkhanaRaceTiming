@@ -30,5 +30,6 @@ namespace RaceManagementTests.TestHelpers
 
         public void EmitIdEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
         public void EmitExitEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
+
     }
 }
