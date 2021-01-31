@@ -25,6 +25,8 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         event EventHandler<RiderIdEventArgs> OnRiderExit;
 
+        string SensorId { get; }
+
         /// <summary>
         /// A unit will store which riders it should report about, to avoid reporting riders or loose senders that are near the sensor range
         /// </summary>

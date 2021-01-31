@@ -74,17 +74,20 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         private Beacon closestBeacon;
 
+        public string SensorId { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public BLERiderIdUnit(ISerialCommunication commInterface)
+        public BLERiderIdUnit(ISerialCommunication commInterface, string id)
         {
             if (commInterface == null)
             {
                 throw new ArgumentNullException("commInterface");
             }
 
+            SensorId = id;
             this.protocolHandler = new CommunicationProtocol(commInterface);
             this.protocolHandler.ConnectionStateChanged += this.ProtocolHandler_ConnectionStateChanged;
             this.protocolHandler.NewDataArrived += this.ProtocolHandler_NewDataArrived;

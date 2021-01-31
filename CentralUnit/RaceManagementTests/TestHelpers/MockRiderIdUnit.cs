@@ -10,8 +10,15 @@ namespace RaceManagementTests.TestHelpers
     /// </summary>
     public class MockRiderIdUnit : IRiderIdUnit
     {
+        public string SensorId { get; private set; }
+
         public event EventHandler<RiderIdEventArgs> OnRiderId;
         public event EventHandler<RiderIdEventArgs> OnRiderExit;
+
+        public MockRiderIdUnit(string id)
+        {
+            SensorId = id;
+        }
 
         public void AddKnownRiders(List<Rider> riders)
         {
@@ -28,7 +35,7 @@ namespace RaceManagementTests.TestHelpers
             throw new NotImplementedException();
         }
 
-        public void EmitIdEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
-        public void EmitExitEvent(Rider rider, DateTime received, string sensorId) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, sensorId));
+        public void EmitIdEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, SensorId));
+        public void EmitExitEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, SensorId));
     }
 }

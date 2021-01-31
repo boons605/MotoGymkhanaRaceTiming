@@ -9,4 +9,10 @@
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\RaceManagement\RaceManagement.csproj" />
+    <ProjectReference Include="..\SensorUnits\SensorUnits.csproj" />
+  </ItemGroup>
+
 </Project>

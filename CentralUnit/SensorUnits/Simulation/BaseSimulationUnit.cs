@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SensorUnits.Simulation
@@ -10,9 +11,9 @@ namespace SensorUnits.Simulation
     /// <summary>
     /// This class provides base functionality to simulate a sensor based on a RaceSummary
     /// </summary>
-    public abstract class BaseSimulationUnit
+    public abstract class BaseSimulationUnit<T> where T : RaceEvent
     {
-        private readonly Stack<RaceEvent> eventsToReplay;
+        private readonly Stack<T> eventsToReplay;
         private readonly double milliSecondsToStart;
 
         public BaseSimulationUnit(RaceSummary race)
@@ -23,18 +24,16 @@ namespace SensorUnits.Simulation
             milliSecondsToStart = (eventsToReplay.Peek().Time - raceStart.Time).TotalMilliseconds;
         }
 
-        public async Task Run()
+        public async Task Run(CancellationToken token)
         {
             int milliSecondsToWait = (int)milliSecondsToStart;
             
-            while(true)
+            while(!token.IsCancellationRequested)
             {
-                Stopwatch test = new Stopwatch();
-
-                //TO DO: this is not accurate, the semantics are more like 'sleep at least x milliseconds'
+                //this is not going to be accurate, depends on windows task scheduler. Best we can hope for is 15ms accuracy. Worst case could be seconds
                 await Task.Delay(milliSecondsToWait);
 
-                RaceEvent toReplay = eventsToReplay.Pop();
+                T toReplay = eventsToReplay.Pop();
                 Replay(toReplay);
 
                 if (eventsToReplay.Count == 0)
@@ -53,13 +52,13 @@ namespace SensorUnits.Simulation
         /// </summary>
         /// <param name="race"></param>
         /// <returns>All the events that should be replayed so that popping returns events in chronological order</returns>
-        protected abstract Stack<RaceEvent> FilterEvents(RaceSummary race);
+        protected abstract Stack<T> FilterEvents(RaceSummary race);
 
         /// <summary>
         /// Performs whatever actions are necessery to simulate that the provided event happened
         /// Should be able to handle every kind of event returned by <see cref="FilterEvents(RaceSummary)"/>
         /// </summary>
         /// <param name="raceEvent"></param>
-        protected abstract void Replay(RaceEvent raceEvent);
+        protected abstract void Replay(T raceEvent);
     }
 }
