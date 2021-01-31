@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Models;
 using RiderIdUnit;
 using TimingUnit;
 
@@ -153,7 +154,8 @@ namespace RaceManagement
         {
             lock (waitingLock)
             {
-                EnteredEvent newEvent = new EnteredEvent(args.Received, args.Rider.Name, args.Rider.Beacon.Identifier);
+                EnteredEvent newEvent = new EnteredEvent(args.Received, args.Rider);
+
                 waitingRiders.Enqueue(newEvent);
                 raceState.Enqueue(newEvent);
 
@@ -173,7 +175,8 @@ namespace RaceManagement
         {
             lock (endLock)
             {
-                LeftEvent newEvent = new LeftEvent(args.Received, args.Rider.Name, args.Rider.Beacon.Identifier);
+
+                LeftEvent newEvent = new LeftEvent(args.Received, args.Rider);
 
                 //if we receive an end id for a rider that is not on track ignore it
                 if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))

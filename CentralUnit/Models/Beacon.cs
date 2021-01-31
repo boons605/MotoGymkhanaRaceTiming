@@ -27,24 +27,24 @@ namespace Models
         /// <summary>
         /// The BLE MAC address of this beacon.
         /// </summary>
-        private byte[] identifier;
+        public byte[] Identifier { get; private set; }
 
         /// <summary>
         /// The Received Signal Strength Indicator for this beacon.
         /// This is a negative number expressed in <c>dBm</c>.
         /// </summary>
-        private int rssi;
+        public int Rssi;
 
         /// <summary>
         /// The calibrated RSSI at 1m distance, as provided by the manufacturer and sent in the payload of the beacon broadcast message.
         /// </summary>
-        private int measuredPower;
+        public int MeasuredPower;
 
         /// <summary>
         /// The correction factor for the <see cref="measuredPower"/>, since manufacturers of cheap Chinese iBeacons don't always put the correct
         /// data in the beacon broadcast message.
         /// </summary>
-        private UInt16 correctionFactor;
+        public UInt16 CorrectionFactor { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Beacon" /> class based on an identifier and a correction factor for 
@@ -65,8 +65,8 @@ namespace Models
                 throw new ArgumentException($"Invalid identifier length ({identifier.Length}). Identifier must be 6 bytes to represent a BLE MAC address");
             }
 
-            this.identifier = identifier;
-            this.correctionFactor = correctionFactor;
+            this.Identifier = identifier;
+            this.CorrectionFactor = correctionFactor;
         }
 
         /// <summary>
@@ -76,34 +76,14 @@ namespace Models
         {
             get
             {
-                if ((this.measuredPower == 0) || (this.rssi == 0))
+                if ((this.MeasuredPower == 0) || (this.Rssi == 0))
                 {
                     return 0.0;
                 }
 
-                return Math.Pow(10, ((double)this.measuredPower - (double)this.rssi) / (10.0 * DistanceEnvironmentFactor));
+                return Math.Pow(10, ((double)this.MeasuredPower - (double)this.Rssi) / (10.0 * DistanceEnvironmentFactor));
             }
         }
-
-        /// <summary>
-        /// Gets the correction factor for chinese beacons.
-        /// </summary>
-        public UInt16 CorrectionFactor { get => this.correctionFactor; }
-
-        /// <summary>
-        /// Gets the identifier for this beacon.
-        /// </summary>
-        public byte[] Identifier { get => this.identifier; }
-
-        /// <summary>
-        /// Gets or sets the Received Signal Strength Indicator for this beacon.
-        /// </summary>
-        public int Rssi { get => this.rssi; set => this.rssi = value; }
-
-        /// <summary>
-        /// Gets or sets the calibrated RSSI at 1m distance.
-        /// </summary>
-        public int MeasuredPower { get => this.measuredPower; set => this.measuredPower = value; }
 
         /// <summary>
         /// Represents this Beacon as a string.
@@ -113,14 +93,14 @@ namespace Models
         {
             StringBuilder output = new StringBuilder();
             output.Append("Id: ");
-            output.Append(BitConverter.ToString(this.identifier));
+            output.Append(BitConverter.ToString(this.Identifier));
             output.Append(";MeasuredPower: ");
-            output.Append(this.measuredPower);
+            output.Append(this.MeasuredPower);
             output.Append("(-");
-            output.Append(this.correctionFactor);
+            output.Append(this.CorrectionFactor);
             output.Append(")");
             output.Append(";RSSI: ");
-            output.Append(this.rssi);
+            output.Append(this.Rssi);
             output.Append(";Distance: ");
             output.Append(this.Distance);
 
@@ -130,7 +110,7 @@ namespace Models
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return this.identifier.GetHashCode() ^ this.correctionFactor.GetHashCode() ^ this.measuredPower.GetHashCode() ^ this.rssi.GetHashCode();
+            return this.Identifier.GetHashCode() ^ this.CorrectionFactor.GetHashCode() ^ this.MeasuredPower.GetHashCode() ^ this.Rssi.GetHashCode();
         }
 
         /// <summary>
@@ -145,9 +125,9 @@ namespace Models
                 if (obj is Beacon)
                 {
                     Beacon otherBeacon = (Beacon)obj;
-                    for (int i = 0; i < this.identifier.Length; i++)
+                    for (int i = 0; i < this.Identifier.Length; i++)
                     {
-                        if (this.identifier[i] != otherBeacon.Identifier[i])
+                        if (this.Identifier[i] != otherBeacon.Identifier[i])
                         {
                             return false;
                         }

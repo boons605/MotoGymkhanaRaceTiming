@@ -1,38 +1,12 @@
-﻿// <copyright file="RaceSummary.cs" company="Moto Gymkhana">
+﻿// <copyright file="RaceEvents.cs" company="Moto Gymkhana">
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
 
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.IO;
 
-namespace RaceManagement
+namespace Models
 {
-    /// <summary>
-    /// This class lists all the events that happened during a race. In the future should also be able to save/load summaries and provide race statistics
-    /// </summary>
-    public class RaceSummary
-    {
-        /// <summary>
-        /// The events that happened in the race in the order that were processed
-        /// </summary>
-        public List<RaceEvent> Events { get; private set; }
-
-        public RaceSummary(List<RaceEvent> events)
-        {
-            Events = events;
-        }
-
-        /// <summary>
-        /// Writes a JSON to the stream that represents the race
-        /// </summary>
-        /// <param name="output">the stream to write to</param>
-        public void WriteSummary(Stream output)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     /// <summary>
     /// Base class for representing things that happened during a race. Every event has three basic properties: event id, who the event applies to and when the event was recorded
     /// </summary>
@@ -41,30 +15,23 @@ namespace RaceManagement
         /// <summary>
         /// The moment the event was processed
         /// </summary>
-        public readonly DateTime Time;
+        public DateTime Time;
 
         /// <summary>
         /// Unique id to refer to this event
         /// </summary>
-        public readonly Guid EventId;
+        public Guid EventId;
 
         /// <summary>
         /// The rider this event happened to
         /// </summary>
-        public string Rider { get; protected set; }
+        public Rider Rider { get; protected set; }
 
-        public RaceEvent(DateTime time, string rider, Guid eventId)
+        public RaceEvent(DateTime time, Rider rider, Guid eventId)
         {
             Time = time;
             Rider = rider;
             EventId = eventId;
-        }
-
-        public RaceEvent(DateTime time, string rider)
-            : this(time, rider, Guid.NewGuid())
-        {
-            Time = time;
-            Rider = rider;
         }
     }
 
@@ -99,7 +66,7 @@ namespace RaceManagement
         public readonly LeftEvent Left;
 
         public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
-            : base(timeEnd.Time, timeEnd.Rider)
+            : base(timeEnd.Time, timeEnd.Rider, Guid.NewGuid())
         {
             Entered = entered;
             TimeStart = timeStart;
@@ -113,16 +80,8 @@ namespace RaceManagement
     /// </summary>
     public class EnteredEvent : RaceEvent
     {
-        /// <summary>
-        /// Id reported to the sensor that registered the rider
-        /// </summary>
-        public byte[] SensorId { get; private set; }
-
-        public EnteredEvent(DateTime time, string rider, byte[] sensorId)
-            : base(time, rider)
-        {
-            SensorId = sensorId;
-        }
+        public EnteredEvent(DateTime time, Rider rider)
+            : base(time, rider, Guid.NewGuid()) { }
     }
 
     /// <summary>
@@ -130,16 +89,8 @@ namespace RaceManagement
     /// </summary>
     public class LeftEvent : RaceEvent
     {
-        /// <summary>
-        /// Id reported to the sensor that registered the rider
-        /// </summary>
-        public readonly byte[] SensorId;
-
-        public LeftEvent(DateTime time, string rider, byte[] sensorId)
-         : base(time, rider)
-        {
-            SensorId = sensorId;
-        }
+        public LeftEvent(DateTime time, Rider rider)
+         : base(time, rider, Guid.NewGuid()) { }
     }
 
     /// <summary>
@@ -157,7 +108,7 @@ namespace RaceManagement
         /// </summary>
         public readonly int GateId;
 
-        public TimingEvent(DateTime time, string rider, long microseconds, int gateId) : base(time, rider)
+        public TimingEvent(DateTime time, Rider rider, long microseconds, int gateId) : base(time, rider, Guid.NewGuid())
         {
             Microseconds = microseconds;
             GateId = gateId;
@@ -168,7 +119,7 @@ namespace RaceManagement
         /// So we might have to set this field after we've matched it
         /// </summary>
         /// <param name="rider"></param>
-        public void SetRider(string rider)
+        public void SetRider(Rider rider)
         {
             Rider = rider;
         }
@@ -190,7 +141,7 @@ namespace RaceManagement
         public readonly EnteredEvent ThisRider;
 
         public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
-            : base(otherRider.Time, thisRider.Rider)
+            : base(otherRider.Time, thisRider.Rider, Guid.NewGuid())
         {
             OtherRider = otherRider;
             ThisRider = thisRider;
