@@ -103,9 +103,7 @@ namespace Models
 
             public override Rider ReadJson(JsonReader reader, Type objectType, Rider existingValue, bool hasExistingValue, JsonSerializer serializer)
             {
-                JObject intermediate = JObject.Parse((string)reader.Value);
-
-                string name = intermediate["Rider"].ToString();
+                string name = (string)reader.Value;
 
                 Rider replacement = riders.Find(r => r.Name == name);
 
@@ -114,11 +112,7 @@ namespace Models
 
             public override void WriteJson(JsonWriter writer, Rider value, JsonSerializer serializer)
             {
-                JObject intermediate = JObject.FromObject(value);
-
-                intermediate["Rider"] = value.Name;
-
-                writer.WriteValue(intermediate.ToString());
+                writer.WriteValue(value.Name);
             }
         }
 

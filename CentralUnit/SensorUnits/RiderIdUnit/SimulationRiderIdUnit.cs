@@ -16,9 +16,9 @@ namespace SensorUnits.RiderIdUnit
         public string SensorId => start ? "startUnit" : "endUnit";
 
         /// <summary>
-        /// Creates a new Rdier id unit that simulates the events fom the provided race
+        /// Creates a new Rider id unit that simulates the events fom the provided race
         /// </summary>
-        /// <param name="start">When true this senor will simulate events for riders entering the track, when false for leaving the track</param>
+        /// <param name="start">When true this sensor will simulate events for riders entering the track, when false for leaving the track</param>
         public SimulationRiderIdUnit(bool start, RaceSummary race)
             :base(race)
         {
@@ -40,12 +40,12 @@ namespace SensorUnits.RiderIdUnit
             throw new NotImplementedException();
         }
 
-        protected override Stack<RaceEvent> FilterEvents(RaceSummary race)
+        public override void Initialize()
         {
             if(start)
-                return new Stack<RaceEvent>(race.Events.Where(r => r is EnteredEvent));
+                eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is EnteredEvent));
             else
-                return new Stack<RaceEvent>(race.Events.Where(r => r is LeftEvent));
+                eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is LeftEvent));
 
         }
 

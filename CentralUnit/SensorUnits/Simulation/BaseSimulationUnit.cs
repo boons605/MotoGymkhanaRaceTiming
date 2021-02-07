@@ -13,27 +13,29 @@ namespace SensorUnits.Simulation
     /// </summary>
     public abstract class BaseSimulationUnit<T> where T : RaceEvent
     {
-        private readonly Stack<T> eventsToReplay;
-        private readonly double milliSecondsToStart;
+        protected Queue<T> eventsToReplay;
+        protected RaceSummary race;
 
         public BaseSimulationUnit(RaceSummary race)
         {
-            eventsToReplay = FilterEvents(race);
-
-            RaceEvent raceStart = race.Events[0];
-            milliSecondsToStart = (eventsToReplay.Peek().Time - raceStart.Time).TotalMilliseconds;
+            this.race = race;
         }
+
+        /// <summary>
+        /// Analyze the race provided in the constructor and decide which events to replay
+        /// </summary>
+        public abstract void Initialize();
 
         public async Task Run(CancellationToken token)
         {
-            int milliSecondsToWait = (int)milliSecondsToStart;
-            
-            while(!token.IsCancellationRequested)
+            int milliSecondsToWait = (int)(eventsToReplay.Peek().Time - race.Events[0].Time).TotalMilliseconds;
+
+            while (!token.IsCancellationRequested)
             {
                 //this is not going to be accurate, depends on windows task scheduler. Best we can hope for is 15ms accuracy. Worst case could be seconds
                 await Task.Delay(milliSecondsToWait);
 
-                T toReplay = eventsToReplay.Pop();
+                T toReplay = eventsToReplay.Dequeue();
                 Replay(toReplay);
 
                 if (eventsToReplay.Count == 0)
@@ -46,13 +48,6 @@ namespace SensorUnits.Simulation
                 }
             }
         }
-
-        /// <summary>
-        /// Extract all the events that this sensor should replay from the race
-        /// </summary>
-        /// <param name="race"></param>
-        /// <returns>All the events that should be replayed so that popping returns events in chronological order</returns>
-        protected abstract Stack<T> FilterEvents(RaceSummary race);
 
         /// <summary>
         /// Performs whatever actions are necessery to simulate that the provided event happened

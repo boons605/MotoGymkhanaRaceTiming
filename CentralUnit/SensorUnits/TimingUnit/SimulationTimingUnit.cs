@@ -22,9 +22,9 @@ namespace SensorUnits.TimingUnit
             EndId = finish.TimeEnd.GateId;
         }
 
-        protected override Stack<TimingEvent> FilterEvents(RaceSummary race)
+        public override void Initialize()
         {
-            return new Stack<TimingEvent>(race.Events.Where(r => r is TimingEvent).Select(r => r as TimingEvent));
+            eventsToReplay = new Queue<TimingEvent>(race.Events.Where(r => r is TimingEvent).Select(r => r as TimingEvent));
         }
 
         protected override void Replay(TimingEvent raceEvent)

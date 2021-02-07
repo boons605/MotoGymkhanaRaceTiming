@@ -81,6 +81,8 @@ namespace RaceManagement
         /// </summary>
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
 
+        public event EventHandler<DNFRiderEventArgs> OnRiderDNF;
+
         /// <summary>
         /// Fired when the system has no riders waiting to start
         /// </summary>
@@ -319,7 +321,9 @@ namespace RaceManagement
 
             foreach ((EnteredEvent startId, TimingEvent startTime) in dnf)
             {
-                raceState.Enqueue(new DNFEvent(finish, startId));
+                DNFEvent dnfEvent = new DNFEvent(finish, startId);
+                raceState.Enqueue(dnfEvent);
+                OnRiderDNF?.Invoke(this, new DNFRiderEventArgs(dnfEvent));
             }
 
             //filter out all older events that can never be matched
@@ -346,6 +350,16 @@ namespace RaceManagement
         public WaitingRiderEventArgs(EnteredEvent rider)
         {
             Rider = rider;
+        }
+    }
+
+    public class DNFRiderEventArgs
+    {
+        public DNFEvent Dnf { get; private set; }
+
+        public DNFRiderEventArgs(DNFEvent dnf)
+        {
+            Dnf = dnf;
         }
     }
 }
