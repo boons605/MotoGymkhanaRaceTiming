@@ -13,14 +13,14 @@ namespace SensorUnits.RiderIdUnit
 
         private readonly bool start;
 
-        public string SensorId => start ? "startUnit" : "endUnit";
+        public string UnitId => start ? "startUnit" : "endUnit";
 
         /// <summary>
         /// Creates a new Rider id unit that simulates the events fom the provided race
         /// </summary>
         /// <param name="start">When true this sensor will simulate events for riders entering the track, when false for leaving the track</param>
         public SimulationRiderIdUnit(bool start, RaceSummary race)
-            :base(race)
+            : base(race)
         {
             this.start = start;
         }
@@ -42,7 +42,7 @@ namespace SensorUnits.RiderIdUnit
 
         public override void Initialize()
         {
-            if(start)
+            if (start)
                 eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is EnteredEvent));
             else
                 eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is LeftEvent));
@@ -51,7 +51,7 @@ namespace SensorUnits.RiderIdUnit
 
         protected override void Replay(RaceEvent raceEvent)
         {
-            OnRiderId?.Invoke(this, new RiderIdEventArgs(raceEvent.Rider, raceEvent.Time, SensorId));
+            OnRiderId?.Invoke(this, new RiderIdEventArgs(raceEvent.Rider, raceEvent.Time, UnitId));
         }
     }
 }

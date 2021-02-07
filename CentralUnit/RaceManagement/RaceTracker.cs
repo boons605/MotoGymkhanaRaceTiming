@@ -121,10 +121,10 @@ namespace RaceManagement
                     {
                         switch (e)
                         {
-                            case RiderIdEventArgs rider when rider.SensorId == startGate.SensorId:
+                            case RiderIdEventArgs rider when rider.UnitId == startGate.UnitId:
                                 OnStartId(rider);
                                 break;
-                            case RiderIdEventArgs rider when rider.SensorId == endGate.SensorId:
+                            case RiderIdEventArgs rider when rider.UnitId == endGate.UnitId:
                                 OnEndId(rider);
                                 break;
                             case TimingTriggeredEventArgs time:

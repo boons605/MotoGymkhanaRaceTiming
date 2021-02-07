@@ -14,7 +14,7 @@ namespace SensorUnits.TimingUnit
         public int EndId { get; private set; }
 
         public SimulationTimingUnit(RaceSummary race)
-            :base(race)
+            : base(race)
         {
             FinishedEvent finish = race.Events.Find(r => r is FinishedEvent) as FinishedEvent;
 

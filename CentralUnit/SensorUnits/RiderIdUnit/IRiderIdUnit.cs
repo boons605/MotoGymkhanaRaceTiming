@@ -25,7 +25,7 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         event EventHandler<RiderIdEventArgs> OnRiderExit;
 
-        string SensorId { get; }
+        string UnitId { get; }
 
         /// <summary>
         /// A unit will store which riders it should report about, to avoid reporting riders or loose senders that are near the sensor range
@@ -43,33 +43,5 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         /// <param name="name">the name of the rider as reported by this unit in the exposed events</param>
         void RemoveKnownRider(string name);
-    }
-
-    /// <summary>
-    /// Event that is triggered when a rider is picked up by an id unit
-    /// </summary>
-    public class RiderIdEventArgs : EventArgs
-    {
-        /// <summary>
-        /// Name associated with the received sensor id
-        /// </summary>
-        public Rider Rider;
-
-        /// <summary>
-        /// Date and time when this message was received
-        /// </summary>
-        public DateTime Received;
-
-        /// <summary>
-        /// Name of the RiderIdUnit that picket this signal up
-        /// </summary>
-        public string SensorId;
-
-        public RiderIdEventArgs(Rider rider, DateTime received, string sensorId)
-        {
-            Rider = rider;
-            Received = received;
-            SensorId = sensorId;
-        }
     }
 }

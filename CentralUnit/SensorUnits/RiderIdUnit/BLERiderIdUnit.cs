@@ -17,47 +17,12 @@ namespace SensorUnits.RiderIdUnit
     /// <summary>
     /// Rider ID Unit implementation for the ESP32-based Rider ID unit employing BLE iBeacons for identifying riders.
     /// </summary>
-    public class BLERiderIdUnit : IRiderIdUnit, IDisposable
+    public class BLERiderIdUnit : AbstractCommunicatingUnit, IRiderIdUnit
     {
-        /// <summary>
-        /// Logger object used to display data in a console or file.
-        /// </summary>
-        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
-        /// <summary>
-        /// The protocol handler.
-        /// </summary>
-        private CommunicationProtocol protocolHandler;
-
         /// <summary>
         /// A list of known <see cref="Rider"/> objects with <see cref="Beacon"/> object
         /// </summary>
         private List<Rider> knownRiders;
-
-        /// <summary>
-        /// The queue of commands.
-        /// </summary>
-        private ConcurrentQueue<CommandData> commandQueue;
-
-        /// <summary>
-        /// The current process state.
-        /// </summary>
-        private State state = State.Idle;
-
-        /// <summary>
-        /// The timer to guard response timeouts.
-        /// </summary>
-        private System.Timers.Timer timeoutTimer;
-
-        /// <summary>
-        /// The retry-sending-command timer.
-        /// </summary>
-        private System.Timers.Timer retryTimer;
-
-        /// <summary>
-        /// The current command being processed.
-        /// </summary>
-        private CommandData currentCommand;
 
         /// <summary>
         /// A list of found beacons from either a <see cref="BLERiderIDCommands.DetectAll"/> or <see cref="BLERiderIDCommands.ListAllowed"/>
@@ -74,29 +39,36 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         private Beacon closestBeacon;
 
-        public string SensorId { get; private set; }
+        /// <summary>
+        /// Queue of events.
+        /// </summary>
+        private ConcurrentQueue<RiderIDQueuedEvent> eventQueue;
+
+        public string UnitId => unitId;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
+        /// Using a default max detection distance of 4 meter.
+        /// </summary>
+        /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
+        /// <param name="unitId">The unit name</param>
+        /// <param name="token">The cancellation token for this unit</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, CancellationToken token) : this(commInterface, unitId, 4.0, token)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
-        public BLERiderIdUnit(ISerialCommunication commInterface, string id)
+        /// <param name="unitId">The unit name</param>
+        /// <param name="distanceLimit">The distance in meter within which a beacon must be to be considered in range.</param>
+        /// <param name="token">The cancellation token for this unit</param>
+        public BLERiderIdUnit(ISerialCommunication commInterface, string unitId, double distanceLimit, CancellationToken token) : base(commInterface, unitId, token)
         {
-            if (commInterface == null)
-            {
-                throw new ArgumentNullException("commInterface");
-            }
-
-            SensorId = id;
-            this.protocolHandler = new CommunicationProtocol(commInterface);
-            this.protocolHandler.ConnectionStateChanged += this.ProtocolHandler_ConnectionStateChanged;
-            this.protocolHandler.NewDataArrived += this.ProtocolHandler_NewDataArrived;
             this.knownRiders = new List<Rider>();
-            this.timeoutTimer = new System.Timers.Timer(500);
-            this.retryTimer = new System.Timers.Timer(100);
-            this.timeoutTimer.Elapsed += this.TimeoutTimer_Elapsed;
-            this.retryTimer.Elapsed += this.RetryTimer_Elapsed;
-            this.commandQueue = new ConcurrentQueue<CommandData>();
+            this.eventQueue = new ConcurrentQueue<RiderIDQueuedEvent>();
+            this.maxDetectionDistance = distanceLimit;
         }
 
         /// <inheritdoc/>
@@ -174,11 +146,6 @@ namespace SensorUnits.RiderIdUnit
                     }
                 }
             }
-
-            if (this.state == State.Idle)
-            {
-                this.SendNextCommand();
-            }
         }
 
         /// <summary>
@@ -187,11 +154,6 @@ namespace SensorUnits.RiderIdUnit
         public void ClearKnownRiders()
         {
             this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ListAllowed, 0, new byte[2]));
-
-            if (this.state == State.Idle)
-            {
-                this.SendNextCommand();
-            }
         }
 
         /// <summary>
@@ -204,19 +166,84 @@ namespace SensorUnits.RiderIdUnit
             {
                 this.commandQueue.Enqueue(this.GenerateRemoveRiderCommand(this.knownRiders.First(rid => rid.Name == name).Beacon));
             }
-
-            if (this.state == State.Idle)
-            {
-                this.SendNextCommand();
-            }
         }
 
         /// <summary>
-        /// Dispose of this object.
+        /// Event dispatcher and command thread.
         /// </summary>
-        public void Dispose()
+        protected override void RunEventThread()
         {
-            this.protocolHandler.Dispose();
+            try
+            {
+                while (this.keepEventThreadAlive && (!this.cancellationToken.IsCancellationRequested))
+                {
+                    while (this.eventQueue.TryDequeue(out RiderIDQueuedEvent evt))
+                    {
+                        if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Entered)
+                        {
+                            this.OnRiderId?.Invoke(this, evt.EventArgs);
+                        }
+                        else if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Exit)
+                        {
+                            this.OnRiderExit?.Invoke(this, evt.EventArgs);
+                        }
+                        else
+                        {
+                            Log.Error($"Got illegal type of RiderIDQueuedEvent: {evt.Type}");
+                        }
+                    }
+
+                    while (this.protocolHandler.ReadyToSend() &&
+                             (!this.commandQueue.IsEmpty))
+                    {
+                        CommandData command;
+                        if (this.commandQueue.TryDequeue(out command))
+                        {
+                            if (command.CommandType == (ushort)BLERiderIDCommands.ListAllowed)
+                            {
+                                this.foundBeacons = new List<Beacon>();
+                            }
+
+                            this.protocolHandler.SendCommand(command);
+                        }
+                    }
+
+                    Thread.Sleep(20);
+                }
+
+                Log.Info($"Event thread ended for unit {this.unitId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Exception on thread for {this.unitId}", ex);
+                this.OnThreadException(ex);
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override void ProcessPacket(CommandData packet)
+        {
+            switch (packet.CommandType)
+            {
+                case (ushort)BLERiderIDCommands.AddAllowed:
+                    this.HandleAddAllowedResponse(packet);
+                    break;
+                case (ushort)BLERiderIDCommands.DeleteAllowed:
+                    this.HandleRemoveAllowedResponse(packet);
+                    break;
+                case (ushort)BLERiderIDCommands.ListAllowed:
+                    this.HandleListAllowedDevices(packet);
+                    break;
+                case (ushort)BLERiderIDCommands.DetectAll:
+                    this.HandleListDetectedDevices(packet);
+                    break;
+                case (ushort)BLERiderIDCommands.GetClosest:
+                    this.HandleGetClosestDevice(packet);
+                    break;
+                default:
+                    Log.Error($"Got invalid packet {packet}");
+                    break;
+            }
         }
 
         /// <summary>
@@ -252,106 +279,6 @@ namespace SensorUnits.RiderIdUnit
         }
 
         /// <summary>
-        /// Send the next command and set the state of the Rider ID unit.
-        /// </summary>
-        private void SendNextCommand()
-        {
-            if (!this.commandQueue.IsEmpty)
-            {
-                if (this.protocolHandler.ReadyToSend())
-                {
-                    if (this.commandQueue.TryDequeue(out this.currentCommand))
-                    {
-                        if (this.currentCommand.CommandType == (ushort)BLERiderIDCommands.ListAllowed)
-                        {
-                            this.state = State.ClearingKnownRiders;
-                            this.foundBeacons = new List<Beacon>();
-                        }
-                        else if (this.currentCommand.CommandType == (ushort)BLERiderIDCommands.AddAllowed)
-                        {
-                            this.state = State.AddingKnownRiders;
-                        }
-
-                        this.protocolHandler.SendCommand(this.currentCommand);
-                        this.timeoutTimer.Start();
-                    }
-                    else
-                    {
-                        this.retryTimer.Start();
-                    }
-                }
-                else
-                {
-                    this.retryTimer.Start();
-                }
-            }
-            else
-            {
-                this.state = State.Idle;
-            }
-        }
-
-        /// <summary>
-        /// Retry sending a command when the <see cref="CommunicationProtocol"/> wasn't available.
-        /// </summary>
-        /// <param name="sender">The timer.</param>
-        /// <param name="e">EventArgs for this timer event.</param>
-        private void RetryTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            this.retryTimer.Stop();
-            this.SendNextCommand();
-        }
-
-        /// <summary>
-        /// Handle a timeout.
-        /// </summary>
-        /// <param name="sender">The timer.</param>
-        /// <param name="e">EventArgs for this timer event.</param>
-        private void TimeoutTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            // Don't know what to do yet.
-            this.timeoutTimer.Stop();
-            this.SendNextCommand();
-        }
-
-        /// <summary>
-        /// Handle new data from the <see cref="CommunicationProtocol"/>
-        /// </summary>
-        /// <param name="sender">The sender of the event.</param>
-        /// <param name="e">The event args, not used.</param>
-        private void ProtocolHandler_NewDataArrived(object sender, EventArgs e)
-        {
-            CommandData packet;
-            while ((packet = this.protocolHandler.NextPacket) != null)
-            {
-                this.timeoutTimer.Stop();
-                this.retryTimer.Stop();
-                switch (packet.CommandType)
-                {
-                    case (ushort)BLERiderIDCommands.AddAllowed:
-                        this.HandleAddAllowedResponse(packet);
-                        break;
-                    case (ushort)BLERiderIDCommands.DeleteAllowed:
-                        this.HandleRemoveAllowedResponse(packet);
-                        break;
-                    case (ushort)BLERiderIDCommands.ListAllowed:
-                        this.HandleListAllowedDevices(packet);
-                        break;
-                    case (ushort)BLERiderIDCommands.DetectAll:
-                        this.HandleListDetectedDevices(packet);
-                        break;
-                    case (ushort)BLERiderIDCommands.GetClosest:
-                        this.HandleGetClosestDevice(packet);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            this.SendNextCommand();
-        }
-
-        /// <summary>
         /// Sets the closest beacon and fires an event if:
         /// - The beacon was not null and in range an the beacon is now null or out of range. <see cref="OnRiderExit"/>
         /// - The beacon was null or out of range and is now not null and in range. <see cref="OnRiderId"/>
@@ -359,18 +286,25 @@ namespace SensorUnits.RiderIdUnit
         /// <param name="b">The <see cref="Beacon"/></param>
         private void SetClosestBeacon(Beacon b)
         {
-            if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
+            if (knownRiders.Any(rid => rid.Beacon.Equals(b)))
             {
-                // Entered range
-                this.OnRiderId?.Invoke(this, null);
-            }
-            else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
-            {
-                // Left range
-                this.OnRiderExit?.Invoke(this, null);
-            }
+                if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
+                {
+                    // Entered range
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
+                }
+                else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
+                {
+                    // Left range
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+                }
 
-            this.closestBeacon = b;
+                this.closestBeacon = b;
+            }
         }
 
         /// <summary>
@@ -402,7 +336,11 @@ namespace SensorUnits.RiderIdUnit
         {
             if (packet.Status != 0)
             {
-                Log.Info($"GetClosestDevice returned {packet.Status}");
+                if (this.closestBeacon != null)
+                {
+                    Log.Info($"GetClosestDevice returned {packet.Status}");
+                }
+
                 this.SetClosestBeacon(null);
             }
             else
@@ -410,7 +348,11 @@ namespace SensorUnits.RiderIdUnit
                 List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(packet.Status, packet.Data);
                 foreach (Beacon b in beacons)
                 {
-                    Log.Info($"Got closest device: {b.ToString()}");
+                    if (!b.Equals(this.closestBeacon))
+                    {
+                        Log.Info($"Got closest device: {b}");
+                    }
+
                     this.SetClosestBeacon(b);
                 }
             }
@@ -433,14 +375,14 @@ namespace SensorUnits.RiderIdUnit
                     {
                         foreach (Beacon b in this.foundBeacons)
                         {
-                            Log.Info($"Found beacon {b}");
+                            Log.Debug($"Found beacon {b}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Received bad response for {this.currentCommand.CommandType} command", ex);
+                Log.Error($"Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -468,7 +410,7 @@ namespace SensorUnits.RiderIdUnit
             }
             catch (Exception ex)
             {
-                Log.Error($"Received bad response for {this.currentCommand.CommandType} command", ex);
+                Log.Error($"Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -481,11 +423,10 @@ namespace SensorUnits.RiderIdUnit
             try
             {
                 Beacon receivedBeacon = RiderIDCommandDataParser.ParseAllowedDeviceOperationResponse(packet.Status, packet.Data);
-                Beacon sentBeacon = RiderIDCommandDataParser.ParseAllowedDeviceOperationResponse(this.currentCommand.Status, this.currentCommand.Data);
 
-                if ((packet.Status == 0) && sentBeacon.Equals(receivedBeacon))
+                if (packet.Status == 0)
                 {
-                    this.knownRiders.RemoveAll(rid => rid.Beacon.Equals(sentBeacon));
+                    this.knownRiders.RemoveAll(rid => rid.Beacon.Equals(receivedBeacon));
                 }
                 else
                 {
@@ -494,7 +435,7 @@ namespace SensorUnits.RiderIdUnit
             }
             catch (Exception ex)
             {
-                Log.Error($"Received bad response for {this.currentCommand.CommandType} command", ex);
+                Log.Error($"Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -507,14 +448,13 @@ namespace SensorUnits.RiderIdUnit
             try
             {
                 Beacon receivedBeacon = RiderIDCommandDataParser.ParseAllowedDeviceOperationResponse(packet.Status, packet.Data);
-                Beacon sentBeacon = RiderIDCommandDataParser.ParseAllowedDeviceOperationResponse(this.currentCommand.Status, this.currentCommand.Data);
 
-                if ((packet.Status == 0) && sentBeacon.Equals(receivedBeacon))
+                if (packet.Status == 0)
                 {
                     if (this.knownRiders.Any(rid => rid.Beacon.Equals(receivedBeacon)))
                     {
                         Log.Info($"Successfully added rider {this.knownRiders.First(rid => rid.Beacon.Equals(receivedBeacon)).Name} with beacon {receivedBeacon}");
-                    }                    
+                    }
                 }
                 else
                 {
@@ -523,25 +463,7 @@ namespace SensorUnits.RiderIdUnit
             }
             catch (Exception ex)
             {
-                Log.Error($"Received bad response for {this.currentCommand.CommandType} command", ex);
-            }
-        }
-
-        /// <summary>
-        /// Handle a connection state change of the protocol handler.
-        /// </summary>
-        /// <param name="sender">The protocol handler.</param>
-        /// <param name="e">Event args containing the data for this event.</param>
-        private void ProtocolHandler_ConnectionStateChanged(object sender, ConnectionStateChangedEventArgs e)
-        {
-            if (!e.Connected)
-            {
-                this.state = State.Idle;
-                CommandData cmd;
-                while (this.commandQueue.TryDequeue(out cmd))
-                {
-                    Log.Info($"Clearing command from queue due to disconnect {cmd}");
-                }
+                Log.Error($"Received bad response for {packet.CommandType} command", ex);
             }
         }
     }
