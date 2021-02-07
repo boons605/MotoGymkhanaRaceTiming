@@ -44,7 +44,15 @@
             this.closestDeviceLbl = new System.Windows.Forms.Label();
             this.updateClosestDeviceBtn = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
+            this.IdentBtn = new System.Windows.Forms.Button();
+            this.SetTimeBtn = new System.Windows.Forms.Button();
+            this.opModeGbx = new System.Windows.Forms.GroupBox();
+            this.lapTimerRbtn = new System.Windows.Forms.RadioButton();
+            this.singleRunRbtn = new System.Windows.Forms.RadioButton();
+            this.connectedRbtn = new System.Windows.Forms.RadioButton();
+            this.getLapsBtn = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
+            this.opModeGbx.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -190,11 +198,93 @@
             this.button3.UseVisualStyleBackColor = true;
             this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
+            // IdentBtn
+            // 
+            this.IdentBtn.Location = new System.Drawing.Point(13, 375);
+            this.IdentBtn.Name = "IdentBtn";
+            this.IdentBtn.Size = new System.Drawing.Size(71, 30);
+            this.IdentBtn.TabIndex = 13;
+            this.IdentBtn.Text = "Ident";
+            this.IdentBtn.UseVisualStyleBackColor = true;
+            this.IdentBtn.Click += new System.EventHandler(this.IdentBtn_Click);
+            // 
+            // SetTimeBtn
+            // 
+            this.SetTimeBtn.Location = new System.Drawing.Point(90, 375);
+            this.SetTimeBtn.Name = "SetTimeBtn";
+            this.SetTimeBtn.Size = new System.Drawing.Size(71, 30);
+            this.SetTimeBtn.TabIndex = 14;
+            this.SetTimeBtn.Text = "SetTime";
+            this.SetTimeBtn.UseVisualStyleBackColor = true;
+            this.SetTimeBtn.Click += new System.EventHandler(this.SetTimeBtn_Click);
+            // 
+            // opModeGbx
+            // 
+            this.opModeGbx.Controls.Add(this.connectedRbtn);
+            this.opModeGbx.Controls.Add(this.singleRunRbtn);
+            this.opModeGbx.Controls.Add(this.lapTimerRbtn);
+            this.opModeGbx.Location = new System.Drawing.Point(182, 375);
+            this.opModeGbx.Name = "opModeGbx";
+            this.opModeGbx.Size = new System.Drawing.Size(157, 124);
+            this.opModeGbx.TabIndex = 15;
+            this.opModeGbx.TabStop = false;
+            this.opModeGbx.Text = "OpMode";
+            // 
+            // lapTimerRbtn
+            // 
+            this.lapTimerRbtn.AutoSize = true;
+            this.lapTimerRbtn.Location = new System.Drawing.Point(7, 20);
+            this.lapTimerRbtn.Name = "lapTimerRbtn";
+            this.lapTimerRbtn.Size = new System.Drawing.Size(65, 17);
+            this.lapTimerRbtn.TabIndex = 0;
+            this.lapTimerRbtn.TabStop = true;
+            this.lapTimerRbtn.Text = "Laptimer";
+            this.lapTimerRbtn.UseVisualStyleBackColor = true;
+            this.lapTimerRbtn.CheckedChanged += new System.EventHandler(this.lapTimerRbtn_CheckedChanged);
+            // 
+            // singleRunRbtn
+            // 
+            this.singleRunRbtn.AutoSize = true;
+            this.singleRunRbtn.Location = new System.Drawing.Point(7, 43);
+            this.singleRunRbtn.Name = "singleRunRbtn";
+            this.singleRunRbtn.Size = new System.Drawing.Size(69, 17);
+            this.singleRunRbtn.TabIndex = 1;
+            this.singleRunRbtn.TabStop = true;
+            this.singleRunRbtn.Text = "Singlerun";
+            this.singleRunRbtn.UseVisualStyleBackColor = true;
+            this.singleRunRbtn.CheckedChanged += new System.EventHandler(this.singleRunRbtn_CheckedChanged);
+            // 
+            // connectedRbtn
+            // 
+            this.connectedRbtn.AutoSize = true;
+            this.connectedRbtn.Location = new System.Drawing.Point(7, 66);
+            this.connectedRbtn.Name = "connectedRbtn";
+            this.connectedRbtn.Size = new System.Drawing.Size(77, 17);
+            this.connectedRbtn.TabIndex = 2;
+            this.connectedRbtn.TabStop = true;
+            this.connectedRbtn.Text = "Connected";
+            this.connectedRbtn.UseVisualStyleBackColor = true;
+            this.connectedRbtn.CheckedChanged += new System.EventHandler(this.connectedRbtn_CheckedChanged);
+            // 
+            // getLapsBtn
+            // 
+            this.getLapsBtn.Location = new System.Drawing.Point(13, 411);
+            this.getLapsBtn.Name = "getLapsBtn";
+            this.getLapsBtn.Size = new System.Drawing.Size(71, 30);
+            this.getLapsBtn.TabIndex = 16;
+            this.getLapsBtn.Text = "Get Laps";
+            this.getLapsBtn.UseVisualStyleBackColor = true;
+            this.getLapsBtn.Click += new System.EventHandler(this.getLapsBtn_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1029, 676);
+            this.Controls.Add(this.getLapsBtn);
+            this.Controls.Add(this.opModeGbx);
+            this.Controls.Add(this.SetTimeBtn);
+            this.Controls.Add(this.IdentBtn);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.updateClosestDeviceBtn);
             this.Controls.Add(this.closestDeviceLbl);
@@ -214,6 +304,8 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
+            this.opModeGbx.ResumeLayout(false);
+            this.opModeGbx.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -236,6 +328,13 @@
         private System.Windows.Forms.Label closestDeviceLbl;
         private System.Windows.Forms.Button updateClosestDeviceBtn;
         private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button IdentBtn;
+        private System.Windows.Forms.Button SetTimeBtn;
+        private System.Windows.Forms.GroupBox opModeGbx;
+        private System.Windows.Forms.RadioButton connectedRbtn;
+        private System.Windows.Forms.RadioButton singleRunRbtn;
+        private System.Windows.Forms.RadioButton lapTimerRbtn;
+        private System.Windows.Forms.Button getLapsBtn;
     }
 }
 

@@ -75,12 +75,19 @@ namespace Communication
         private XBeePacketParser parser;
 
         /// <summary>
+        /// The cancellation token for this unit.
+        /// </summary>
+        private CancellationToken cancellationToken;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="XbeeNetwork" /> class.
         /// </summary>
         /// <param name="portName">The name of the serial port to use</param>
-        public XbeeNetwork(string portName)
+        /// <param name="token">The cancellation token for this unit</param>
+        public XbeeNetwork(string portName, CancellationToken token)
         {
-            this.Initialize(new DirectSerialCommunication(portName));
+            this.cancellationToken = token;
+            this.Initialize(new DirectSerialCommunication(portName, this.cancellationToken));
         }
 
         /// <summary>
@@ -298,7 +305,7 @@ namespace Communication
                     Thread.Sleep(100);
                 }
 
-                while (this.communicationChannel.Connected)
+                while (this.communicationChannel.Connected && (!this.cancellationToken.IsCancellationRequested))
                 {
                     this.ManageTxQueue();
 

@@ -8,11 +8,12 @@ namespace Communication
     using System.Linq;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Threading;
 
     /// <summary>
     /// Management of communication devices.
     /// </summary>
-    public class CommunicationManager
+    public class CommunicationManager : IDisposable
     {
         /// <summary>
         /// Regular expression to verify identifiers and split them into groups.
@@ -30,12 +31,39 @@ namespace Communication
         private Dictionary<string, ISerialCommunication> devices;
 
         /// <summary>
+        /// The cancellation token for this unit.
+        /// </summary>
+        private CancellationToken cancellationToken;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CommunicationManager" /> class.
         /// </summary>
-        public CommunicationManager()
+        /// <param name="token">The cancellation token for this unit</param>
+        public CommunicationManager(CancellationToken token)
         {
+            this.cancellationToken = token;
             this.xbeeNetworks = new Dictionary<string, XbeeNetwork>();
             this.devices = new Dictionary<string, ISerialCommunication>();
+        }
+
+        /// <summary>
+        /// Closes all connections.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (XbeeNetwork net in this.xbeeNetworks.Values)
+            {
+                net.Dispose();
+            }
+
+            this.xbeeNetworks.Clear();
+
+            foreach (ISerialCommunication dev in this.devices.Values)
+            {
+                dev.Close();
+            }
+
+            this.devices.Clear();
         }
 
         /// <summary>
@@ -97,7 +125,7 @@ namespace Communication
         {
             if (!this.devices.ContainsKey(portName))
             {
-                this.devices.Add(portName, new DirectSerialCommunication(portName));
+                this.devices.Add(portName, new DirectSerialCommunication(portName, this.cancellationToken));
             }
 
             return this.devices[portName];
@@ -114,7 +142,7 @@ namespace Communication
         {
             if (!this.xbeeNetworks.ContainsKey(networkNameOrPort))
             {
-                this.xbeeNetworks.Add(networkNameOrPort, new XbeeNetwork(networkNameOrPort));
+                this.xbeeNetworks.Add(networkNameOrPort, new XbeeNetwork(networkNameOrPort, this.cancellationToken));
             }
 
             XbeeNetwork xbeeNet = this.xbeeNetworks[networkNameOrPort];

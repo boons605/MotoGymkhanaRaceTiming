@@ -21,6 +21,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ModelsTests", "ModelsTests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SensorUnits", "SensorUnits\SensorUnits.csproj", "{D4E78A0A-F862-47A3-B900-FDE908A64E74}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisplayUnit", "DisplayUnit\DisplayUnit.csproj", "{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CLITestWithUnits", "CLITestWithUnits\CLITestWithUnits.csproj", "{26543DDE-CE42-4883-8311-791D62879F16}"
+EndProject
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +60,14 @@ Global
 		{9B68C599-F25F-4415-91A2-F99D1E798C6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B68C599-F25F-4415-91A2-F99D1E798C6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9B68C599-F25F-4415-91A2-F99D1E798C6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF58EC13-6E80-4D7B-98BC-706DCBDE70DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9916D775-9C80-4C3B-AD83-B6DDE9ED7BCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9916D775-9C80-4C3B-AD83-B6DDE9ED7BCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9916D775-9C80-4C3B-AD83-B6DDE9ED7BCE}.Release|Any CPU.ActiveCfg = Release|Any CPU

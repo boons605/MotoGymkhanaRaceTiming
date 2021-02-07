@@ -16,7 +16,6 @@ volatile uint8_t sensorStartStopInterrupt = 0U;
 volatile uint8_t sensorStopInterrupt = 0U;
 volatile uint8_t ppsTick = 0U;
 
-
 uint32_t GetMillisecondsFromTimeStampPPS(SensorTimestamp* timeStamp)
 {
     return ((timeStamp->timeStampPps * 10000U) + timeStamp->ppsOffset100us);
