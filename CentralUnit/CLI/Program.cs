@@ -75,7 +75,7 @@ namespace CLI
             RaceTracker tracker = new RaceTracker(timing, startId, endId, timing.StartId, timing.EndId);
 
             tracker.OnRiderFinished += (o, e) => Console.WriteLine($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
-            tracker.OnRiderDNF += (o, e) => Console.WriteLine($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider} finshed before them");
+            tracker.OnRiderDNF += (o, e) => Console.WriteLine($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
             tracker.OnRiderWaiting += (o, e) => Console.WriteLine($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Console.WriteLine("Start box is empty");
 
