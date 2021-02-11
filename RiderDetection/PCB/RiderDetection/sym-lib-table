@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name MGBT)(type Legacy)(uri ${KIPRJMOD}/Libs/MGBT.lib)(options "")(descr ""))
+  (lib (name SparkFun-RF)(type Legacy)(uri C:/SVN/MotoGymkhanaRaceTiming/Libs/KiCad_Libs/Sparkfun_RF/SparkFun-RF.lib)(options "")(descr ""))
+  (lib (name SparkFun-Boards)(type Legacy)(uri C:/SVN/MotoGymkhanaRaceTiming/Libs/KiCad_Libs/Sparkfun_Boards/SparkFun-Boards.lib)(options "")(descr ""))
+)

@@ -733,7 +733,7 @@ Wire Wire Line
 	6750 3050 6750 2350
 Connection ~ 6300 3050
 $Comp
-L MotoGymkhanaRaceTiming-rescue:LM2577T-ADJ_NOPB-2020-05-24_13-28-23 U1
+L MotoGymkhanaRaceTiming-rescue:LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue U1
 U 1 1 5ED0DA73
 P 850 6700
 F 0 "U1" H 1950 7087 60  0000 C CNN
