@@ -3,8 +3,16 @@
 // </copyright>
 
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Models;
+using RaceManagement;
+using SensorUnits.RiderIdUnit;
+using SensorUnits.TimingUnit;
 
 namespace CLI
 {
@@ -17,6 +25,8 @@ namespace CLI
     /// Root command of the tool. For different modes of operation, make more command classes and put them in [SubCommand] attributes
     /// </summary>
     [Command("mgk")]
+    [Subcommand(typeof(SimulationCommand))]
+    [Subcommand(typeof(TestUnitCommand))]
     [VersionOptionFromMember("--version", MemberName = nameof(GetVersion))]
     public class RootCommand : CommandBase
     {

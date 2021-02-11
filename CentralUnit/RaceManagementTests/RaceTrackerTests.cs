@@ -30,8 +30,8 @@ namespace RaceManagementTests
         [TestInitialize]
         public void Init()
         {
-            startId = new MockRiderIdUnit();
-            endId = new MockRiderIdUnit();
+            startId = new MockRiderIdUnit("StartId");
+            endId = new MockRiderIdUnit("EndId");
             timer = new MockTimingUnit();
 
             source = new CancellationTokenSource();
@@ -47,7 +47,7 @@ namespace RaceManagementTests
             Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
             Rider martijn = new Rider("Martijn", beacon);
 
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             source.Cancel();
 
@@ -87,7 +87,7 @@ namespace RaceManagementTests
             Rider martijn = new Rider("Martijn", beacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
@@ -144,7 +144,7 @@ namespace RaceManagementTests
             Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
             Rider martijn = new Rider("Martijn", beacon);
 
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             source.Cancel();
 
@@ -168,13 +168,13 @@ namespace RaceManagementTests
             Rider richard = new Rider("Richard", richardBeacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider not on track triggers end id
-            endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 1));
 
             source.Cancel();
 
@@ -218,7 +218,7 @@ namespace RaceManagementTests
             Rider richard = new Rider("Richard", richardBeacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 2));
@@ -232,13 +232,13 @@ namespace RaceManagementTests
             //a different rider gets too close to the stop box
             if (includeUnmatchedId)
             {
-                endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 30), "EndId");
+                endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 30));
             }
 
             List<Action> endEvents = new List<Action>
             { 
                 //rider triggers id in stop box
-                () => endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1), "EndId"),
+                () => endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1)),
 
                 //rider triggers timing in stop box
                 () => timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 2))
@@ -280,7 +280,7 @@ namespace RaceManagementTests
             Rider martijn = new Rider("Martijn", martijnBeacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
@@ -289,10 +289,10 @@ namespace RaceManagementTests
             timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20));
 
             //end id is triggered 11 seconds apart, should not match
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)), "EndId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)));
 
             //end id is triggered 10 seconds apart, should match
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference), "EndId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference));
 
             source.Cancel();
             RaceSummary summary = race.Result;
@@ -328,13 +328,13 @@ namespace RaceManagementTests
             Rider martijn = new Rider("Martijn", martijnBeacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
 
             //rider triggers id in stop box
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20), "EndId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20));
 
             //end timer triggered 11 seconds apart, should not match
             timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)));
@@ -399,16 +399,16 @@ namespace RaceManagementTests
             Rider martijn = new Rider("Martijn", martijnBeacon);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
 
             //rider triggers id in stop box accidentally (maybe the track was constructed to pass too close to stop box
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20), "EndId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20));
 
             //rider triggers id in stop box for real five seconds later
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 25), "EndId");
+            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 25));
 
             //end timer triggered 1 second later
             timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 26));
@@ -442,13 +442,19 @@ namespace RaceManagementTests
             subject.OnRiderWaiting += (obj, args) => waiting = args.Rider.Rider.Name;
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //the race tracker is processing events in a different thread, we must wait for it
+            Thread.Sleep(1000);
 
             //Martijn should be flagged as ready to start
             Assert.AreEqual(waiting, "Martijn");
 
             //Second rider enters the queue to start
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1), "StartId");
+            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            //the race tracker is processing events in a different thread, we must wait for it
+            Thread.Sleep(1000);
 
             //OnRiderWaiting should not be fired since Martijn has not left
             Assert.AreEqual(waiting, "Martijn");
@@ -456,10 +462,11 @@ namespace RaceManagementTests
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
+            source.Cancel();
+            race.Wait();
+
             //Bert moves to the front of the waiting queue, so he is now ready to start
             Assert.AreEqual(waiting, "Bert");
-
-            source.Cancel();
         }
 
         [TestMethod]
@@ -476,13 +483,16 @@ namespace RaceManagementTests
             subject.OnStartEmpty += (obj, args) => isEmpty = true;
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1), "StartId");
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //the race tracker is processing events in a different thread, we must wait for it
+            Thread.Sleep(1000);
 
             //event should not have fired
             Assert.IsFalse(isEmpty);
 
             //Second rider enters the queue to start
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1), "StartId");
+            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1));
 
             //event should not have fired
             Assert.IsFalse(isEmpty);
@@ -491,9 +501,10 @@ namespace RaceManagementTests
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 2));
 
-            Assert.IsTrue(isEmpty);
-
             source.Cancel();
+            race.Wait();
+
+            Assert.IsTrue(isEmpty);
         }
 
         [TestMethod]
@@ -506,6 +517,7 @@ namespace RaceManagementTests
             SimulateRaceWithDNF();
 
             source.Cancel();
+            race.Wait();
 
             Assert.AreEqual(2, finished.Count);
             Assert.AreEqual("Martijn", finished[0]);
@@ -558,7 +570,7 @@ namespace RaceManagementTests
         /// <param name="time"></param>
         private void MakeStartEvents(Rider rider, DateTime start, MockRiderIdUnit id, MockTimingUnit time)
         {
-            id.EmitIdEvent(rider, start, "StartId");
+            id.EmitIdEvent(rider, start);
             time.EmitTriggerEvent(100, "Timer", 0, start);
         }
 
@@ -572,7 +584,7 @@ namespace RaceManagementTests
         /// <param name="time"></param>
         private void MakeEndEvents(Rider rider, DateTime end, MockRiderIdUnit id, MockTimingUnit time)
         {
-            id.EmitIdEvent(rider, end, "EndId");
+            id.EmitIdEvent(rider, end);
             time.EmitTriggerEvent(100, "Timer", 1, end);
         }
     }

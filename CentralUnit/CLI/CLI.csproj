@@ -10,7 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RiderIdUnit\RiderIdUnit.csproj" />
+    <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\RaceManagement\RaceManagement.csproj" />
+    <ProjectReference Include="..\SensorUnits\SensorUnits.csproj" />
   </ItemGroup>
 
 </Project>
