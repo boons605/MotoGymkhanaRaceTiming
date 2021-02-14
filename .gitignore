@@ -364,3 +364,4 @@ Timer/.settings/
 CentralUnit/XBeeLibraryTesting/
 RiderDetection/Embedded/build/
 *.sch-bak
+*.kicad_pcb-bak
