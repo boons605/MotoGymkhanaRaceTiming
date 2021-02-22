@@ -282,28 +282,24 @@ Wire Wire Line
 $Comp
 L Relay:G5V-1 K1
 U 1 1 602DD50C
-P 3700 4200
-F 0 "K1" V 3133 4200 50  0000 C CNN
-F 1 "G5V-1" V 3224 4200 50  0000 C CNN
-F 2 "Relay_THT:Relay_SPDT_Omron_G5V-1" H 4830 4170 50  0001 C CNN
-F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf" H 3700 4200 50  0001 C CNN
-	1    3700 4200
-	0    1    1    0   
+P 1250 4000
+F 0 "K1" V 683 4000 50  0000 C CNN
+F 1 "G5V-1" V 774 4000 50  0000 C CNN
+F 2 "RiderDetection:Relay_SPDT_Omron_G5V-1" H 2380 3970 50  0001 C CNN
+F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf" H 1250 4000 50  0001 C CNN
+	1    1250 4000
+	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	3400 4000 2700 4000
-Wire Wire Line
-	2700 4000 2700 3600
 $Comp
 L Relay:G5V-1 K3
 U 1 1 602E9A6F
-P 1200 4350
-F 0 "K3" V 1767 4350 50  0000 C CNN
-F 1 "G5V-1" V 1676 4350 50  0000 C CNN
-F 2 "Relay_THT:Relay_SPDT_Omron_G5V-1" H 2330 4320 50  0001 C CNN
-F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf" H 1200 4350 50  0001 C CNN
-	1    1200 4350
-	0    -1   -1   0   
+P 3900 3950
+F 0 "K3" V 4467 3950 50  0000 C CNN
+F 1 "G5V-1" V 4376 3950 50  0000 C CNN
+F 2 "RiderDetection:Relay_SPDT_Omron_G5V-1" H 5030 3920 50  0001 C CNN
+F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf" H 3900 3950 50  0001 C CNN
+	1    3900 3950
+	0    1    1    0   
 $EndComp
 $Comp
 L Relay:G5V-1 K2
@@ -311,7 +307,7 @@ U 1 1 602EE852
 P 3700 5250
 F 0 "K2" V 3133 5250 50  0000 C CNN
 F 1 "G5V-1" V 3224 5250 50  0000 C CNN
-F 2 "Relay_THT:Relay_SPDT_Omron_G5V-1" H 4830 5220 50  0001 C CNN
+F 2 "RiderDetection:Relay_SPDT_Omron_G5V-1" H 4830 5220 50  0001 C CNN
 F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g5v_1.pdf" H 3700 5250 50  0001 C CNN
 	1    3700 5250
 	0    1    1    0   
@@ -320,36 +316,32 @@ Wire Wire Line
 	2600 3600 2600 5050
 Wire Wire Line
 	2600 5050 3400 5050
-Wire Wire Line
-	2500 3600 2500 4550
-Wire Wire Line
-	2500 4550 1500 4550
 $Comp
 L power:+5V #PWR0111
 U 1 1 602F4D4B
-P 800 4550
-F 0 "#PWR0111" H 800 4400 50  0001 C CNN
-F 1 "+5V" V 815 4678 50  0000 L CNN
-F 2 "" H 800 4550 50  0001 C CNN
-F 3 "" H 800 4550 50  0001 C CNN
-	1    800  4550
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	800  4550 900  4550
-$Comp
-L power:+5V #PWR0112
-U 1 1 602F645C
-P 4150 4000
-F 0 "#PWR0112" H 4150 3850 50  0001 C CNN
-F 1 "+5V" V 4165 4128 50  0000 L CNN
-F 2 "" H 4150 4000 50  0001 C CNN
-F 3 "" H 4150 4000 50  0001 C CNN
-	1    4150 4000
+P 4300 3750
+F 0 "#PWR0111" H 4300 3600 50  0001 C CNN
+F 1 "+5V" V 4315 3878 50  0000 L CNN
+F 2 "" H 4300 3750 50  0001 C CNN
+F 3 "" H 4300 3750 50  0001 C CNN
+	1    4300 3750
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	4000 4000 4150 4000
+	4300 3750 4200 3750
+$Comp
+L power:+5V #PWR0112
+U 1 1 602F645C
+P 800 4200
+F 0 "#PWR0112" H 800 4050 50  0001 C CNN
+F 1 "+5V" V 815 4328 50  0000 L CNN
+F 2 "" H 800 4200 50  0001 C CNN
+F 3 "" H 800 4200 50  0001 C CNN
+	1    800  4200
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	950  4200 800  4200
 $Comp
 L power:+5V #PWR0113
 U 1 1 602F7753
@@ -413,34 +405,26 @@ F 3 "~" H 5450 1200 50  0001 C CNN
 	1    5450 1200
 	0    -1   -1   0   
 $EndComp
-Text GLabel 1600 4150 2    50   Input ~ 0
+Text GLabel 3500 4150 0    50   Input ~ 0
 START_COLOR_COM
 Wire Wire Line
-	1500 4150 1600 4150
-Text GLabel 2800 4250 3    50   Input ~ 0
+	3600 4150 3500 4150
+Text GLabel 1700 3800 2    50   Input ~ 0
 START_COLOR_COM
-Wire Wire Line
-	2800 4250 2800 4200
-Wire Wire Line
-	2800 4200 3250 4200
-Wire Wire Line
-	3250 4200 3250 4400
-Wire Wire Line
-	3250 4400 3400 4400
 Text GLabel 3250 5450 0    50   Input ~ 0
 START_COLOR_COM
 Wire Wire Line
 	3250 5450 3400 5450
-Text GLabel 750  3950 1    50   Input ~ 0
+Text GLabel 4350 4350 3    50   Input ~ 0
 COL_GRN
 Wire Wire Line
-	750  3950 750  4050
+	4350 4350 4350 4250
 Wire Wire Line
-	750  4050 900  4050
-Text GLabel 4150 4500 2    50   Input ~ 0
+	4350 4250 4200 4250
+Text GLabel 800  3700 0    50   Input ~ 0
 COL_RD
 Wire Wire Line
-	4000 4500 4150 4500
+	950  3700 800  3700
 Text GLabel 4150 5550 2    50   Input ~ 0
 COL_YW
 Wire Wire Line
@@ -551,8 +535,8 @@ NoConn ~ 2400 2800
 NoConn ~ 2300 2800
 NoConn ~ 2200 2800
 NoConn ~ 2100 2800
-NoConn ~ 900  4250
-NoConn ~ 4000 4300
+NoConn ~ 4200 4050
+NoConn ~ 950  3900
 NoConn ~ 4000 5350
 NoConn ~ 3150 6300
 NoConn ~ 3150 6400
@@ -631,22 +615,6 @@ $EndComp
 Connection ~ 3350 1000
 Wire Wire Line
 	3350 1000 3350 1050
-Wire Wire Line
-	1550 900  1550 950 
-$Comp
-L power:PWR_FLAG #FLG0103
-U 1 1 60350EF5
-P 1550 950
-F 0 "#FLG0103" H 1550 1025 50  0001 C CNN
-F 1 "PWR_FLAG" V 1550 1077 50  0000 L CNN
-F 2 "" H 1550 950 50  0001 C CNN
-F 3 "~" H 1550 950 50  0001 C CNN
-	1    1550 950 
-	0    -1   -1   0   
-$EndComp
-Connection ~ 1550 950 
-Wire Wire Line
-	1550 950  1550 1050
 $Comp
 L power:PWR_FLAG #FLG0104
 U 1 1 6035206C
@@ -661,4 +629,125 @@ $EndComp
 Connection ~ 4100 1450
 Wire Wire Line
 	4100 1450 4100 1550
+$Comp
+L Regulator_Switching:TSR_1-2450 U2
+U 1 1 603634C2
+P 1250 2600
+F 0 "U2" V 1296 2830 50  0000 L CNN
+F 1 "TSR_1-2450" V 1205 2830 50  0000 L CNN
+F 2 "Converter_DCDC:Converter_DCDC_TRACO_TSR-1_THT" H 1250 2450 50  0001 L CIN
+F 3 "http://www.tracopower.com/products/tsr1.pdf" H 1250 2600 50  0001 C CNN
+	1    1250 2600
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+12V #PWR0120
+U 1 1 60364C65
+P 1150 3150
+F 0 "#PWR0120" H 1150 3000 50  0001 C CNN
+F 1 "+12V" H 1165 3323 50  0000 C CNN
+F 2 "" H 1150 3150 50  0001 C CNN
+F 3 "" H 1150 3150 50  0001 C CNN
+	1    1150 3150
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR0121
+U 1 1 603658AC
+P 1550 2600
+F 0 "#PWR0121" H 1550 2350 50  0001 C CNN
+F 1 "GND" V 1555 2472 50  0000 R CNN
+F 2 "" H 1550 2600 50  0001 C CNN
+F 3 "" H 1550 2600 50  0001 C CNN
+	1    1550 2600
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR0122
+U 1 1 603665CD
+P 1150 2050
+F 0 "#PWR0122" H 1150 1900 50  0001 C CNN
+F 1 "+5V" H 1165 2223 50  0000 C CNN
+F 2 "" H 1150 2050 50  0001 C CNN
+F 3 "" H 1150 2050 50  0001 C CNN
+	1    1150 2050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1150 2050 1150 2200
+Wire Wire Line
+	1450 2600 1550 2600
+Wire Wire Line
+	1150 3000 1150 3150
+Wire Wire Line
+	1550 900  1550 1050
+Wire Wire Line
+	1550 3800 1700 3800
+Wire Wire Line
+	1550 4200 2500 4200
+Wire Wire Line
+	2500 4200 2500 3600
+Wire Wire Line
+	2700 3600 2700 4050
+Wire Wire Line
+	2700 4050 3600 4050
+Wire Wire Line
+	3600 4050 3600 3750
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 603B5B08
+P 5700 2500
+F 0 "H1" H 5800 2546 50  0000 L CNN
+F 1 "MountingHole" H 5800 2455 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 5700 2500 50  0001 C CNN
+F 3 "~" H 5700 2500 50  0001 C CNN
+	1    5700 2500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 603B626E
+P 5700 2700
+F 0 "H2" H 5800 2746 50  0000 L CNN
+F 1 "MountingHole" H 5800 2655 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 5700 2700 50  0001 C CNN
+F 3 "~" H 5700 2700 50  0001 C CNN
+	1    5700 2700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 603B717D
+P 5700 2950
+F 0 "H3" H 5800 2999 50  0000 L CNN
+F 1 "MountingHole_Pad" H 5800 2908 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad_Via" H 5700 2950 50  0001 C CNN
+F 3 "~" H 5700 2950 50  0001 C CNN
+	1    5700 2950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0123
+U 1 1 603B7760
+P 5700 3200
+F 0 "#PWR0123" H 5700 2950 50  0001 C CNN
+F 1 "GND" H 5705 3027 50  0000 C CNN
+F 2 "" H 5700 3200 50  0001 C CNN
+F 3 "" H 5700 3200 50  0001 C CNN
+	1    5700 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5700 3200 5700 3050
+$Comp
+L Mechanical:MountingHole H4
+U 1 1 603C7FFB
+P 5700 2300
+F 0 "H4" H 5800 2346 50  0000 L CNN
+F 1 "MountingHole" H 5800 2255 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 5700 2300 50  0001 C CNN
+F 3 "~" H 5700 2300 50  0001 C CNN
+	1    5700 2300
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

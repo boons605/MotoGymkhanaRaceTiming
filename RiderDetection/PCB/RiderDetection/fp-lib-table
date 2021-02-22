@@ -1,3 +1,4 @@
 (fp_lib_table
   (lib (name RF)(type KiCad)(uri C:/SVN/MotoGymkhanaRaceTiming/Libs/KiCad_Libs/Sparkfun_RF/RF.pretty)(options "")(descr ""))
+  (lib (name RiderDetection)(type KiCad)(uri ${KIPRJMOD}/Libs/RiderDetection.pretty)(options "")(descr ""))
 )
