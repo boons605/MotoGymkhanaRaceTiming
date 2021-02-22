@@ -366,3 +366,4 @@ RiderDetection/Embedded/build/
 *.sch-bak
 *.kicad_pcb-bak
 Timer/PCB/MotoGymkhanaRaceTiming/_autosave-MotoGymkhanaRaceTiming.sch
+RiderDetection/PCB/RiderDetection/fp-info-cache
