@@ -367,3 +367,16 @@ RiderDetection/Embedded/build/
 *.kicad_pcb-bak
 Timer/PCB/MotoGymkhanaRaceTiming/_autosave-MotoGymkhanaRaceTiming.sch
 RiderDetection/PCB/RiderDetection/fp-info-cache
+Timer/PCB/MotoGymkhanaRaceTiming/fp-info-cache
+RiderDetection/PCB/RiderDetection/Gerbers/RiderDetectionV1.zip
+RiderDetection/PCB/RiderDetection/RiderDetection-B_Cu.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-B_Mask.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-B_Paste.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-B_SilkS.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-Edge_Cuts.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-F_Cu.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-F_Mask.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-F_Paste.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection-F_SilkS.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection.pdf
+RiderDetection/PCB/RiderDetection/RiderDetection.png
