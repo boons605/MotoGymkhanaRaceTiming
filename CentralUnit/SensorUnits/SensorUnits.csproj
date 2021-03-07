@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Communication\Communication.csproj" />
     <ProjectReference Include="..\DisplayUnit\DisplayUnit.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
+    <ProjectReference Include="..\StartLightUnit\StartLightUnit.csproj" />
   </ItemGroup>
 
 </Project>

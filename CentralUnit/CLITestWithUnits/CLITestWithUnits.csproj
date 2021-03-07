@@ -23,6 +23,8 @@
     <ProjectReference Include="..\Communication\Communication.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\RiderIdUnit\RiderIdUnit.csproj" />
+    <ProjectReference Include="..\SensorUnits\SensorUnits.csproj" />
+    <ProjectReference Include="..\StartLightUnit\StartLightUnit.csproj" />
     <ProjectReference Include="..\TimingUnit\TimingUnit.csproj" />
   </ItemGroup>
 

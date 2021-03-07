@@ -13,11 +13,12 @@ namespace SensorUnits.RiderIdUnit
     using Communication;
     using log4net;
     using Models;
+    using StartLightUnit;
 
     /// <summary>
     /// Rider ID Unit implementation for the ESP32-based Rider ID unit employing BLE iBeacons for identifying riders.
     /// </summary>
-    public class BLERiderIdUnit : AbstractCommunicatingUnit, IRiderIdUnit
+    public class BLERiderIdUnit : AbstractCommunicatingUnit, IRiderIdUnit, IStartLightUnit
     {
         /// <summary>
         /// A list of known <see cref="Rider"/> objects with <see cref="Beacon"/> object
@@ -126,7 +127,12 @@ namespace SensorUnits.RiderIdUnit
             /// <summary>
             /// Get the closest beacon.
             /// </summary>
-            GetClosest = 0x0005
+            GetClosest = 0x0005,
+
+            /// <summary>
+            /// Set the start light color
+            /// </summary>
+            SetStartColor = 0x0006
         }
 
         /// <summary>
@@ -166,6 +172,30 @@ namespace SensorUnits.RiderIdUnit
             {
                 this.commandQueue.Enqueue(this.GenerateRemoveRiderCommand(this.knownRiders.First(rid => rid.Name == name).Beacon));
             }
+        }
+
+        /// <inheritdoc/>
+        public void SetStartLightColor(StartLightColor color)
+        {
+            byte colorByte;
+            switch (color)
+            {
+                case StartLightColor.RED:
+                    colorByte = 0x04;
+                    break;
+                case StartLightColor.YELLOW:
+                    colorByte = 0x02;
+                    break;
+                case StartLightColor.GREEN:
+                    colorByte = 0x01;
+                    break;
+                default:
+                    colorByte = 0x00;
+                    break;
+
+            }
+
+            this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.SetStartColor, 0, new byte[] { colorByte }));
         }
 
         /// <summary>
@@ -240,9 +270,28 @@ namespace SensorUnits.RiderIdUnit
                 case (ushort)BLERiderIDCommands.GetClosest:
                     this.HandleGetClosestDevice(packet);
                     break;
+                case (ushort)BLERiderIDCommands.SetStartColor:
+                    HandleSetStartColorResponse(packet);
+                    break;
                 default:
                     Log.Error($"Got invalid packet {packet}");
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Handle a 'Set start light color' response.
+        /// </summary>
+        /// <param name="packet">The packet to check.</param>
+        private void HandleSetStartColorResponse(CommandData packet)
+        {
+            try
+            {
+                Log.Info($"Set color to {packet.Data[0]}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Received bad response for {packet.CommandType} command", ex);
             }
         }
 
