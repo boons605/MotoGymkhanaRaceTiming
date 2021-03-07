@@ -5,14 +5,16 @@
  *      Author: cdromke
  */
 
-#ifdef CONFIG_IDF_TARGET_ESP
+
+#include <stdint.h>
+#include <string.h>
+#include "platformconfig.h"
+
+#ifdef CONFIG_IDF_TARGET_ESP32
 #include "MGBTTimeMgmt.h"
 #else
 #include "TimeMgmt.h"
 #endif
-#include <stdint.h>
-#include <string.h>
-#include "platformconfig.h"
 
 #ifdef CONFIG_IDF_TARGET_ESP32
 #include <driver/uart.h>
