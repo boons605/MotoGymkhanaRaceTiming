@@ -437,11 +437,11 @@ X 1 1 0 -100 100 U 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
-# MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23
+# MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue
 #
-DEF MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23 U 0 10 Y Y 1 L N
+DEF MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue U 0 10 Y Y 1 L N
 F0 "U" 1100 400 60 H V C CNN
-F1 "MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23" 1100 300 60 H V C CNN
+F1 "MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue" 1100 300 60 H V C CNN
 F2 "T05A_TEX" 1100 240 60 H I C CNN
 F3 "" 0 0 60 H V C CNN
 $FPLIST
