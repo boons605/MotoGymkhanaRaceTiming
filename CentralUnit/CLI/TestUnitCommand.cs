@@ -102,7 +102,7 @@ namespace CLI
                 Environment.Exit(-2);
             }
 
-            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(TimingId), "timerUnit", source.Token);
+            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(TimingId), "timerUnit", source.Token, 0, 1);
             timer.OnTrigger += Timer_OnTrigger;
 
             if (timer is AbstractCommunicatingUnit)

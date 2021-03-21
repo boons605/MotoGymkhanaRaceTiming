@@ -33,36 +33,9 @@ namespace WebAPI
         {
             services.AddControllers();
 
-            RaceSummary race;
-            using (Stream input = new FileStream("D:\\Summary.json", FileMode.Open))
-                race = RaceSummary.ReadSummary(input);
+            RaceManager manager = new RaceManager("Summary.json");
 
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(true, race);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(false, race);
-            SimulationTimingUnit timing = new SimulationTimingUnit(race);
-
-            startId.Initialize();
-            endId.Initialize();
-            timing.Initialize();
-
-            RaceTracker tracker = new RaceTracker(timing, startId, endId, timing.StartId, timing.EndId);
-
-            tracker.OnRiderFinished += (o, e) => Console.WriteLine($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
-            tracker.OnRiderDNF += (o, e) => Console.WriteLine($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
-            tracker.OnRiderWaiting += (o, e) => Console.WriteLine($"Rider {e.Rider.Rider.Name} can start");
-            tracker.OnStartEmpty += (o, e) => Console.WriteLine("Start box is empty");
-
-            CancellationTokenSource source = new CancellationTokenSource();
-
-            var trackTask = tracker.Run(source.Token);
-
-            var startTask = startId.Run(source.Token);
-            var endTask = endId.Run(source.Token);
-            var timeTask = timing.Run(source.Token);
-
-            var unitsTask = Task.WhenAll(startTask, endTask, timeTask);
-
-            services.AddSingleton<RaceTracker>(tracker);
+            services.AddSingleton<RaceManager>(manager);
 
             services.AddMvc().AddNewtonsoftJson();
         }

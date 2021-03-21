@@ -11,6 +11,8 @@ namespace SensorUnits.TimingUnit
     /// </summary>
     public interface ITimingUnit
     {
+        int StartId { get; }
+        int EndId { get; }
         /// <summary>
         /// This event will fire when the sensor of the unit is triggered.
         /// </summary>

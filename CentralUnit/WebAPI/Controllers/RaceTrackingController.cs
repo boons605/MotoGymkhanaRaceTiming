@@ -15,19 +15,19 @@ namespace WebAPI.Controllers
     public class RaceTrackingController : ControllerBase
     {
         private readonly ILogger<RaceTrackingController> logger;
-        private readonly RaceTracker tracker;
+        private readonly RaceManager manager;
 
-        public RaceTrackingController(ILogger<RaceTrackingController> logger, RaceTracker tracker)
+        public RaceTrackingController(ILogger<RaceTrackingController> logger, RaceManager tracker)
         {
             this.logger = logger;
-            this.tracker = tracker;
+            this.manager = tracker;
         }
 
         [HttpGet]
         public JsonResult Get()
         {
             JObject result = new JObject();
-            (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = tracker.GetState;
+            (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
             result["waiting"] = JArray.FromObject(waiting);
