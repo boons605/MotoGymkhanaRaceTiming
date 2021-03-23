@@ -175,7 +175,7 @@ Wire Wire Line
 	1950 1500 1950 1350
 Connection ~ 1950 1350
 Wire Wire Line
-	1950 1350 4400 1350
+	1950 1350 2550 1350
 Wire Wire Line
 	1950 1800 1950 2050
 Wire Wire Line
@@ -1120,4 +1120,59 @@ Text Label 5650 7450 1    50   ~ 0
 12V
 Text Label 800  7250 3    50   ~ 0
 12V
+$Comp
+L TSR_2-2450:TSR_2-2450 PS1
+U 1 1 605B9C68
+P 2750 850
+F 0 "PS1" H 3578 796 50  0000 L CNN
+F 1 "TSR_2-2450" H 3578 705 50  0000 L CNN
+F 2 "MotoGymkhanaRaceTiming:TSR-2" H 3600 950 50  0001 L CNN
+F 3 "https://componentsearchengine.com/Datasheets/1/TSR 2-2450.pdf" H 3600 850 50  0001 L CNN
+F 4 "Switching Regulator 5Vout 2A TRACOPOWER Switching Regulator, 6.5  36V dc Input, 5V dc Output, Maximum of 2A" H 3600 750 50  0001 L CNN "Description"
+F 5 "" H 3600 650 50  0001 L CNN "Height"
+F 6 "Traco Power" H 3600 550 50  0001 L CNN "Manufacturer_Name"
+F 7 "TSR 2-2450" H 3600 450 50  0001 L CNN "Manufacturer_Part_Number"
+F 8 "495-TSR2-2450" H 3600 350 50  0001 L CNN "Mouser Part Number"
+F 9 "https://www.mouser.co.uk/ProductDetail/TRACO-Power/TSR-2-2450/?qs=NtE2QagKf6RzknAolzm%2FTQ%3D%3D" H 3600 250 50  0001 L CNN "Mouser Price/Stock"
+F 10 "" H 3600 150 50  0001 L CNN "Arrow Part Number"
+F 11 "" H 3600 50  50  0001 L CNN "Arrow Price/Stock"
+	1    2750 850 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2750 1050 2550 1050
+Wire Wire Line
+	2550 1050 2550 1350
+Connection ~ 2550 1350
+Wire Wire Line
+	2550 1350 4400 1350
+$Comp
+L power:GND #PWR0110
+U 1 1 605C7356
+P 2350 950
+F 0 "#PWR0110" H 2350 700 50  0001 C CNN
+F 1 "GND" H 2355 777 50  0000 C CNN
+F 2 "" H 2350 950 50  0001 C CNN
+F 3 "" H 2350 950 50  0001 C CNN
+	1    2350 950 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2350 950  2750 950 
+$Comp
+L Connector:Screw_Terminal_01x02 J1
+U 1 1 605D42A6
+P 1400 950
+F 0 "J1" H 1318 625 50  0000 C CNN
+F 1 "Screw_Terminal_01x02" H 1318 716 50  0000 C CNN
+F 2 "Connector_Phoenix_MSTB:PhoenixContact_MSTBA_2,5_2-G_1x02_P5.00mm_Horizontal" H 1400 950 50  0001 C CNN
+F 3 "~" H 1400 950 50  0001 C CNN
+	1    1400 950 
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	1600 950  2350 950 
+Connection ~ 2350 950 
+Wire Wire Line
+	1600 850  2750 850 
 $EndSCHEMATC

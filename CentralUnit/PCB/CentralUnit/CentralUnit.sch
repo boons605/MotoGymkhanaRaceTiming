@@ -123,10 +123,10 @@ Wire Wire Line
 Wire Wire Line
 	1350 6200 1450 6200
 $Comp
-L Device:LED D1
+L Device:LED RSSI_D1
 U 1 1 604778FA
 P 850 6200
-F 0 "D1" H 843 6417 50  0000 C CNN
+F 0 "RSSI_D1" H 843 6417 50  0000 C CNN
 F 1 "LED" H 843 6326 50  0000 C CNN
 F 2 "LED_THT:LED_D3.0mm" H 850 6200 50  0001 C CNN
 F 3 "~" H 850 6200 50  0001 C CNN
@@ -134,10 +134,10 @@ F 3 "~" H 850 6200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:LED D2
+L Device:LED ASSOC_D2
 U 1 1 60478220
 P 3500 6200
-F 0 "D2" H 3493 5945 50  0000 C CNN
+F 0 "ASSOC_D2" H 3493 5945 50  0000 C CNN
 F 1 "LED" H 3493 6036 50  0000 C CNN
 F 2 "LED_THT:LED_D3.0mm" H 3500 6200 50  0001 C CNN
 F 3 "~" H 3500 6200 50  0001 C CNN
@@ -198,10 +198,10 @@ F 3 "~" H 2200 3400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:LED D3
+L Device:LED PWR_D3
 U 1 1 6047CD28
 P 2400 3650
-F 0 "D3" H 2393 3395 50  0000 C CNN
+F 0 "PWR_D3" H 2393 3395 50  0000 C CNN
 F 1 "LED" H 2393 3486 50  0000 C CNN
 F 2 "LED_THT:LED_D3.0mm" H 2400 3650 50  0001 C CNN
 F 3 "~" H 2400 3650 50  0001 C CNN
@@ -229,10 +229,10 @@ Wire Wire Line
 	2200 3250 2200 3150
 Connection ~ 2200 3150
 $Comp
-L Connector:Conn_01x03_Male J3
+L Connector:Conn_01x03_Male TMR_J3
 U 1 1 6047F103
 P 3650 1200
-F 0 "J3" V 3712 1344 50  0000 L CNN
+F 0 "TMR_J3" V 3712 1344 50  0000 L CNN
 F 1 "Conn_01x03_Male" V 3803 1344 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 3650 1200 50  0001 C CNN
 F 3 "~" H 3650 1200 50  0001 C CNN
@@ -277,10 +277,10 @@ TRM_RX
 Wire Wire Line
 	1550 2850 1700 2850
 $Comp
-L Connector_Generic:Conn_01x06 J2
+L Connector_Generic:Conn_01x06 TRM_J2
 U 1 1 604873D0
 P 4300 2750
-F 0 "J2" H 4380 2742 50  0000 L CNN
+F 0 "TRM_J2" H 4380 2742 50  0000 L CNN
 F 1 "Conn_01x06" H 4380 2651 50  0000 L CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Horizontal" H 4300 2750 50  0001 C CNN
 F 3 "~" H 4300 2750 50  0001 C CNN
@@ -300,14 +300,10 @@ F 3 "" H 3950 3050 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	3950 3050 4100 3050
-Text GLabel 3900 2750 0    50   Input ~ 0
+Text GLabel 3900 2650 0    50   Input ~ 0
 TRM_TX
-Text GLabel 3900 2850 0    50   Input ~ 0
+Text GLabel 3900 2750 0    50   Input ~ 0
 TRM_RX
-Wire Wire Line
-	3900 2750 4100 2750
-Wire Wire Line
-	3900 2850 4100 2850
 NoConn ~ 1700 1250
 NoConn ~ 1700 1350
 NoConn ~ 1700 1450
@@ -323,7 +319,6 @@ NoConn ~ 2200 1850
 NoConn ~ 2200 1950
 NoConn ~ 2200 2050
 NoConn ~ 4100 2550
-NoConn ~ 4100 2650
 NoConn ~ 1700 2150
 NoConn ~ 1700 2250
 NoConn ~ 1700 2350
@@ -385,4 +380,53 @@ $EndComp
 Connection ~ 2300 1250
 Wire Wire Line
 	2300 1250 2350 1250
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 6050FA5E
+P 1000 4050
+F 0 "H2" H 1100 4096 50  0000 L CNN
+F 1 "MountingHole" H 1100 4005 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 1000 4050 50  0001 C CNN
+F 3 "~" H 1000 4050 50  0001 C CNN
+	1    1000 4050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H4
+U 1 1 6051004E
+P 1000 4500
+F 0 "H4" H 1100 4546 50  0000 L CNN
+F 1 "MountingHole" H 1100 4455 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 1000 4500 50  0001 C CNN
+F 3 "~" H 1000 4500 50  0001 C CNN
+	1    1000 4500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H3
+U 1 1 60510818
+P 1000 4300
+F 0 "H3" H 1100 4346 50  0000 L CNN
+F 1 "MountingHole" H 1100 4255 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 1000 4300 50  0001 C CNN
+F 3 "~" H 1000 4300 50  0001 C CNN
+	1    1000 4300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 60511025
+P 1000 3850
+F 0 "H1" H 1100 3896 50  0000 L CNN
+F 1 "MountingHole" H 1100 3805 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 1000 3850 50  0001 C CNN
+F 3 "~" H 1000 3850 50  0001 C CNN
+	1    1000 3850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3900 2650 4100 2650
+Wire Wire Line
+	3900 2750 4100 2750
+NoConn ~ 4100 2850
 $EndSCHEMATC
