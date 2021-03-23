@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP TSR_2-2450
+D Switching Regulator 5Vout 2A TRACOPOWER Switching Regulator, 6.5  36V dc Input, 5V dc Output, Maximum of 2A
+K
+F https://componentsearchengine.com/Datasheets/1/TSR 2-2450.pdf
+$ENDCMP
+#
+#End Doc Library

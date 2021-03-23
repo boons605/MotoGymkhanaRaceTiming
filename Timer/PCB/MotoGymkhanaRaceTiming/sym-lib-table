@@ -2,4 +2,5 @@
   (lib (name STM32Board)(type Legacy)(uri C:/Users/r.boonstra/STM32CubeIDE/workspace_1.3.0/MotoGymkhanaRaceTiming/PCB/STM32Board.lib)(options "")(descr ""))
   (lib (name bluepill)(type Legacy)(uri C:/Users/r.boonstra/STM32CubeIDE/bluepill.lib)(options "")(descr ""))
   (lib (name MotoGymkhanaRaceTiming-rescue)(type Legacy)(uri ${KIPRJMOD}/MotoGymkhanaRaceTiming-rescue.lib)(options "")(descr ""))
+  (lib (name TSR_2-2450)(type Legacy)(uri C:/SVN/MotoGymkhanaRaceTiming/Timer/PCB/Library/TSR_2-2450/TSR_2-2450.lib)(options "")(descr ""))
 )
