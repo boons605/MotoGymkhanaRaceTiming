@@ -4,18 +4,28 @@
  *  Created on: 21 Nov 2020
  *      Author: cdromke
  */
-#include "MGBTCommProto.h"
-#include "MGBTTimeMgmt.h"
+
+
 #include <stdint.h>
 #include <string.h>
 #include "platformconfig.h"
 
 #ifdef CONFIG_IDF_TARGET_ESP32
+#include "MGBTTimeMgmt.h"
+#else
+#include "TimeMgmt.h"
+#endif
+
+#ifdef CONFIG_IDF_TARGET_ESP32
 #include <driver/uart.h>
 #include "driver/gpio.h"
 #include "esp_log.h"
+#else
+#include "UARTBuffer.h"
 
 #endif
+
+#include "MGBTCommProto.h"
 
 #define MAXWAITSTATETIME 1000U
 #define MAXSENDINGTIME 10000U
@@ -28,6 +38,7 @@ static uint32_t stateEntryTime = 0U;
 static MGBTCommandData rxCommand = {0};
 static MGBTCommandData txResponse = {0};
 static uint8_t commandIsNew = 0U;
+static uint8_t lastResponseSending = 0U;
 
 #ifdef CONFIG_IDF_TARGET_ESP32
 
@@ -43,6 +54,26 @@ static const uart_config_t uart_config =
 };
 
 #endif
+
+#ifndef CONFIG_IDF_TARGET_ESP32
+static uint32_t GetTimestampMs(void)
+{
+    return GetSystemTimeStampMs();
+}
+
+#endif
+
+static uint8_t GetDoneSending(void)
+{
+    uint8_t retVal = 0U;
+#ifdef CONFIG_IDF_TARGET_ESP32
+    retVal = 1U;
+#else
+    retVal = UARTBufferTxBufferEmpty(UARTBufferGetUART(MGBT_UART));
+#endif
+
+    return retVal;
+}
 
 static uint32_t GetTimeInState(void)
 {
@@ -125,7 +156,8 @@ uint16_t GetCommandDataSize(MGBTCommandData* data)
 uint8_t CanSendResponse(void)
 {
     uint8_t retVal = 0U;
-    if((state != CommProtoReceiving))
+    if((GetDoneSending() == 1U) &&
+       (state != CommProtoReceiving))
     {
         retVal = 1U;
     }
@@ -136,16 +168,16 @@ uint8_t CanSendResponse(void)
 void SendResponse(MGBTCommandData* data, uint8_t lastResponse)
 {
     data->crc = calculateCRC((uint8_t*)&data->status, (data->dataLength + 4));
+#ifdef CONFIG_IDF_TARGET_ESP32
     uart_write_bytes(MGBT_UART, (char*)data, GetCommandDataSize(data));
-    if(lastResponse == 0U)
-    {
-        state = CommProtoSending;
-    }
-    else
-    {
-        state = CommProtoIdle;
-        ResetData();
-    }
+#else
+    UARTBufferSendData(UARTBufferGetUART(MGBT_UART), (uint8_t*)data, (data->dataLength + 8));
+#endif
+
+    lastResponseSending = lastResponse;
+    state = CommProtoSending;
+
+
 }
 
 
@@ -223,7 +255,17 @@ static uint8_t* GetBuffer(void)
 static uint8_t ReceiveData(void)
 {
     uint8_t retVal = 0U;
+#ifdef CONFIG_IDF_TARGET_ESP32
     int32_t uartResult = uart_read_bytes(MGBT_UART, GetBuffer(), GetBufferRemaining(), 1);
+#else
+    UARTBuffer* buff = UARTBufferGetUART(MGBT_UART);
+
+    int32_t uartResult = (int32_t)UARTBufferHasNewData(buff);
+    if(uartResult > 0)
+    {
+        UARTBufferGetData(buff, GetBuffer(), GetBufferRemaining());
+    }
+#endif
 
     if(uartResult > 0)
     {
@@ -279,7 +321,11 @@ static void RunProtoReceivingState(void)
 
 static void RunProtoWaitingState(void)
 {
+#ifdef CONFIG_IDF_TARGET_ESP32
     uart_flush(MGBT_UART);
+#else
+    UARTBufferClear(UARTBufferGetUART(MGBT_UART));
+#endif
     if(GetTimeInState() > MAXWAITSTATETIME)
     {
 #ifdef CONFIG_IDF_TARGET_ESP32
@@ -301,7 +347,19 @@ static void RunProtoWaitingState(void)
 
 static void RunProtoSendingState(void)
 {
+#ifdef CONFIG_IDF_TARGET_ESP32
     uart_flush(MGBT_UART);
+#else
+    UARTBufferClear(UARTBufferGetUART(MGBT_UART));
+#endif
+
+    if((GetDoneSending() == 1U) &&
+       (lastResponseSending == 1U))
+    {
+        state = CommProtoIdle;
+        ResetData();
+    }
+
     if(GetTimeInState() > MAXSENDINGTIME)
     {
 #ifdef CONFIG_IDF_TARGET_ESP32

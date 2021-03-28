@@ -1,9 +1,6 @@
 ﻿// <copyright file="IRiderIdUnit.cs" company="Moto Gymkhana">
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
-using System;
-using System.Collections.Generic;
-
 namespace SensorUnits.RiderIdUnit
 {
     using System;

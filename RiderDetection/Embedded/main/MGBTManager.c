@@ -5,6 +5,7 @@
  *      Author: cdromke
  */
 
+#include <stdint.h>
 #include "MGBTManager.h"
 #include "MGBTCommProto.h"
 #include "MGBTDevice.h"
@@ -12,6 +13,12 @@
 
 #include "esp_ibeacon_api.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
+
+#define GPIO_OUTPUT_IO_0    18
+#define GPIO_OUTPUT_IO_1    17
+#define GPIO_OUTPUT_IO_2    16
+#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<GPIO_OUTPUT_IO_0) | (1ULL<<GPIO_OUTPUT_IO_1) | (1ULL<<GPIO_OUTPUT_IO_2))
 
 static const char* AppName = "MGBTManager";
 
@@ -22,6 +29,7 @@ static uint32_t lastTimeCleanup = 0U;
 static uint32_t lastTimeClosestDevice = 0U;
 static uint32_t scanStartTime = 0U;
 static uint32_t lastProgressPacketTime = 0U;
+static uint8_t startLightState = 0U;
 
 static uint8_t totalPackets;
 static uint8_t currentPacket;
@@ -35,6 +43,20 @@ void InitManager(void)
     InitCommProto();
     lastTimeCleanup = GetTimestampMs();
     lastTimeClosestDevice = lastTimeCleanup;
+
+    gpio_config_t io_conf;
+	//disable interrupt
+	io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+	//set as output mode
+	io_conf.mode = GPIO_MODE_OUTPUT;
+	//bit mask of the pins that you want to set,e.g.GPIO18/19
+	io_conf.pin_bit_mask = GPIO_OUTPUT_PIN_SEL;
+	//disable pull-down mode
+	io_conf.pull_down_en = 0;
+	//disable pull-up mode
+	io_conf.pull_up_en = 0;
+	//configure GPIO with the given settings
+	gpio_config(&io_conf);
 }
 
 static void FindDeviceOrFirstFreeIndex(uint8_t* address, uint16_t* firstFreeIndex, uint16_t* indexFound)
@@ -90,9 +112,6 @@ static uint8_t CountDevices(uint8_t active, uint8_t allowed)
 				}
             }
         }
-
-
-
 
         if(deviceList[index].allowed == 1U)
         {
@@ -368,6 +387,11 @@ static void PrepareClosestDeviceData(void)
     lastResponseSent = 1U;
 }
 
+static void ProcessSetStartLight(uint8_t data)
+{
+	startLightState = data;
+}
+
 static void ProcessCommand(MGBTCommandData* command)
 {
     lastResponseSent = 0U;
@@ -418,6 +442,14 @@ static void ProcessCommand(MGBTCommandData* command)
             PrepareClosestDeviceData();
             break;
         }
+        case SetStartLightState:
+		{
+			ESP_LOGI(AppName, "Set start light state");
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			ProcessSetStartLight(command->data[0]);
+			lastResponseSent = 1U;
+			break;
+		}
         default:
         {
             break;
@@ -490,6 +522,10 @@ static void ProcessManagerWork(void)
         }
 
     }
+
+    gpio_set_level(GPIO_OUTPUT_IO_0, startLightState & 0x01);
+	gpio_set_level(GPIO_OUTPUT_IO_1, startLightState & 0x02);
+	gpio_set_level(GPIO_OUTPUT_IO_2, startLightState & 0x04);
     //ESP_LOGI(AppName, "mState2: %d", managerState);
 }
 
