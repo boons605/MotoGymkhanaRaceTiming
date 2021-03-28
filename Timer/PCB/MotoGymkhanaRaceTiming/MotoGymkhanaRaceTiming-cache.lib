@@ -205,6 +205,29 @@ X Pin_9 9 -200 100 150 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
+# Connector_Screw_Terminal_01x02
+#
+DEF Connector_Screw_Terminal_01x02 J 0 40 Y N 1 F N
+F0 "J" 0 100 50 H V C CNN
+F1 "Connector_Screw_Terminal_01x02" 0 -200 50 H V C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ TerminalBlock*:*
+$ENDFPLIST
+DRAW
+C 0 -100 25 1 1 6 N
+C 0 0 25 1 1 6 N
+S -50 50 50 -150 1 1 10 f
+P 2 1 1 6 -21 -87 13 -120 N
+P 2 1 1 6 -21 13 13 -20 N
+P 2 1 1 6 -14 -80 20 -113 N
+P 2 1 1 6 -14 20 20 -13 N
+X Pin_1 1 -200 0 150 R 50 50 1 1 P
+X Pin_2 2 -200 -100 150 R 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
 # Connector_Screw_Terminal_01x03
 #
 DEF Connector_Screw_Terminal_01x03 J 0 40 Y N 1 F N
@@ -437,11 +460,11 @@ X 1 1 0 -100 100 U 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
-# MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23
+# MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue
 #
-DEF MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23 U 0 10 Y Y 1 L N
+DEF MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue U 0 10 Y Y 1 L N
 F0 "U" 1100 400 60 H V C CNN
-F1 "MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23" 1100 300 60 H V C CNN
+F1 "MotoGymkhanaRaceTiming-rescue_LM2577T-ADJ_NOPB-2020-05-24_13-28-23-MotoGymkhanaRaceTiming-rescue" 1100 300 60 H V C CNN
 F2 "T05A_TEX" 1100 240 60 H I C CNN
 F3 "" 0 0 60 H V C CNN
 $FPLIST
@@ -457,6 +480,26 @@ X FB 2 0 -100 300 R 59 59 1 1 I
 X GND 3 2200 -200 300 L 59 59 1 1 W
 X SW 4 2200 -100 300 L 59 59 1 1 O
 X VIN 5 2200 0 300 L 59 59 1 1 W
+ENDDRAW
+ENDDEF
+#
+# TSR_2-2450_TSR_2-2450
+#
+DEF TSR_2-2450_TSR_2-2450 PS 0 30 Y Y 1 F N
+F0 "PS" 850 300 50 H V L CNN
+F1 "TSR_2-2450_TSR_2-2450" 850 200 50 H V L CNN
+F2 "TSR-2" 850 100 50 H I L CNN
+F3 "https://componentsearchengine.com/Datasheets/1/TSR 2-2450.pdf" 850 0 50 H I L CNN
+F4 "Switching Regulator 5Vout 2A TRACOPOWER Switching Regulator, 6.5  36V dc Input, 5V dc Output, Maximum of 2A" 850 -100 50 H I L CNN "Description"
+F5 "Traco Power" 850 -300 50 H I L CNN "Manufacturer_Name"
+F6 "TSR 2-2450" 850 -400 50 H I L CNN "Manufacturer_Part_Number"
+F7 "495-TSR2-2450" 850 -500 50 H I L CNN "Mouser Part Number"
+F8 "https://www.mouser.co.uk/ProductDetail/TRACO-Power/TSR-2-2450/?qs=NtE2QagKf6RzknAolzm%2FTQ%3D%3D" 850 -600 50 H I L CNN "Mouser Price/Stock"
+DRAW
+P 5 0 1 6 200 100 800 100 800 -300 200 -300 200 100 N
+X +VIN 1 0 0 200 R 50 50 0 0 I
+X GND 2 0 -100 200 R 50 50 0 0 W
+X +VOUT 3 0 -200 200 R 50 50 0 0 O
 ENDDRAW
 ENDDEF
 #
