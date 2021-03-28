@@ -7,13 +7,16 @@ sudo dpkg -i packages-microsoft-prod.deb
 #Install .NET runtime
 #MS: https://dotnet.microsoft.com/download/dotnet-core/3.1
 #MS: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#manual-install
+#Very similar procedure for .net 5.0
 #MS Download 1: https://download.visualstudio.microsoft.com/download/pr/be90bd1a-a314-4c87-8b90-7ac7681beea9/2297d87631c13074bb85abed61f8138d/dotnet-runtime-3.1.10-linux-arm64.tar.gz
 #MS Download 2: https://download.visualstudio.microsoft.com/download/pr/936a9563-1dad-4c4b-b366-c7fcc3e28215/a1edcaf4c35bce760d07e3f1f3d0b9cf/aspnetcore-runtime-3.1.10-linux-arm64.tar.gz
+#MS Download 3: https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.201-linux-arm64-binaries
 
 wget https://download.visualstudio.microsoft.com/download/pr/be90bd1a-a314-4c87-8b90-7ac7681beea9/2297d87631c13074bb85abed61f8138d/dotnet-runtime-3.1.10-linux-arm64.tar.gz
 wget https://download.visualstudio.microsoft.com/download/pr/936a9563-1dad-4c4b-b366-c7fcc3e28215/a1edcaf4c35bce760d07e3f1f3d0b9cf/aspnetcore-runtime-3.1.10-linux-arm64.tar.gz
+wget https://download.visualstudio.microsoft.com/download/pr/2e5353f1-8818-4d87-af94-0e5cec730b40/58172cde97795b55bcfc7177dbcf3c68/dotnet-sdk-5.0.201-linux-arm64.tar.gz
 
-mkdir ~/dotnet && tar zxf dotnet-runtime-3.1.10-linux-arm64.tar.gz -C ~/dotnet && tar zxf aspnetcore-runtime-3.1.10-linux-arm64.tar.gz -C ~/dotnet  && \
+mkdir ~/dotnet && tar zxf dotnet-runtime-3.1.10-linux-arm64.tar.gz -C ~/dotnet && tar zxf aspnetcore-runtime-3.1.10-linux-arm64.tar.gz -C ~/dotnet  && tar zxf dotnet-sdk-5.0.201-linux-arm64.tar.gz -C ~/dotnet \
 export DOTNET_ROOT=$HOME/dotnet && \
 export PATH=$PATH:$HOME/dotnet
 
@@ -21,3 +24,33 @@ export PATH=$PATH:$HOME/dotnet
 export DOTNET_ROOT=$HOME/dotnet
 export PATH=$PATH:$HOME/dotnet
 
+
+#To serve the web api we must set up a reverse proxy
+#Instructions here are mostly copied from https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-nginx?view=aspnetcore-5.0
+
+#Install nginx
+sudo apt-get install nginx
+#Nginx will run at startup in the future, but this one time we need to start it
+sudo service nginx start
+#Let nginx now to forward incoming http requests to the web api by modifiying the config
+sudo vi etc/nginx/sites-available/default
+#Delete everything in the file and replace it with
+server {
+    listen        80;
+    location / {
+        proxy_pass         http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection keep-alive;
+        proxy_set_header   Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+#Check the config is correct
+sudo nginx -t
+#Force nginx to reload the config
+sudo nginx -s reload
+#Try sending the pi a http request, should return a 502 since the web api is not running yet
+#For deploying the web api see DeployWebAPI.txt
