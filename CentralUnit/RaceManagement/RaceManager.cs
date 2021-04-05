@@ -7,9 +7,9 @@ using SensorUnits.TimingUnit;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace RaceManagement
 {
@@ -23,9 +23,12 @@ namespace RaceManagement
         private readonly ITimingUnit timing;
         private readonly IRiderIdUnit startGate, endGate;
         private RaceTracker tracker;
+        private CancellationTokenSource source = new CancellationTokenSource();
+
+        //DNF of Finished
+        private List<Lap> laps = new List<Lap>();
 
         public Task combinedTasks { get; private set; }
-        private CancellationTokenSource source;
 
         /// <summary>
         /// Simulates a race from a json that contains all the race events
@@ -52,13 +55,7 @@ namespace RaceManagement
             timingUnit.Initialize();
 
             tracker = new RaceTracker(timing, startId, endId, timingUnit.StartId, timingUnit.EndId);
-
-            tracker.OnRiderFinished += (o, e) => Console.WriteLine($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
-            tracker.OnRiderDNF += (o, e) => Console.WriteLine($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
-            tracker.OnRiderWaiting += (o, e) => Console.WriteLine($"Rider {e.Rider.Rider.Name} can start");
-            tracker.OnStartEmpty += (o, e) => Console.WriteLine("Start box is empty");
-
-            source = new CancellationTokenSource();
+            HookEvents(tracker);
 
             var trackTask = tracker.Run(source.Token);
 
@@ -86,8 +83,6 @@ namespace RaceManagement
         /// <param name="knownRiders"></param>
         public RaceManager(string timingUnitId, string startIdUnitId, string endIdUnitId, string knownRiders, int startTimingId, int endTimingId)
         {
-            CancellationTokenSource source = new CancellationTokenSource();
-
             CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
 
             List<Rider> riders;
@@ -110,8 +105,29 @@ namespace RaceManagement
             endGate.AddKnownRiders(riders);
 
             tracker = new RaceTracker(timing, startGate, endGate, timing.StartId, timing.EndId);
+            HookEvents(tracker);
 
             combinedTasks = tracker.Run(source.Token);
+        }
+
+        private void HookEvents(RaceTracker tracker)
+        {
+            tracker.OnRiderFinished += HandleFinish;
+
+            tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
+            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
+            tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
+            tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
+        }
+
+        private void HandleFinish(object o, FinishedRiderEventArgs e)
+        {
+            laps.Add(new Lap(e.Finish));
+        }
+
+        private void HandleDNF(object o, DNFRiderEventArgs e)
+        {
+            laps.Add(new Lap(e.Dnf));
         }
 
         private static List<Rider> ReadRidersFile(string file)
@@ -132,5 +148,41 @@ namespace RaceManagement
         }
 
         public (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
+
+        /// <summary>
+        /// Returns all lap times driven so far
+        /// </summary>
+        /// <param name="start">the first lap to be returned. Default value (0) returns all laps driven</param>
+        /// <returns></returns>
+        public List<Lap> GetLapTimes(int start = 0)
+        {
+            return laps.Skip(start).ToList();
+        }
+
+        /// <summary>
+        /// Returns the best lap per rider, sorted by lap time
+        /// </summary>
+        /// <returns></returns>
+        public List<Lap> GetBestLaps()
+        {
+            Dictionary<string, Lap> lapsByRider = new Dictionary<string, Lap>();
+
+            foreach(Lap lap in laps)
+            {
+                if (!lapsByRider.ContainsKey(lap.Rider.Name))
+                {
+                    lapsByRider.Add(lap.Rider.Name, lap);
+                }
+                else if (lap <= lapsByRider[lap.Rider.Name])
+                {
+                    lapsByRider[lap.Rider.Name] = lap;
+                }  
+            }
+
+            List<Lap> fastestLaps = lapsByRider.Select(p => p.Value).ToList();
+            fastestLaps.Sort();
+
+            return fastestLaps;
+        }
     }
 }
