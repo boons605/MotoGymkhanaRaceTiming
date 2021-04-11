@@ -4,11 +4,26 @@ using System.Text;
 
 namespace Models
 {
-    public class Lap
+    public class Lap: IComparable<Lap>
     {
         RaceEvent end;
 
         public Rider Rider => end.Rider;
+
+        public long LapTime 
+        {
+            get
+            {
+                if(end is FinishedEvent f)
+                {
+                    return f.LapTime;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+        }
 
         public Lap(FinishedEvent finish)
         {
@@ -20,25 +35,24 @@ namespace Models
             end = dnf;
         }
 
-        public static bool operator <=(Lap a, Lap b)
+        public int CompareTo(Lap other)
         {
-            if(a.end is FinishedEvent fa && b.end is FinishedEvent fb)
             {
-                //when both laps have actually finished compare lap times
-                return fa.LapTime <= fb.LapTime;
-            }
-            else if (a.end is FinishedEvent)
-            {
-                //if only lap a has finished a is faster
-                return true;
-            }
-            else
-            {
-                //if only b has finished b is faster, or both are DNF and then order is irrelevant
-                return false;
+                if (this.end is FinishedEvent fa && other.end is FinishedEvent fb)
+                {
+                    //when both laps have actually finished compare lap times
+                    return fa.LapTime.CompareTo(fb.LapTime);
+                }
+                else if (this.end is FinishedEvent)
+                {
+                    return -1;
+                }
+                else
+                {
+                    //if only b has finished b is faster, or both are DNF and then order is irrelevant
+                    return 1;
+                }
             }
         }
-
-        public static bool operator >=(Lap a, Lap b) => b <= a
     }
 }

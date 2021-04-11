@@ -17,7 +17,7 @@ namespace RaceManagement
     /// <summary>
     /// Class that keeps track of a race through events provided raised by timing and id units
     /// </summary>
-    public class RaceTracker
+    public class RaceTracker : IRaceTracker
     {
         /// <summary>
         /// The timing unit that contains the timing gates at the start and stop box
@@ -148,7 +148,7 @@ namespace RaceManagement
         }
 
         private void OnEvent(EventArgs e) => toProcess.Enqueue(e);
-            
+
 
         /// <summary>
         /// When a rider enters the start box they are recorded as waiting to start.
@@ -164,7 +164,7 @@ namespace RaceManagement
             if (waitingRiders.Count == 1)
             {
                 OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
-            }   
+            }
         }
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace RaceManagement
             {
                 //when a rider triggers the end timing unit, that must be matched to an end id unit event
                 //if there is such a match, then it must be matched to an on track rider
-               
+
                 //we dont know the rider yet
                 TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
                 raceState.Enqueue(newEvent);

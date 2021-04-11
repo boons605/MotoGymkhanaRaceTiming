@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 namespace WebAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
     public class RaceTrackingController : ControllerBase
     {
         private readonly ILogger<RaceTrackingController> logger;
@@ -24,7 +23,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
-        public JsonResult Get()
+        [Route("[controller]/State")]
+        public JsonResult GetState()
         {
             JObject result = new JObject();
             (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
@@ -36,6 +36,20 @@ namespace WebAPI.Controllers
             result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
 
             return new JsonResult(result);
+        }
+
+        [HttpGet]
+        [Route("[controller]/Laps")]
+        public JsonResult GetLaps(int start = 0)
+        {
+            return new JsonResult(JArray.FromObject(manager.GetLapTimes(start)));
+        }
+
+        [HttpGet]
+        [Route("[controller]/BestLapsByRider")]
+        public JsonResult GetLapsByRider()
+        {
+            return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
         }
     }
 }

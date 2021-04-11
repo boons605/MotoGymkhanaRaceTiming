@@ -22,7 +22,7 @@ namespace RaceManagement
 
         private readonly ITimingUnit timing;
         private readonly IRiderIdUnit startGate, endGate;
-        private RaceTracker tracker;
+        private IRaceTracker tracker;
         private CancellationTokenSource source = new CancellationTokenSource();
 
         //DNF of Finished
@@ -110,9 +110,18 @@ namespace RaceManagement
             combinedTasks = tracker.Run(source.Token);
         }
 
-        private void HookEvents(RaceTracker tracker)
+        public RaceManager(IRaceTracker tracker)
+        {
+            this.tracker = tracker;
+            HookEvents(tracker);
+
+            combinedTasks = tracker.Run(source.Token);
+        }
+
+        private void HookEvents(IRaceTracker tracker)
         {
             tracker.OnRiderFinished += HandleFinish;
+            tracker.OnRiderDNF += HandleDNF;
 
             tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
             tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
@@ -173,7 +182,7 @@ namespace RaceManagement
                 {
                     lapsByRider.Add(lap.Rider.Name, lap);
                 }
-                else if (lap <= lapsByRider[lap.Rider.Name])
+                else if (lap.CompareTo(lapsByRider[lap.Rider.Name]) <= 0)
                 {
                     lapsByRider[lap.Rider.Name] = lap;
                 }  
