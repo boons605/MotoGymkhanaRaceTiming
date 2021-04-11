@@ -238,8 +238,11 @@ namespace Communication
             {
                 ushort packetLength = (ushort)(((ushort)buffer[1]) << 8);
                 packetLength |= (ushort)buffer[2];
+                packetLength += (ushort)buffer.Count(bt => bt == (byte)SpecialByte.ESCAPE_BYTE);
+                packetLength += 4;
 
-                if (position >= packetLength)
+                if ((position >= packetLength) &&
+                    (packetLength > 0))
                 {
                     try
                     {
@@ -247,14 +250,15 @@ namespace Communication
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error while parsing packet: ", ex);
+                        Log.Error($"Error while parsing packet, position at {position}, packet length {packetLength}: ", ex);
+                    }
+
+                    if (packet == null)
+                    {
+                        //Log.Error($"Packet in queue was invalid");
+                        Log.Error($"Packet in queue was invalid, data: {BitConverter.ToString(buffer)}");
                     }
                 }
-            }
-
-            if (packet == null)
-            {
-                Log.Error($"Packet in queue was invalid, data: {BitConverter.ToString(buffer)}");
             }
 
             return packet;
