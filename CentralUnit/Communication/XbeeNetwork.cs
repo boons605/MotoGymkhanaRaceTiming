@@ -20,6 +20,14 @@ namespace Communication
     public class XbeeNetwork : IDisposable
     {
         /// <summary>
+        /// The number of bytes not included in the <c>Xbee</c> packet length:
+        /// - Header byte <see cref="SpecialByte.HEADER_BYTE"/>
+        /// - 2 length bytes
+        /// - Checksum byte
+        /// </summary>
+        private const ushort XbeeBytesNotIncludedInPacketLength = 4;
+        
+        /// <summary>
         /// Logger object used to display data in a console or file.
         /// </summary>
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -227,6 +235,7 @@ namespace Communication
         /// <summary>
         /// Check if the packet in the buffer is complete.
         /// First check is done based on length, since the <c>Xbee</c> library contains a long timeout.
+        /// Start of the buffer is the <see cref="SpecialByte.HEADER_BYTE"/>.
         /// </summary>
         /// <param name="buffer">The buffer to check</param>
         /// <param name="position">The buffer position if it is the current receive buffer to be checked, buffer length if it is a queued buffer</param>
@@ -236,13 +245,17 @@ namespace Communication
             XBeePacket packet = null;
             if (buffer.Length > 3)
             {
-                ushort packetLength = (ushort)(((ushort)buffer[1]) << 8);
-                packetLength |= (ushort)buffer[2];
+                // Packet length calculation
+                // https://www.digi.com/resources/documentation/Digidocs/90001942-13/concepts/c_api_frame_structure.htm?tocpath=XBee%20API%20mode%7C_____2
+                // Packet content length is provided at the byte 1 and 2 of the packet, MSB and LSB respectively.
+                // Packet length does not include bytes mentioned in comment of XbeeBytesNotIncludedInPacketLength, which must be added to see if the packet is really complete.
+                // Since we're running the API in escaped mode, it means we need to include all escape bytes as well, since the packet content length does not include them either.
+                ushort packetLength = (ushort)((((ushort)buffer[1]) << 8) | (ushort)buffer[2]);
                 packetLength += (ushort)buffer.Count(bt => bt == (byte)SpecialByte.ESCAPE_BYTE);
-                packetLength += 4;
+                packetLength += XbeeBytesNotIncludedInPacketLength;
 
                 if ((position >= packetLength) &&
-                    (packetLength > 0))
+                    (packetLength > XbeeBytesNotIncludedInPacketLength))
                 {
                     try
                     {
@@ -250,13 +263,11 @@ namespace Communication
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Error while parsing packet, position at {position}, packet length {packetLength}: ", ex);
-                    }
-
-                    if (packet == null)
-                    {
-                        //Log.Error($"Packet in queue was invalid");
-                        Log.Error($"Packet in queue was invalid, data: {BitConverter.ToString(buffer)}");
+                        Log.Error($"Error while parsing packet, position at {position}, packet length {packetLength}", ex);
+                        if (Log.IsDebugEnabled)
+                        {
+                            Log.Debug($"Data which caused packet to fail parsing: {BitConverter.ToString(buffer)}");
+                        }
                     }
                 }
             }
