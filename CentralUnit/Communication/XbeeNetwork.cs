@@ -154,6 +154,12 @@ namespace Communication
             this.communicationChannel.Close();
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Xbee network {this.Name} on port {this.communicationChannel}";
+        }
+
         /// <summary>
         /// Write data, to be used by <see cref="XbeeSerialCommunication"/> devices.
         /// </summary>
@@ -190,6 +196,9 @@ namespace Communication
             this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
             this.commThread.Start();
             this.parser = new XBeePacketParser();
+
+            // Kick the Xbee module to allow joining per https://www.digi.com/resources/documentation/Digidocs/90002002/Reference/r_zb_permit_joining.htm?TocPath=Zigbee%20networks%7CZigbee%20Coordinator%20operation%7C_____5
+            transmitQueue.Enqueue(new ATCommandPacket(1, "CB", "2").GenerateByteArray());
         }
 
         /// <summary>
@@ -320,6 +329,8 @@ namespace Communication
                     Thread.Sleep(100);
                 }
 
+                this.CommunicationChannel_ConnectionStateChanged(this, new ConnectionStateChangedEventArgs(this.communicationChannel.Connected, !this.communicationChannel.Connected));
+
                 while (this.communicationChannel.Connected && (!this.cancellationToken.IsCancellationRequested))
                 {
                     this.ManageTxQueue();
@@ -346,22 +357,33 @@ namespace Communication
         {
             if (packet != null)
             {
+                if (Log.IsDebugEnabled)
+                {
+                    Log.Debug(packet.ToPrettyString());
+                }
+
                 if (packet is ExplicitRxIndicatorPacket eriPacket)
                 {
                     XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
                     deviceForPacket.OnDataReceived(eriPacket.RFData);
                 }
+                else if (packet is ReceivePacket recPacket)
+                {
+                    XbeeSerialCommunication deviceForPacket = this.GetDevice(recPacket.SourceAddress64);
+                    deviceForPacket.OnDataReceived(recPacket.RFData);
+
+                }
                 else if (packet is TransmitStatusPacket txsPacket)
                 {
                     this.ProcessTransmitStatusPacket(txsPacket);
                 }
+                else if (packet is ATCommandResponsePacket atrPacket)
+                {
+                    Log.Info($"Got response for AT command {atrPacket.StringCommandValue}, status {atrPacket.Status}");
+                }
                 else
                 {
-                    Log.Info($"Got unknown packet of type {packet.GetType().Name}");
-                    if (Log.IsDebugEnabled)
-                    {
-                        Log.Debug(packet.ToPrettyString());
-                    }
+                    Log.Info($"Got unknown packet of type {packet.GetType().Name}");   
                 }
             }
         }
