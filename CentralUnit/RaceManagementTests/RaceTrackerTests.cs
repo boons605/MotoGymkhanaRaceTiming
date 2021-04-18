@@ -36,7 +36,7 @@ namespace RaceManagementTests
 
             source = new CancellationTokenSource();
 
-            subject = new RaceTracker(timer, startId, endId, 0, 1);
+            subject = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider> { });
 
             race = subject.Run(source.Token);
         }
@@ -56,7 +56,7 @@ namespace RaceManagementTests
 
             Assert.AreEqual(1, summary.Events.Count);
 
-            EnteredEvent entered = summary.Events[0] as EnteredEvent;
+            IdEvent entered = summary.Events[0] as IdEvent;
             Assert.AreEqual(entered, state.waiting[0]);
 
             Assert.AreEqual("Martijn", entered.Rider.Name);
@@ -100,7 +100,7 @@ namespace RaceManagementTests
             //we expect an EnteredEvent and a TimingEvent, in that order
             Assert.AreEqual(2, summary.Events.Count);
 
-            EnteredEvent id = summary.Events[0] as EnteredEvent;
+            IdEvent id = summary.Events[0] as IdEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
             Assert.AreEqual(state.onTrack[0].id, id);
             Assert.AreEqual(state.onTrack[0].timer, start);
@@ -184,7 +184,7 @@ namespace RaceManagementTests
             //we expect only the events for Martijn tto be recorded
             Assert.AreEqual(2, summary.Events.Count);
 
-            EnteredEvent id = summary.Events[0] as EnteredEvent;
+            IdEvent id = summary.Events[0] as IdEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
             Assert.AreEqual(state.onTrack[0].id, id);
             Assert.AreEqual(state.onTrack[0].timer, start);

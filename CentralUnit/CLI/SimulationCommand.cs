@@ -27,15 +27,15 @@ namespace CLI
             using (Stream input = new FileStream(SummaryFile, FileMode.Open))
                 race = RaceSummary.ReadSummary(input);
 
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(true, race);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(false, race);
+            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(race.StartId, race);
+            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(race.EndId, race);
             SimulationTimingUnit timing = new SimulationTimingUnit(race);
 
             startId.Initialize();
             endId.Initialize();
             timing.Initialize();
 
-            RaceTracker tracker = new RaceTracker(timing, startId, endId, timing.StartId, timing.EndId);
+            RaceTracker tracker = new RaceTracker(timing, startId, endId, timing.StartId, timing.EndId, race.Riders);
 
             tracker.OnRiderFinished += (o, e) => Console.WriteLine($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
             tracker.OnRiderDNF += (o, e) => Console.WriteLine($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");

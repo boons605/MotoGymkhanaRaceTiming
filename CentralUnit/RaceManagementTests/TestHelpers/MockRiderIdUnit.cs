@@ -22,7 +22,7 @@ namespace RaceManagementTests.TestHelpers
 
         public void AddKnownRiders(List<Rider> riders)
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public void ClearKnownRiders()
@@ -32,10 +32,10 @@ namespace RaceManagementTests.TestHelpers
 
         public void RemoveKnownRider(string name)
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
-        public void EmitIdEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId));
-        public void EmitExitEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId));
+        public void EmitIdEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId, Direction.Enter));
+        public void EmitExitEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId, Direction.Exit));
     }
 }

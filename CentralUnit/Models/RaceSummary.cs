@@ -23,6 +23,9 @@ namespace Models
         /// </summary>
         public List<RaceEvent> Events { get; private set; }
 
+        public string StartId { get; private set; }
+        public string EndId { get; private set; }
+
         /// <summary>
         /// All the riders that participated in this race
         /// </summary>
@@ -42,9 +45,11 @@ namespace Models
         /// Constructor for general use. Riders will be collected from events
         /// </summary>
         /// <param name="events"></param>
-        public RaceSummary(List<RaceEvent> events)
+        public RaceSummary(List<RaceEvent> events, string startId, string endId)
         {
             Events = events;
+            StartId = startId;
+            EndId = endId;
         }
 
         /// <summary>
@@ -64,6 +69,9 @@ namespace Models
             JObject composite = new JObject();
             composite.Add("Riders", riders);
             composite.Add("Events", events);
+            composite.Add("StartId", StartId);
+            composite.Add("EndId", EndId);
+
 
             using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true))//we dont own the stream, so dont close it when the writer closes
             {
@@ -85,7 +93,7 @@ namespace Models
 
                 List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
 
-                return new RaceSummary(events);
+                return new RaceSummary(events, intermediate["StartId"].ToString(), intermediate["EndId"].ToString());
             }
         }
 

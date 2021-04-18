@@ -209,17 +209,17 @@ namespace SensorUnits.RiderIdUnit
                 {
                     while (this.eventQueue.TryDequeue(out RiderIDQueuedEvent evt))
                     {
-                        if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Entered)
+                        if (evt.EventArgs.IdType == Direction.Enter)
                         {
                             this.OnRiderId?.Invoke(this, evt.EventArgs);
                         }
-                        else if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Exit)
+                        else if (evt.EventArgs.IdType == Direction.Exit)
                         {
                             this.OnRiderExit?.Invoke(this, evt.EventArgs);
                         }
                         else
                         {
-                            Log.Error($"Got illegal type of RiderIDQueuedEvent: {evt.Type}");
+                            Log.Error($"Got illegal type of RiderIDQueuedEvent: {evt.EventArgs.IdType}");
                         }
                     }
 
@@ -341,15 +341,13 @@ namespace SensorUnits.RiderIdUnit
                 {
                     // Entered range
                     this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
-                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId, Direction.Enter)));
                 }
                 else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
                 {
                     // Left range
                     this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
-                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId, Direction.Exit)));
                 }
 
                 this.closestBeacon = b;

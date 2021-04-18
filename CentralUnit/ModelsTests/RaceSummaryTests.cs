@@ -22,10 +22,10 @@ namespace ModelsTests
             bertBeacon.Rssi = 7;
             bertBeacon.MeasuredPower = 8;
 
-            EnteredEvent entered = new EnteredEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnBeacon));
+            IdEvent entered = new IdEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnBeacon), "StartId", Direction.Enter);
             TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", bertBeacon),100, 1);
 
-            RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing });
+            RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing }, "StartId", "EndId");
 
             MemoryStream stream = new MemoryStream();
 
@@ -43,6 +43,9 @@ namespace ModelsTests
 
             foreach ((RaceEvent e1, RaceEvent e2) in subject.Events.Zip(parsed.Events))
                 Assert.IsTrue(CompareRiders(e1.Rider, e2.Rider));
+
+            Assert.AreEqual("StartId", parsed.StartId);
+            Assert.AreEqual("EndId", parsed.EndId);
         }
 
         private bool CompareRiders(Rider r1, Rider r2)
