@@ -10,8 +10,9 @@ namespace CLITestWithUnits
     using log4net;
     using log4net.Config;
     using Models;
-    using RiderIdUnit;
-    using TimingUnit;
+    using SensorUnits.RiderIdUnit;
+    using SensorUnits.TimingUnit;
+    using StartLightUnit;
 
     class Program
     {
@@ -60,12 +61,15 @@ namespace CLITestWithUnits
                 Environment.Exit(-2);
             }
 
-            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit", source.Token);
-            timer.OnTrigger += Timer_OnTrigger;
-
-            if (timer is AbstractCommunicatingUnit)
+            if (args[1] != "none")
             {
-                //((AbstractCommunicatingUnit)timer).
+                timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit", source.Token, 0, 1);
+                timer.OnTrigger += Timer_OnTrigger;
+
+                if (timer is AbstractCommunicatingUnit)
+                {
+                    //((AbstractCommunicatingUnit)timer).
+                }
             }
 
             startIdUnit = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(args[2]), "startUnit", 2.0, source.Token);
@@ -80,13 +84,46 @@ namespace CLITestWithUnits
 
             startIdUnit.AddKnownRiders(riders);
 
-            Console.ReadLine();
+            string line;
+            while ((line = Console.ReadLine()) != "QUIT")
+            {
+                if (line.StartsWith("setcolor:", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    SetStartLightColor(line.Split(':')[1]);
+                }
+            }
 
             source.Cancel();
 
             CommunicationManager.Dispose();
 
             Environment.Exit(0);
+        }
+
+        private static void SetStartLightColor(string v)
+        {
+            if (startIdUnit is IStartLightUnit)
+            {
+                StartLightColor color;
+
+                switch (v)
+                {
+                    case "green":
+                        color = StartLightColor.GREEN;
+                        break;
+                    case "yellow":
+                        color = StartLightColor.YELLOW;
+                        break;
+                    case "red":
+                        color = StartLightColor.RED;
+                        break;
+                    default:
+                        color = StartLightColor.OFF;
+                        break;
+                }
+
+                ((IStartLightUnit)startIdUnit).SetStartLightColor(color);
+            }
         }
 
         private static void StartIdUnit_OnRiderExit(object sender, RiderIdEventArgs e)

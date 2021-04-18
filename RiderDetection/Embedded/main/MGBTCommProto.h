@@ -19,6 +19,10 @@
 #define MGBT_UART UART_NUM_1
 #define TXD_PIN (GPIO_NUM_4)
 #define RXD_PIN (GPIO_NUM_5)
+#else
+
+#define MGBT_UART 0
+
 #endif
 
 typedef enum
@@ -37,7 +41,14 @@ typedef enum
     ListAllowedDevices = 3U,
     ListDetectedDevices = 4U,
     GetClosestDevice = 5U,
-	GetIdentification = 255U
+	SetStartLightState = 6U,
+
+    GetLatestTimeStamp = 101U,
+    GetAllLaps = 102U,
+    GetCurrentTime = 103U,
+    UpdateDisplayedTime = 104U,
+    UpdateOpMode = 105U,
+    GetIdentification = 255U
 
 } MGBTCommandType;
 
@@ -46,9 +57,18 @@ typedef struct
     uint16_t dataLength;
     uint16_t crc;
     uint16_t status;
-    MGBTCommandType cmdType : 16;
+    uint16_t cmdType;
     uint8_t data[COMMANDDATAMAXSIZE];
 } MGBTCommandData;
+
+typedef enum
+{
+	DeviceTypeNone = 0U,
+	DeviceTypeTimer = 1U,
+	DeviceTypeIdentifier = 2U,
+	DeviceTypeDisplay = 4U,
+	DeviceTypeStartRelease = 8U
+} DeviceTypes;
 
 uint8_t CommandAvailable(void);
 MGBTCommandData* GetAndClearCommand(void);

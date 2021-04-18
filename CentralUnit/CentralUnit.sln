@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CLITestWithUnits", "CLITest
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI", "WebAPI\WebAPI.csproj", "{9071D8A0-3C62-404A-8702-F7576655346B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StartLightUnit", "StartLightUnit\StartLightUnit.csproj", "{4916A03E-AF15-4CF0-8B01-0B2A065D0383}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,10 +79,17 @@ Global
 		{26543DDE-CE42-4883-8311-791D62879F16}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26543DDE-CE42-4883-8311-791D62879F16}.Release|Any CPU.Build.0 = Release|Any CPU
+<<<<<<< HEAD
 		{9071D8A0-3C62-404A-8702-F7576655346B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9071D8A0-3C62-404A-8702-F7576655346B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9071D8A0-3C62-404A-8702-F7576655346B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9071D8A0-3C62-404A-8702-F7576655346B}.Release|Any CPU.Build.0 = Release|Any CPU
+=======
+		{4916A03E-AF15-4CF0-8B01-0B2A065D0383}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4916A03E-AF15-4CF0-8B01-0B2A065D0383}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4916A03E-AF15-4CF0-8B01-0B2A065D0383}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4916A03E-AF15-4CF0-8B01-0B2A065D0383}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> master
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

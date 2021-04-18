@@ -2,7 +2,7 @@
   "profiles": {
     "CLITestWithUnits": {
       "commandName": "Project",
-      "commandLineArgs": "macddresslist.txt directserial:COM6 directserial:COM10"
+      "commandLineArgs": "macddresslist.txt none directserial:COM6"
     }
   }
 }
