@@ -26,7 +26,7 @@ namespace Communication
         /// - Checksum byte
         /// </summary>
         private const ushort XbeeBytesNotIncludedInPacketLength = 4;
-        
+
         /// <summary>
         /// Logger object used to display data in a console or file.
         /// </summary>
@@ -198,7 +198,7 @@ namespace Communication
             this.parser = new XBeePacketParser();
 
             // Kick the Xbee module to allow joining per https://www.digi.com/resources/documentation/Digidocs/90002002/Reference/r_zb_permit_joining.htm?TocPath=Zigbee%20networks%7CZigbee%20Coordinator%20operation%7C_____5
-            transmitQueue.Enqueue(new ATCommandPacket(1, "CB", "2").GenerateByteArray());
+            this.transmitQueue.Enqueue(new ATCommandPacket(1, "CB", "2").GenerateByteArray());
         }
 
         /// <summary>
@@ -362,28 +362,27 @@ namespace Communication
                     Log.Debug(packet.ToPrettyString());
                 }
 
-                if (packet is ExplicitRxIndicatorPacket eriPacket)
+                switch (packet)
                 {
-                    XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
-                    deviceForPacket.OnDataReceived(eriPacket.RFData);
-                }
-                else if (packet is ReceivePacket recPacket)
-                {
-                    XbeeSerialCommunication deviceForPacket = this.GetDevice(recPacket.SourceAddress64);
-                    deviceForPacket.OnDataReceived(recPacket.RFData);
+                    case ExplicitRxIndicatorPacket eriPacket:
 
-                }
-                else if (packet is TransmitStatusPacket txsPacket)
-                {
-                    this.ProcessTransmitStatusPacket(txsPacket);
-                }
-                else if (packet is ATCommandResponsePacket atrPacket)
-                {
-                    Log.Info($"Got response for AT command {atrPacket.StringCommandValue}, status {atrPacket.Status}");
-                }
-                else
-                {
-                    Log.Info($"Got unknown packet of type {packet.GetType().Name}");   
+                        XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
+                        deviceForPacket.OnDataReceived(eriPacket.RFData);
+                        break;
+
+                    case ReceivePacket recPacket:
+                        XbeeSerialCommunication deviceForThisPacket = this.GetDevice(recPacket.SourceAddress64);
+                        deviceForThisPacket.OnDataReceived(recPacket.RFData);
+                        break;
+                    case TransmitStatusPacket txsPacket:
+                        this.ProcessTransmitStatusPacket(txsPacket);
+                        break;
+                    case ATCommandResponsePacket atrPacket:
+                        Log.Info($"Got response for AT command {atrPacket.StringCommandValue}, status {atrPacket.Status}");
+                        break;
+                    default:
+                        Log.Info($"Got unknown packet of type {packet.GetType().Name}");
+                        break;
                 }
             }
         }
@@ -404,18 +403,18 @@ namespace Communication
                 {
                     if (Log.IsDebugEnabled)
                     {
-                        Log.Debug($"Transmit succeeded to {deviceForPacket.Xbee64address.ToString()}");
+                        Log.Debug($"Transmit succeeded to {deviceForPacket.Xbee64address}");
                     }
                 }
                 else
                 {
-                    Log.WarnFormat($"Got TX status {txsPacket.TransmitStatus} for device {deviceForPacket.Xbee64address}");
+                    Log.Warn($"Got TX status {txsPacket.TransmitStatus} for device {deviceForPacket.Xbee64address}");
                     deviceForPacket.OnFailure();
                 }
             }
             else
             {
-                Log.WarnFormat($"Got TX Status {txsPacket.TransmitStatus} for unknown frame ID {txsPacket.FrameID}");
+                Log.Warn($"Got TX Status {txsPacket.TransmitStatus} for unknown frame ID {txsPacket.FrameID}");
             }
         }
 

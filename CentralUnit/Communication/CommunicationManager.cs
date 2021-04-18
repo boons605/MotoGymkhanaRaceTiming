@@ -3,20 +3,19 @@
 // </copyright>
 namespace Communication
 {
-    using log4net;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using log4net;
 
     /// <summary>
     /// Management of communication devices.
     /// </summary>
     public class CommunicationManager : IDisposable
     {
-
         /// <summary>
         /// Logger object used to display data in a console or file.
         /// </summary>
