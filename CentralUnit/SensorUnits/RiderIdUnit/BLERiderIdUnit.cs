@@ -36,16 +36,14 @@ namespace SensorUnits.RiderIdUnit
         private double maxDetectionDistance = 4.0;
 
         /// <summary>
-        /// The closest beacon.
+        /// The closest rider.
         /// </summary>
-        private Beacon closestBeacon;
+        private Rider closestRider;
 
         /// <summary>
         /// Queue of events.
         /// </summary>
         private ConcurrentQueue<RiderIDQueuedEvent> eventQueue;
-
-        public string UnitId => unitId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BLERiderIdUnit" /> class based with a specific serial channel.
@@ -136,6 +134,11 @@ namespace SensorUnits.RiderIdUnit
         }
 
         /// <summary>
+        /// The ID for this unit, i.e. startUnit or finishUnit
+        /// </summary>
+        public string UnitId => this.unitId;
+
+        /// <summary>
         /// Add a list of known <see cref="Rider"/> object.
         /// </summary>
         /// <param name="riders">The riders to add</param>
@@ -195,7 +198,6 @@ namespace SensorUnits.RiderIdUnit
                 default:
                     colorByte = 0x00;
                     break;
-
             }
 
             this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.SetStartColor, 0, new byte[] { colorByte }));
@@ -275,7 +277,7 @@ namespace SensorUnits.RiderIdUnit
                     this.HandleGetClosestDevice(packet);
                     break;
                 case (ushort)BLERiderIDCommands.SetStartColor:
-                    HandleSetStartColorResponse(packet);
+                    this.HandleSetStartColorResponse(packet);
                     break;
                 default:
                     Log.Error($"{this.unitId}:Got invalid packet {packet}");
@@ -333,46 +335,58 @@ namespace SensorUnits.RiderIdUnit
 
         /// <summary>
         /// Sets the closest beacon and fires an event if:
-        /// - The beacon was not null and in range an the beacon is now null or out of range. <see cref="OnRiderExit"/>
-        /// - The beacon was null or out of range and is now not null and in range. <see cref="OnRiderId"/>
+        /// - The rider was not null and in range an the beacon is now null or out of range. <see cref="OnRiderExit"/>
+        /// - The beacon is null or not linked to a known rider, and a rider is currently in range. <see cref="OnRiderExit"/>
+        /// - The rider was null or out of range and is now not null and in range. <see cref="OnRiderId"/>
         /// </summary>
         /// <param name="b">The <see cref="Beacon"/></param>
-        private void SetClosestBeacon(Beacon b)
+        private void SetClosestRider(Beacon b)
         {
-            if (knownRiders.Any(rid => rid.Beacon.Equals(b)))
+            if (this.knownRiders.Any(rid => rid.Beacon.Equals(b)))
             {
-                if (this.CheckDeviceInRange(b) && (!this.CheckDeviceInRange(this.closestBeacon)))
+                Rider newClosest = this.knownRiders.First(rid => rid.Beacon.Equals(b));
+
+                if (this.CheckRiderInRange(newClosest) && (!this.CheckRiderInRange(this.closestRider)))
                 {
                     // Entered range
                     this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId),
                                                     RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
                 }
-                else if ((!this.CheckDeviceInRange(b)) && this.CheckDeviceInRange(this.closestBeacon))
+                else if ((!this.CheckRiderInRange(newClosest)) && this.CheckRiderInRange(this.closestRider))
                 {
                     // Left range
                     this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(this.knownRiders.First(rid => rid.Beacon.Equals(b)), DateTime.Now, this.unitId),
+                                                    new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId),
                                                     RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
                 }
 
-                this.closestBeacon = b;
+                this.closestRider = newClosest;
+            }
+            else if (this.closestRider != null)
+            {
+                // Left range
+                this.eventQueue.Enqueue(new RiderIDQueuedEvent(
+                                                new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId),
+                                                RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+
+                this.closestRider = null;
             }
         }
 
         /// <summary>
-        /// Checks if a <see cref="Beacon"/> <paramref name="b"/> is at a distance of less than <see cref="maxDetectionDistance"/>.
-        /// If <paramref name="b"/> is null, it is considered not in range.
+        /// Checks if a <see cref="Rider"/> <paramref name="r"/> is at a distance of less than <see cref="maxDetectionDistance"/>.
+        /// If <paramref name="r"/> is null, it is considered not in range.
         /// </summary>
-        /// <param name="b">The beacon to check.</param>
-        /// <returns>true if <paramref name="b"/> is non-null and in range, false otherwise.</returns>
-        private bool CheckDeviceInRange(Beacon b)
+        /// <param name="r">The rider to check.</param>
+        /// <returns>true if <paramref name="r"/> is non-null and in range, false otherwise.</returns>
+        private bool CheckRiderInRange(Rider r)
         {
             bool retVal = false;
 
-            if (b != null)
+            if (r != null)
             {
-                if (b.Distance < this.maxDetectionDistance)
+                if (r.Beacon.Distance < this.maxDetectionDistance)
                 {
                     retVal = true;
                 }
@@ -389,24 +403,24 @@ namespace SensorUnits.RiderIdUnit
         {
             if (packet.Status != 0)
             {
-                if (this.closestBeacon != null)
+                if (this.closestRider != null)
                 {
-                    Log.Info($"{this.unitId}:GetClosestDevice returned {packet.Status}");
+                    Log.Info($"{this.unitId}: GetClosestDevice returned {packet.Status}");
                 }
 
-                this.SetClosestBeacon(null);
+                this.SetClosestRider(null);
             }
             else
             {
                 List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(packet.Status, packet.Data);
                 foreach (Beacon b in beacons)
                 {
-                    if (!b.Equals(this.closestBeacon))
+                    if (!b.Equals(this.closestRider))
                     {
-                        Log.Info($"{this.unitId}:Got closest device: {b}");
+                        Log.Info($"{this.unitId}: Got closest device: {b}");
                     }
 
-                    this.SetClosestBeacon(b);
+                    this.SetClosestRider(b);
                 }
             }
         }
