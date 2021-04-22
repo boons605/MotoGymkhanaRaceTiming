@@ -7,6 +7,10 @@ namespace RaceManagementTests.TestHelpers
 {
     public class MockTimingUnit : ITimingUnit
     {
+        public int StartId => throw new NotImplementedException();
+
+        public int EndId => throw new NotImplementedException();
+
         public event EventHandler<TimingTriggeredEventArgs> OnTrigger;
 
         public void EmitTriggerEvent(long microseconds, string unitId, int gateId, DateTime received) => OnTrigger.Invoke(this, new TimingTriggeredEventArgs(microseconds, unitId, gateId, received));

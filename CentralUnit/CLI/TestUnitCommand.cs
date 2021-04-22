@@ -49,6 +49,13 @@ namespace CLI
         [Argument(3, "end id unit identifier")]
         public string EndId { get; set; }
 
+        [Option("Id for start gate of the timing unit")]
+        public int StartGateId { get; set; } = 0;
+
+        [Option("Id for end gate of the timing unit")]
+        public int EndGateId { get; set; } = 1;
+
+
 
         private static void StartIdUnit_OnRiderExit(object sender, RiderIdEventArgs e)
         {
@@ -102,7 +109,7 @@ namespace CLI
                 Environment.Exit(-2);
             }
 
-            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(TimingId), "timerUnit", source.Token);
+            timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(TimingId), "timerUnit", source.Token, StartGateId, EndGateId);
             timer.OnTrigger += Timer_OnTrigger;
 
             if (timer is AbstractCommunicatingUnit)

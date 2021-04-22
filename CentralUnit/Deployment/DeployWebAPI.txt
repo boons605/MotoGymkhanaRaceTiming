@@ -1,0 +1,11 @@
+#Establish a way to put files on the PI we use https://winscp.net/eng/download.php
+#Open the CentralUnit solution in vs
+#Right click the WebApi project -> Publish
+#Publish with a FolderProfile (note Target location)
+#Copy the contents of the target location to the PI (say ~/motogymkhana)
+cd motogymkhana
+#run the app
+dotnet WebApi.dll
+
+#NOTE: Currently we only support simulation from a file which will run automatically fom the included Summary.json
+#In the future this will probably take more config regarding riders, hardware etc

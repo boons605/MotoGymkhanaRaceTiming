@@ -62,7 +62,7 @@ namespace CLITestWithUnits
 
             if (args[1] != "none")
             {
-                timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit", source.Token);
+                timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(args[1]), "timerUnit", source.Token, 0, 1);
                 timer.OnTrigger += Timer_OnTrigger;
 
                 if (timer is AbstractCommunicatingUnit)

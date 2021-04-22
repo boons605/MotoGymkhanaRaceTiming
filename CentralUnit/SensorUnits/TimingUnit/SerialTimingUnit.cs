@@ -26,15 +26,21 @@ namespace SensorUnits.TimingUnit
         /// </summary>
         private ConcurrentQueue<TimingTriggeredEventArgs> timingEvents;
 
+        public int StartId { get; private set; }
+
+        public int EndId { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SerialTimingUnit" /> class based with a specific serial channel.
         /// </summary>
         /// <param name="commInterface">The <see cref="ISerialCommunication"/> used for communicating with this Rider ID unit</param>
         /// <param name="unitId">The name of the timing unit</param>
         /// <param name="token">The cancellation token for this unit</param>
-        public SerialTimingUnit(ISerialCommunication commInterface, string unitId, CancellationToken token) : base(commInterface, unitId, token)
+        public SerialTimingUnit(ISerialCommunication commInterface, string unitId, CancellationToken token, int startId, int endId) : base(commInterface, unitId, token)
         {
             this.timingEvents = new ConcurrentQueue<TimingTriggeredEventArgs>();
+            this.StartId = startId;
+            this.EndId = endId;
         }
 
         /// <inheritdoc/>
@@ -212,6 +218,11 @@ namespace SensorUnits.TimingUnit
                     var reader = new BinaryReader(new MemoryStream(packet.Data));
                     UInt32 micros = reader.ReadUInt32();
                     byte gateId = reader.ReadByte();
+
+                    if ((int)gateId != StartId && gateId != EndId)
+                    {
+                        throw new ArgumentException($"Timing sensor reorted gate id: {gateId}, expeted either {StartId} or {EndId}");
+                    }
 
                     this.timingEvents.Enqueue(new TimingTriggeredEventArgs(micros, gateId));
                 }
