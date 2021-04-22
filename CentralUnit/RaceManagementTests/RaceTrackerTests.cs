@@ -572,6 +572,7 @@ namespace RaceManagementTests
         {
             id.EmitIdEvent(rider, start);
             time.EmitTriggerEvent(100, "Timer", 0, start);
+            id.EmitExitEvent(rider, start);
         }
 
         /// <summary>
@@ -586,6 +587,7 @@ namespace RaceManagementTests
         {
             id.EmitIdEvent(rider, end);
             time.EmitTriggerEvent(100, "Timer", 1, end);
+            id.EmitExitEvent(rider, end);
         }
     }
 }

@@ -170,31 +170,34 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnStartId(RiderIdEventArgs args)
         {
+            //Is the rider associated with this even currently registered as waiting?
+            bool waiting = waitingRiders.Any(e => e.Rider == args.Rider);
+
+            //Is the rider associated with this event currently on track
+            bool onTrack = onTrackRiders.Any(t => t.id.Rider == args.Rider);
+
             if (args.IdType == Direction.Enter)
             {
-                IdEvent newEvent = new IdEvent(args.Received, args.Rider, args.UnitId, args.IdType);
-                waitingRiders.AddLast(newEvent);
-                raceState.Enqueue(newEvent);
-
-                if (waitingRiders.Count == 1)
+                if (!waiting && !onTrack)
                 {
-                    OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
+                    IdEvent newEvent = new IdEvent(args.Received, args.Rider, args.UnitId, args.IdType);
+                    waitingRiders.AddLast(newEvent);
+                    raceState.Enqueue(newEvent);
+
+                    if (waitingRiders.Count == 1)
+                    {
+                        OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
+                    }
                 }
             }
             else
             {
-                //Has a rider left the bluetooth range before starting?
-                IdEvent waiting = waitingRiders.Where(e => e.Rider == args.Rider).First();
-
-                if(waiting != null)
+                if(waiting)
                 {
-                    waitingRiders.Remove(waiting);
+                    waitingRiders.Remove(waitingRiders.Where(e => e.Rider == args.Rider).First());
                 }
 
-                //Has a rider left the bluetooth range on track?
-                var onTrack = onTrackRiders.Where(t => t.id.Rider == args.Rider);
-
-                if(onTrack != null)
+                if(onTrack)
                 {
                     startGate.RemoveKnownRider(args.Rider.Name);
                 }
@@ -208,43 +211,46 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnEndId(RiderIdEventArgs args)
         {
-            IdEvent newEvent = new IdEvent(args.Received, args.Rider, args.UnitId, args.IdType);
-
-            //if we receive an end id for a rider that is not on track ignore it
-            if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
+            if (args.IdType == Direction.Enter)
             {
-                return;
-            }
+                IdEvent newEvent = new IdEvent(args.Received, args.Rider, args.UnitId, args.IdType);
 
-            raceState.Enqueue(newEvent);
-
-            TimingEvent closest = endTimes.FirstOrDefault();
-
-            //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
-            if (closest == null)
-            {
-                endIds.Add(newEvent);
-                return;
-            }
-
-            foreach (TimingEvent e in endTimes)
-            {
-                if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
+                //if we receive an end id for a rider that is not on track ignore it
+                if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
                 {
-                    closest = e;
+                    return;
                 }
-            }
 
-            if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
-            {
-                closest.SetRider(newEvent.Rider);
-                endTimes.Remove(closest);
+                raceState.Enqueue(newEvent);
 
-                MatchLapEnd(newEvent, closest);
-            }
-            else
-            {
-                endIds.Add(newEvent);
+                TimingEvent closest = endTimes.FirstOrDefault();
+
+                //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
+                if (closest == null)
+                {
+                    endIds.Add(newEvent);
+                    return;
+                }
+
+                foreach (TimingEvent e in endTimes)
+                {
+                    if ((e.Time - args.Received).Duration() < (closest.Time - args.Received).Duration())
+                    {
+                        closest = e;
+                    }
+                }
+
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
+                {
+                    closest.SetRider(newEvent.Rider);
+                    endTimes.Remove(closest);
+
+                    MatchLapEnd(newEvent, closest);
+                }
+                else
+                {
+                    endIds.Add(newEvent);
+                }
             }
         }
 
