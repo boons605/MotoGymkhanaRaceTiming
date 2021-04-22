@@ -119,6 +119,12 @@ namespace Communication
             }
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Direct serial comm channel {this.serialPort.PortName}";
+        }
+
         /// <summary>
         /// The thread body. Performs polling.
         /// Reads data from the serial port and throws the DataReceived event.

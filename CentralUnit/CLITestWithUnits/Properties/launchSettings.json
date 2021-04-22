@@ -2,7 +2,7 @@
   "profiles": {
     "CLITestWithUnits": {
       "commandName": "Project",
-      "commandLineArgs": "macddresslist.txt none directserial:COM6"
+      "commandLineArgs": "macddresslist.txt none xbee:COM5:0013A20041CC4818 xbee:COM5:0013A20041CC1895"
     }
   }
 }

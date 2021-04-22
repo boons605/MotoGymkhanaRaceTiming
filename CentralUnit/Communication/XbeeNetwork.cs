@@ -26,7 +26,7 @@ namespace Communication
         /// - Checksum byte
         /// </summary>
         private const ushort XbeeBytesNotIncludedInPacketLength = 4;
-        
+
         /// <summary>
         /// Logger object used to display data in a console or file.
         /// </summary>
@@ -154,6 +154,12 @@ namespace Communication
             this.communicationChannel.Close();
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Xbee network {this.Name} on port {this.communicationChannel}";
+        }
+
         /// <summary>
         /// Write data, to be used by <see cref="XbeeSerialCommunication"/> devices.
         /// </summary>
@@ -190,6 +196,9 @@ namespace Communication
             this.commThread = new Thread(this.RunXbeeNetwork) { IsBackground = true };
             this.commThread.Start();
             this.parser = new XBeePacketParser();
+
+            // Kick the Xbee module to allow joining per https://www.digi.com/resources/documentation/Digidocs/90002002/Reference/r_zb_permit_joining.htm?TocPath=Zigbee%20networks%7CZigbee%20Coordinator%20operation%7C_____5
+            this.transmitQueue.Enqueue(new ATCommandPacket(1, "CB", "2").GenerateByteArray());
         }
 
         /// <summary>
@@ -320,6 +329,8 @@ namespace Communication
                     Thread.Sleep(100);
                 }
 
+                this.CommunicationChannel_ConnectionStateChanged(this, new ConnectionStateChangedEventArgs(this.communicationChannel.Connected, !this.communicationChannel.Connected));
+
                 while (this.communicationChannel.Connected && (!this.cancellationToken.IsCancellationRequested))
                 {
                     this.ManageTxQueue();
@@ -346,22 +357,32 @@ namespace Communication
         {
             if (packet != null)
             {
-                if (packet is ExplicitRxIndicatorPacket eriPacket)
+                if (Log.IsDebugEnabled)
                 {
-                    XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
-                    deviceForPacket.OnDataReceived(eriPacket.RFData);
+                    Log.Debug(packet.ToPrettyString());
                 }
-                else if (packet is TransmitStatusPacket txsPacket)
+
+                switch (packet)
                 {
-                    this.ProcessTransmitStatusPacket(txsPacket);
-                }
-                else
-                {
-                    Log.Info($"Got unknown packet of type {packet.GetType().Name}");
-                    if (Log.IsDebugEnabled)
-                    {
-                        Log.Debug(packet.ToPrettyString());
-                    }
+                    case ExplicitRxIndicatorPacket eriPacket:
+
+                        XbeeSerialCommunication deviceForPacket = this.GetDevice(eriPacket.SourceAddress64);
+                        deviceForPacket.OnDataReceived(eriPacket.RFData);
+                        break;
+
+                    case ReceivePacket recPacket:
+                        XbeeSerialCommunication deviceForThisPacket = this.GetDevice(recPacket.SourceAddress64);
+                        deviceForThisPacket.OnDataReceived(recPacket.RFData);
+                        break;
+                    case TransmitStatusPacket txsPacket:
+                        this.ProcessTransmitStatusPacket(txsPacket);
+                        break;
+                    case ATCommandResponsePacket atrPacket:
+                        Log.Info($"Got response for AT command {atrPacket.StringCommandValue}, status {atrPacket.Status}");
+                        break;
+                    default:
+                        Log.Info($"Got unknown packet of type {packet.GetType().Name}");
+                        break;
                 }
             }
         }
@@ -382,18 +403,18 @@ namespace Communication
                 {
                     if (Log.IsDebugEnabled)
                     {
-                        Log.Debug($"Transmit succeeded to {deviceForPacket.Xbee64address.ToString()}");
+                        Log.Debug($"Transmit succeeded to {deviceForPacket.Xbee64address}");
                     }
                 }
                 else
                 {
-                    Log.WarnFormat($"Got TX status {txsPacket.TransmitStatus} for device {deviceForPacket.Xbee64address}");
+                    Log.Warn($"Got TX status {txsPacket.TransmitStatus} for device {deviceForPacket.Xbee64address}");
                     deviceForPacket.OnFailure();
                 }
             }
             else
             {
-                Log.WarnFormat($"Got TX Status {txsPacket.TransmitStatus} for unknown frame ID {txsPacket.FrameID}");
+                Log.Warn($"Got TX Status {txsPacket.TransmitStatus} for unknown frame ID {txsPacket.FrameID}");
             }
         }
 

@@ -97,12 +97,19 @@ namespace Communication
             this.network.Write(tp.GenerateByteArrayEscaped());
         }
 
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Xbee comm channel {this.Xbee64address} on port {this.network}";
+        }
+
         /// <summary>
         /// Processes data received from this <c>Xbee</c> module as parsed by the <see cref="XbeeNetwork" /> 
         /// </summary>
         /// <param name="receivedRfData">The data that was received, stripped from any <c>Xbee</c> API data</param>
         internal void OnDataReceived(byte[] receivedRfData)
         {
+            this.connected = true;
             this.DataReceived?.Invoke(this, new DataReceivedEventArgs(receivedRfData));
         }
 

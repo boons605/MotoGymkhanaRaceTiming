@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <StartupObject>CLITestWithUnits.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,10 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Communication\Communication.csproj" />
     <ProjectReference Include="..\Models\Models.csproj" />
-    <ProjectReference Include="..\RiderIdUnit\RiderIdUnit.csproj" />
     <ProjectReference Include="..\SensorUnits\SensorUnits.csproj" />
-    <ProjectReference Include="..\StartLightUnit\StartLightUnit.csproj" />
-    <ProjectReference Include="..\TimingUnit\TimingUnit.csproj" />
   </ItemGroup>
 
 </Project>
