@@ -522,6 +522,123 @@ namespace RaceManagementTests
             Assert.AreEqual(2, finished.Count);
             Assert.AreEqual("Martijn", finished[0]);
             Assert.AreEqual("Bert", finished[1]);
+
+            Assert.AreEqual(3, startId.KnownRiders.Count);
+            Assert.AreEqual("Martijn", startId.KnownRiders[0].Name);
+            Assert.AreEqual("Bert", startId.KnownRiders[1].Name);
+            Assert.AreEqual("Richard", startId.KnownRiders[2].Name);
+        }
+
+        [TestMethod]
+        public void OnlyWaitingRider_LeavingRangeOfStart_ShouldRemoveThem()
+        {
+            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
+            Rider martijn = new Rider("Martijn", martijnBeacon);
+
+            bool isEmpty = false;
+
+            subject.OnStartEmpty += (obj, args) => isEmpty = true;
+
+            //rider enters start box
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //the race tracker is processing events in a different thread, we must wait for it
+            Thread.Sleep(1000);
+
+            //event should not have fired
+            Assert.IsFalse(isEmpty);
+
+            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            source.Cancel();
+            race.Wait();
+
+            var state = subject.GetState;
+            Assert.AreEqual(0, state.waiting.Count);
+
+            Assert.IsTrue(isEmpty);
+        }
+
+        [TestMethod]
+        public void FirstWaitingRider_LeavingRangeOfStart_ShouldMoveSecondUp()
+        {
+            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
+            Rider martijn = new Rider("Martijn", martijnBeacon);
+
+            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
+            Rider bert = new Rider("Bert", bertBeacon);
+
+            bool isEmpty = false;
+
+            subject.OnStartEmpty += (obj, args) => isEmpty = true;
+
+            //rider enters start box
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //the race tracker is processing events in a different thread, we must wait for it
+            Thread.Sleep(1000);
+
+            //event should not have fired
+            Assert.IsFalse(isEmpty);
+
+            //Martijn and Bert trigger timing gate
+            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            source.Cancel();
+            race.Wait();
+
+            var state = subject.GetState;
+            Assert.AreEqual(1, state.waiting.Count);
+            Assert.AreEqual(bert, state.waiting[0].Rider);
+
+            Assert.IsFalse(isEmpty);
+        }
+
+        [TestMethod]
+        public void RiderOnTrack_LeavingRangeOfStart_ShouldRemoveThemFromUnit()
+        {
+            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
+            Rider martijn = new Rider("Martijn", martijnBeacon);
+
+            startId.AddKnownRiders(new List<Rider> { martijn });
+
+            //rider enters start box
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //Martijn triggers timing gate
+            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
+            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            source.Cancel();
+            race.Wait();
+
+            var state = subject.GetState;
+
+            Assert.AreEqual(1, state.onTrack.Count);
+            Assert.AreEqual(martijn, state.onTrack[0].id.Rider);
+
+            Assert.AreEqual(0, startId.KnownRiders.Count);
+        }
+
+        [TestMethod]
+        public void RiderEnteringTrack_ShouldAddToEndUnit()
+        {
+            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
+            Rider martijn = new Rider("Martijn", martijnBeacon);
+
+            startId.AddKnownRiders(new List<Rider> { martijn });
+
+            //rider enters start box
+            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            //Martijn and Bert trigger timing gate
+            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            source.Cancel();
+            race.Wait();
+
+            Assert.AreEqual(1, endId.KnownRiders.Count);
         }
 
         /// <summary>

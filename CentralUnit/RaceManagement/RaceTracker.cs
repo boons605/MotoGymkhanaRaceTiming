@@ -158,6 +158,7 @@ namespace RaceManagement
             startGate.OnRiderId += (_, args) => OnEvent(args);
             endGate.OnRiderId += (_, args) => OnEvent(args);
             startGate.OnRiderExit += (_, args) => OnEvent(args);
+            endGate.OnRiderExit += (_, args) => OnEvent(args);
         }
 
         private void OnEvent(EventArgs e) => toProcess.Enqueue(e);
@@ -195,6 +196,11 @@ namespace RaceManagement
                 if(waiting)
                 {
                     waitingRiders.Remove(waitingRiders.Where(e => e.Rider == args.Rider).First());
+
+                    if(waitingRiders.Count == 0)
+                    {
+                        OnStartEmpty?.Invoke(this, EventArgs.Empty);
+                    }
                 }
 
                 if(onTrack)

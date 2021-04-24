@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Models;
 using SensorUnits.RiderIdUnit;
 
@@ -15,6 +16,8 @@ namespace RaceManagementTests.TestHelpers
         public event EventHandler<RiderIdEventArgs> OnRiderId;
         public event EventHandler<RiderIdEventArgs> OnRiderExit;
 
+        public List<Rider> KnownRiders = new List<Rider>();
+
         public MockRiderIdUnit(string id)
         {
             UnitId = id;
@@ -22,20 +25,25 @@ namespace RaceManagementTests.TestHelpers
 
         public void AddKnownRiders(List<Rider> riders)
         {
-            //do nothing
+            KnownRiders.AddRange(riders);
         }
 
         public void ClearKnownRiders()
         {
-            throw new NotImplementedException();
+            KnownRiders.Clear();
         }
 
         public void RemoveKnownRider(string name)
         {
-            //do nothing
+            Rider toRemove = KnownRiders.Where(r => r.Name == name).FirstOrDefault();
+
+            if (toRemove != null)
+            {
+                KnownRiders.Remove(toRemove);
+            }
         }
 
         public void EmitIdEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId, Direction.Enter));
-        public void EmitExitEvent(Rider rider, DateTime received) => OnRiderId.Invoke(this, new RiderIdEventArgs(rider, received, UnitId, Direction.Exit));
+        public void EmitExitEvent(Rider rider, DateTime received) => OnRiderExit.Invoke(this, new RiderIdEventArgs(rider, received, UnitId, Direction.Exit));
     }
 }
