@@ -25,6 +25,7 @@ namespace CLI
         {
             RaceManager manager = new RaceManager(SummaryFile);
 
+
             manager.combinedTasks.Wait();
 
             return 0;

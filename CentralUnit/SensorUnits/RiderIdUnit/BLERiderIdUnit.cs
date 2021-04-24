@@ -215,17 +215,17 @@ namespace SensorUnits.RiderIdUnit
                 {
                     while (this.eventQueue.TryDequeue(out RiderIDQueuedEvent evt))
                     {
-                        if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Entered)
+                        if (evt.EventArgs.IdType == Direction.Enter)
                         {
                             this.OnRiderId?.Invoke(this, evt.EventArgs);
                         }
-                        else if (evt.Type == RiderIDQueuedEvent.RiderIdQueuedEventType.Exit)
+                        else if (evt.EventArgs.IdType == Direction.Exit)
                         {
                             this.OnRiderExit?.Invoke(this, evt.EventArgs);
                         }
                         else
                         {
-                            Log.Error($"{this.unitId}: Got illegal type of RiderIDQueuedEvent: {evt.Type}");
+                            Log.Error($"{this.unitId}: Got illegal type of RiderIDQueuedEvent: {evt.EventArgs.IdType}");
                         }
                     }
 
@@ -349,16 +349,14 @@ namespace SensorUnits.RiderIdUnit
                 if (this.CheckRiderInRange(newClosest) && (!this.CheckRiderInRange(this.closestRider)))
                 {
                     // Entered range
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId),
-                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Entered));
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId ,Direction.Enter)));
+
                 }
                 else if ((!this.CheckRiderInRange(newClosest)) && this.CheckRiderInRange(this.closestRider))
                 {
                     // Left range
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                    new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId),
-                                                    RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Exit)));
+
                 }
 
                 this.closestRider = newClosest;
@@ -366,9 +364,7 @@ namespace SensorUnits.RiderIdUnit
             else if (this.closestRider != null)
             {
                 // Left range
-                this.eventQueue.Enqueue(new RiderIDQueuedEvent(
-                                                new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId),
-                                                RiderIDQueuedEvent.RiderIdQueuedEventType.Exit));
+                this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId, Direction.Exit)));
 
                 this.closestRider = null;
             }

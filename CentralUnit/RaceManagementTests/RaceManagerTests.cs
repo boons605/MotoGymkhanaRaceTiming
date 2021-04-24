@@ -31,7 +31,8 @@ namespace RaceManagementTests
 
             source = new CancellationTokenSource();
 
-            tracker = new RaceTracker(timer, startId, endId, 0, 1);
+            //mock id units do not really use the rider add/remove calls  so the rider list is irrelevant
+            tracker = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider>());
 
             subject = new RaceManager(tracker);
 

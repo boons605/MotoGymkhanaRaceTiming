@@ -43,8 +43,8 @@ namespace RaceManagement
                 race = RaceSummary.ReadSummary(input);
             
             //we need the simulation specific methods in the constructor
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(true, race);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(false, race);
+            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(race.StartId, race);
+            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(race.EndId, race);
             SimulationTimingUnit timingUnit = new SimulationTimingUnit(race);
             startGate = startId;
             endGate = endId;
@@ -54,7 +54,7 @@ namespace RaceManagement
             endId.Initialize();
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, startId, endId, timingUnit.StartId, timingUnit.EndId);
+            tracker = new RaceTracker(timing, startId, endId, timingUnit.StartId, timingUnit.EndId, race.Riders);
             HookEvents(tracker);
 
             var trackTask = tracker.Run(source.Token);
@@ -104,7 +104,7 @@ namespace RaceManagement
             startGate.AddKnownRiders(riders);
             endGate.AddKnownRiders(riders);
 
-            tracker = new RaceTracker(timing, startGate, endGate, timing.StartId, timing.EndId);
+            tracker = new RaceTracker(timing, startGate, endGate, timing.StartId, timing.EndId, riders);
             HookEvents(tracker);
 
             combinedTasks = tracker.Run(source.Token);
@@ -156,7 +156,7 @@ namespace RaceManagement
             source.Cancel();
         }
 
-        public (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
+        public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
 
         /// <summary>
         /// Returns all lap times driven so far

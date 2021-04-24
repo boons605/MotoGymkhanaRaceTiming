@@ -12,7 +12,7 @@ namespace RaceManagement
 {
     public interface IRaceTracker
     {
-        (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState { get; }
+        (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState { get; }
 
         event EventHandler<DNFRiderEventArgs> OnRiderDNF;
         event EventHandler<FinishedRiderEventArgs> OnRiderFinished;

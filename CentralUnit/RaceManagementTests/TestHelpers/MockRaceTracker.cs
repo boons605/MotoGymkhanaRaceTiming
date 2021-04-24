@@ -10,7 +10,7 @@ namespace RaceManagementTests.TestHelpers
 {
     public class MockRaceTracker : IRaceTracker
     {
-        public (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
+        public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
 
         public event EventHandler<DNFRiderEventArgs> OnRiderDNF;
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;

@@ -27,7 +27,7 @@ namespace WebAPI.Controllers
         public JsonResult GetState()
         {
             JObject result = new JObject();
-            (List<EnteredEvent> waiting, List<(EnteredEvent id, TimingEvent timer)> onTrack, List<LeftEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
+            (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
             result["waiting"] = JArray.FromObject(waiting);

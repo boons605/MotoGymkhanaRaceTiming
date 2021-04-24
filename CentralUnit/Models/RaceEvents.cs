@@ -48,7 +48,7 @@ namespace Models
         /// <summary>
         /// The event where the id unit at the start box picks up the rider
         /// </summary>
-        public readonly EnteredEvent Entered;
+        public readonly IdEvent Entered;
 
         /// <summary>
         /// The event where the start timing gate is triggered by the rider
@@ -63,9 +63,9 @@ namespace Models
         /// <summary>
         /// The event where the id unit at the stop box picks up the rider
         /// </summary>
-        public readonly LeftEvent Left;
+        public readonly IdEvent Left;
 
-        public FinishedEvent(EnteredEvent entered, TimingEvent timeStart, TimingEvent timeEnd, LeftEvent left)
+        public FinishedEvent(IdEvent entered, TimingEvent timeStart, TimingEvent timeEnd, IdEvent left)
             : base(timeEnd.Time, timeEnd.Rider, Guid.NewGuid())
         {
             Entered = entered;
@@ -78,19 +78,17 @@ namespace Models
     /// <summary>
     /// Event when the rider id is picked up at the start gate
     /// </summary>
-    public class EnteredEvent : RaceEvent
+    public class IdEvent : RaceEvent
     {
-        public EnteredEvent(DateTime time, Rider rider)
-            : base(time, rider, Guid.NewGuid()) { }
-    }
+        public readonly string UnitId;
+        public readonly Direction IdType;
 
-    /// <summary>
-    /// Event when the rider id is picked up at the end gate
-    /// </summary>
-    public class LeftEvent : RaceEvent
-    {
-        public LeftEvent(DateTime time, Rider rider)
-         : base(time, rider, Guid.NewGuid()) { }
+        public IdEvent(DateTime time, Rider rider, string unitId, Direction idType)
+            : base(time, rider, Guid.NewGuid()) 
+        {
+            UnitId = unitId;
+            IdType = idType;
+        }
     }
 
     /// <summary>
@@ -138,13 +136,18 @@ namespace Models
         /// <summary>
         /// The event where this driver was picked up at the start gate
         /// </summary>
-        public readonly EnteredEvent ThisRider;
+        public readonly IdEvent ThisRider;
 
-        public DNFEvent(FinishedEvent otherRider, EnteredEvent thisRider)
+        public DNFEvent(FinishedEvent otherRider, IdEvent thisRider)
             : base(otherRider.Time, thisRider.Rider, Guid.NewGuid())
         {
             OtherRider = otherRider;
             ThisRider = thisRider;
         }
+    }
+
+    public enum Direction
+    {
+        Enter, Exit
     }
 }

@@ -12,6 +12,8 @@ namespace SensorUnits.RiderIdUnit
     /// </summary>
     public class RiderIdEventArgs : EventArgs
     {
+        public readonly Direction IdType;
+
         /// <summary>
         /// Rider associated with the received sensor id
         /// </summary>
@@ -27,11 +29,12 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public DateTime Received;
 
-        public RiderIdEventArgs(Rider rider, DateTime received, string unitId)
+        public RiderIdEventArgs(Rider rider, DateTime received, string unitId, Direction idType)
         {
             Rider = rider;
             Received = received;
             UnitId = unitId;
+            IdType = idType;
         }
     }
 }

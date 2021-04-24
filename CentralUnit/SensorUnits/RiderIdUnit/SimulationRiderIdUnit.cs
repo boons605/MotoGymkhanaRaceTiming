@@ -11,18 +11,16 @@ namespace SensorUnits.RiderIdUnit
         public event EventHandler<RiderIdEventArgs> OnRiderId;
         public event EventHandler<RiderIdEventArgs> OnRiderExit;
 
-        private readonly bool start;
-
-        public string UnitId => start ? "startUnit" : "endUnit";
+        public string UnitId { get; private set; }
 
         /// <summary>
         /// Creates a new Rider id unit that simulates the events fom the provided race
         /// </summary>
         /// <param name="start">When true this sensor will simulate events for riders entering the track, when false for leaving the track</param>
-        public SimulationRiderIdUnit(bool start, RaceSummary race)
+        public SimulationRiderIdUnit(string unitId, RaceSummary race)
             : base(race)
         {
-            this.start = start;
+            this.UnitId = unitId;
         }
 
         public void AddKnownRiders(List<Rider> riders)
@@ -42,16 +40,19 @@ namespace SensorUnits.RiderIdUnit
 
         public override void Initialize()
         {
-            if (start)
-                eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is EnteredEvent));
-            else
-                eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is LeftEvent));
-
+            eventsToReplay = new Queue<RaceEvent>(race.Events.Where(r => r is IdEvent id && id.UnitId == UnitId));
         }
 
         protected override void Replay(RaceEvent raceEvent)
         {
-            OnRiderId?.Invoke(this, new RiderIdEventArgs(raceEvent.Rider, raceEvent.Time, UnitId));
+            if (raceEvent is IdEvent id)
+            {
+                OnRiderId?.Invoke(this, new RiderIdEventArgs(id.Rider, id.Time, id.UnitId, id.IdType));
+            }
+            else
+            {
+                throw new ArgumentException($"Cannot replay non IdEvent: {raceEvent.GetType()}");
+            }
         }
     }
 }
