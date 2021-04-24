@@ -1,0 +1,209 @@
+﻿{
+    "Riders": [
+        {
+            "Name": "Martijn",
+            "Beacon": {
+                "Rssi": 0,
+                "MeasuredPower": 0,
+                "Identifier": "AAAAAAAB",
+                "CorrectionFactor": 0,
+                "Distance": 0.0
+            }
+        },
+        {
+            "Name": "Richard",
+            "Beacon": {
+                "Rssi": 0,
+                "MeasuredPower": 0,
+                "Identifier": "AAAAAAAC",
+                "CorrectionFactor": 0,
+                "Distance": 0.0
+            }
+        },
+        {
+            "Name": "Bert",
+            "Beacon": {
+                "Rssi": 0,
+                "MeasuredPower": 0,
+                "Identifier": "AAAAAAAD",
+                "CorrectionFactor": 0,
+                "Distance": 0.0
+            }
+        }
+    ],
+    "Events": [
+        {
+            "$type": "Models.EnteredEvent, Models",
+            "Time": "2000-01-01T01:01:01",
+            "EventId": "5a4927cd-8e83-46f4-9af9-0f885008a07b",
+            "Rider": "Martijn"
+        },
+        {
+            "$type": "Models.TimingEvent, Models",
+            "Microseconds": 100,
+            "GateId": 0,
+            "Time": "2000-01-01T01:01:06",
+            "EventId": "21e49894-fcb8-40e6-ab2f-3d2a327ef8d3",
+            "Rider": "Martijn"
+        },
+        {
+            "$type": "Models.EnteredEvent, Models",
+            "Time": "2000-01-01T01:01:31",
+            "EventId": "d3f45671-0b37-4e66-98d6-10931c7158f1",
+            "Rider": "Richard"
+        },
+        {
+            "$type": "Models.TimingEvent, Models",
+            "Microseconds": 100,
+            "GateId": 0,
+            "Time": "2000-01-01T01:01:36",
+            "EventId": "5b6499da-a750-4b56-b855-0661e6bd558b",
+            "Rider": "Richard"
+        },
+        {
+            "$type": "Models.EnteredEvent, Models",
+            "Time": "2000-01-01T01:02:01",
+            "EventId": "c696b780-cb26-4801-9616-8ea49798cc98",
+            "Rider": "Bert"
+        },
+        {
+            "$type": "Models.TimingEvent, Models",
+            "Microseconds": 100,
+            "GateId": 0,
+            "Time": "2000-01-01T01:02:06",
+            "EventId": "fc979d2d-ef25-4039-b057-1b864af06be2",
+            "Rider": "Bert"
+        },
+        {
+            "$type": "Models.LeftEvent, Models",
+            "Time": "2000-01-01T01:02:31",
+            "EventId": "0a68b5db-e675-4f9c-80a7-23660dbc159a",
+            "Rider": "Martijn"
+        },
+        {
+            "$type": "Models.TimingEvent, Models",
+            "Microseconds": 100,
+            "GateId": 1,
+            "Time": "2000-01-01T01:02:36",
+            "EventId": "12783152-363a-4a7b-8cd6-242e36806ccd",
+            "Rider": "Martijn"
+        },
+        {
+            "$type": "Models.FinishedEvent, Models",
+            "Entered": {
+                "Time": "2000-01-01T01:01:01",
+                "EventId": "5a4927cd-8e83-46f4-9af9-0f885008a07b",
+                "Rider": "Martijn"
+            },
+            "TimeStart": {
+                "Microseconds": 100,
+                "GateId": 0,
+                "Time": "2000-01-01T01:01:01",
+                "EventId": "21e49894-fcb8-40e6-ab2f-3d2a327ef8d3",
+                "Rider": "Martijn"
+            },
+            "TimeEnd": {
+                "Microseconds": 100,
+                "GateId": 1,
+                "Time": "2000-01-01T01:02:31",
+                "EventId": "12783152-363a-4a7b-8cd6-242e36806ccd",
+                "Rider": "Martijn"
+            },
+            "Left": {
+                "Time": "2000-01-01T01:02:31",
+                "EventId": "0a68b5db-e675-4f9c-80a7-23660dbc159a",
+                "Rider": "Martijn"
+            },
+            "Time": "2000-01-01T01:02:31",
+            "EventId": "5b7c509c-df05-4e83-bafd-970639fedfe4",
+            "LapTime": 0,
+            "Rider": "Martijn"
+        },
+        {
+            "$type": "Models.LeftEvent, Models",
+            "Time": "2000-01-01T01:03:06",
+            "EventId": "7c3bf0d5-fb32-4a31-aeda-aaed9033f828",
+            "Rider": "Bert"
+        },
+        {
+            "$type": "Models.TimingEvent, Models",
+            "Microseconds": 100,
+            "GateId": 1,
+            "Time": "2000-01-01T01:03:01",
+            "EventId": "32769802-e72d-42ca-a706-ee339e7df175",
+            "Rider": "Bert"
+        },
+        {
+            "$type": "Models.FinishedEvent, Models",
+            "Entered": {
+                "Time": "2000-01-01T01:02:01",
+                "EventId": "c696b780-cb26-4801-9616-8ea49798cc98",
+                "Rider": "Bert"
+            },
+            "TimeStart": {
+                "Microseconds": 100,
+                "GateId": 0,
+                "Time": "2000-01-01T01:02:01",
+                "EventId": "fc979d2d-ef25-4039-b057-1b864af06be2",
+                "Rider": "Bert"
+            },
+            "TimeEnd": {
+                "Microseconds": 100,
+                "GateId": 1,
+                "Time": "2000-01-01T01:03:01",
+                "EventId": "32769802-e72d-42ca-a706-ee339e7df175",
+                "Rider": "Bert"
+            },
+            "Left": {
+                "Time": "2000-01-01T01:03:01",
+                "EventId": "7c3bf0d5-fb32-4a31-aeda-aaed9033f828",
+                "Rider": "Bert"
+            },
+            "Time": "2000-01-01T01:03:01",
+            "EventId": "651bab81-d258-4d53-93d1-da909b45a92d",
+            "LapTime": 0,
+            "Rider": "Bert"
+        },
+        {
+            "$type": "Models.DNFEvent, Models",
+            "OtherRider": {
+                "Entered": {
+                    "Time": "2000-01-01T01:02:01",
+                    "EventId": "c696b780-cb26-4801-9616-8ea49798cc98",
+                    "Rider": "Bert"
+                },
+                "TimeStart": {
+                    "Microseconds": 100,
+                    "GateId": 0,
+                    "Time": "2000-01-01T01:02:01",
+                    "EventId": "fc979d2d-ef25-4039-b057-1b864af06be2",
+                    "Rider": "Bert"
+                },
+                "TimeEnd": {
+                    "Microseconds": 100,
+                    "GateId": 1,
+                    "Time": "2000-01-01T01:03:01",
+                    "EventId": "32769802-e72d-42ca-a706-ee339e7df175",
+                    "Rider": "Bert"
+                },
+                "Left": {
+                    "Time": "2000-01-01T01:03:01",
+                    "EventId": "7c3bf0d5-fb32-4a31-aeda-aaed9033f828",
+                    "Rider": "Bert"
+                },
+                "Time": "2000-01-01T01:03:01",
+                "EventId": "651bab81-d258-4d53-93d1-da909b45a92d",
+                "LapTime": 0,
+                "Rider": "Bert"
+            },
+            "ThisRider": {
+                "Time": "2000-01-01T01:01:31",
+                "EventId": "d3f45671-0b37-4e66-98d6-10931c7158f1",
+                "Rider": "Richard"
+            },
+            "Time": "2000-01-01T01:03:01",
+            "EventId": "accc7422-aed7-4296-acba-ed758cf0715d",
+            "Rider": "Richard"
+        }
+    ]
+}

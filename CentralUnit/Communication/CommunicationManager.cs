@@ -9,12 +9,18 @@ namespace Communication
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using log4net;
 
     /// <summary>
     /// Management of communication devices.
     /// </summary>
     public class CommunicationManager : IDisposable
     {
+        /// <summary>
+        /// Logger object used to display data in a console or file.
+        /// </summary>
+        protected static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Regular expression to verify identifiers and split them into groups.
         /// </summary>
@@ -89,6 +95,8 @@ namespace Communication
 
             ISerialCommunication communicationDevice = null;
 
+            Log.Info($"Getting device for {identifier}");
+
             if (identifierParts.Count > 2)
             {
                 string communicationType = identifierParts[1].Value;
@@ -112,6 +120,8 @@ namespace Communication
                         throw new ArgumentException($"Invalid communication type: {communicationType} in identifier {identifier}");
                 }
             }
+
+            Log.Info($"Got device {communicationDevice} for identifier {identifier}");
 
             return communicationDevice;
         }

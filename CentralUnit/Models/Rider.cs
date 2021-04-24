@@ -32,5 +32,11 @@ namespace Models
             Name = name;
             Beacon = beacon;
         }
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return $"Rider {this.Name} with beacon {this.Beacon}";
+        }
     }
 }
