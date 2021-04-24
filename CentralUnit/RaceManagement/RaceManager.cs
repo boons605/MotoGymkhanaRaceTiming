@@ -20,22 +20,32 @@ namespace RaceManagement
         /// </summary>
         protected static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private readonly ITimingUnit timing;
-        private readonly IRiderIdUnit startGate, endGate;
+        private ITimingUnit timing;
+        private IRiderIdUnit startGate, endGate;
         private IRaceTracker tracker;
         private CancellationTokenSource source = new CancellationTokenSource();
 
         //DNF of Finished
         private List<Lap> laps = new List<Lap>();
 
-        public Task combinedTasks { get; private set; }
+        public Task CombinedTasks { get; private set; }
+
+        /// <summary>
+        /// Make a new RaceManager. This does not run anything yet
+        /// You can (re)start the manager with any of the Start methods
+        /// </summary>
+        public RaceManager()
+        {
+        }
 
         /// <summary>
         /// Simulates a race from a json that contains all the race events
         /// </summary>
         /// <param name="simulationData"></param>
-        public RaceManager(string simulationData)
+        public void Start(string simulationData)
         {
+            Stop();
+
             XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
 
             RaceSummary race;
@@ -66,12 +76,22 @@ namespace RaceManagement
             //will complete when all units run out of events to simulate
             var unitsTask = Task.WhenAll(startTask, endTask, timeTask);
 
-            combinedTasks = Task.Run(() =>
+            CombinedTasks = Task.Run(() =>
             {
                 unitsTask.Wait();
                 source.Cancel();
                 trackTask.Wait();
             });
+        }
+
+        public void RemoveRider(string name)
+        {
+            tracker?.RemoveRider(name);
+        }
+
+        public void AddRider(Rider rider)
+        {
+            tracker?.AddRider(rider);
         }
 
         /// <summary>
@@ -80,24 +100,16 @@ namespace RaceManagement
         /// <param name="timingUnitId"></param>
         /// <param name="startIdUnitId"></param>
         /// <param name="endIdUnitId"></param>
-        /// <param name="knownRiders"></param>
-        public RaceManager(string timingUnitId, string startIdUnitId, string endIdUnitId, string knownRiders, int startTimingId, int endTimingId)
+        /// <param name="riders">These rider will be added to the start id unit and are elgibile to start right away</param>
+        /// <param name="endTimingGateId">The id reported for the end timing gate by the timiing unit</param>
+        /// <param name="startTimingGateId">The id reported for the start timing gate by the timiing unit</param>
+        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, List<Rider> riders)
         {
+            Stop();
+
             CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
 
-            List<Rider> riders;
-
-            try
-            {
-                riders = ReadRidersFile(knownRiders);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Could not parse riders file {knownRiders}", ex);
-                throw;
-            }
-
-            timing = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingId, endTimingId);
+            timing = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingGateId, endTimingGateId);
             startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", 2.0, source.Token);
             endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", 2.0, source.Token);
             
@@ -107,15 +119,17 @@ namespace RaceManagement
             tracker = new RaceTracker(timing, startGate, endGate, timing.StartId, timing.EndId, riders);
             HookEvents(tracker);
 
-            combinedTasks = tracker.Run(source.Token);
+            CombinedTasks = tracker.Run(source.Token);
         }
 
-        public RaceManager(IRaceTracker tracker)
+        public void Start(IRaceTracker tracker)
         {
+            Stop();
+
             this.tracker = tracker;
             HookEvents(tracker);
 
-            combinedTasks = tracker.Run(source.Token);
+            CombinedTasks = tracker.Run(source.Token);
         }
 
         private void HookEvents(IRaceTracker tracker)
@@ -139,21 +153,11 @@ namespace RaceManagement
             laps.Add(new Lap(e.Dnf));
         }
 
-        private static List<Rider> ReadRidersFile(string file)
-        {
-            string[] lines = File.ReadAllLines(file);
-            List<Rider> riderList = new List<Rider>();
-            foreach (string line in lines)
-            {
-                riderList.Add(BasicRiderCSVHelper.ParseRiderLine(line));
-            }
-
-            return riderList;
-        }
-
         public void Stop()
         {
             source.Cancel();
+            CombinedTasks?.Wait();
+            source = new CancellationTokenSource();
         }
 
         public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;

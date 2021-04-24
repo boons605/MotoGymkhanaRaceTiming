@@ -34,7 +34,8 @@ namespace RaceManagementTests
             //mock id units do not really use the rider add/remove calls  so the rider list is irrelevant
             tracker = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider>());
 
-            subject = new RaceManager(tracker);
+            subject = new RaceManager();
+            subject.Start(tracker);
 
             SimulateRace();
 
@@ -136,7 +137,8 @@ namespace RaceManagementTests
         public void GetLapTimes_WithoutLaps_ShouldReturnEmptyList()
         {
             MockRaceTracker tracker = new MockRaceTracker();
-            RaceManager manager = new RaceManager(tracker);
+            RaceManager manager = new RaceManager();
+            manager.Start(tracker);
 
             List<Lap>laps = manager.GetLapTimes();
 
@@ -168,7 +170,8 @@ namespace RaceManagementTests
         public void GetBestLaps_WithoutLaps_ShouldReturnEmptyList()
         {
             MockRaceTracker tracker = new MockRaceTracker();
-            RaceManager manager = new RaceManager(tracker);
+            RaceManager manager = new RaceManager();
+            manager.Start(tracker);
 
             List<Lap> laps = manager.GetBestLaps();
 

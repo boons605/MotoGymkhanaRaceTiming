@@ -152,6 +152,17 @@ namespace RaceManagement
             });
         }
 
+        public void AddRider(Rider rider)
+        {
+            startGate.AddKnownRiders(new List<Rider> { rider });
+        }
+
+        public void RemoveRider(string name)
+        {
+            endGate.RemoveKnownRider(name);
+            startGate.RemoveKnownRider(name);
+        }
+
         private void RegisterEvents()
         {
             timing.OnTrigger += (_, args) => OnEvent(args);

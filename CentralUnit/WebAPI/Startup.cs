@@ -34,7 +34,7 @@ namespace WebAPI
         {
             services.AddControllers();
 
-            RaceManager manager = new RaceManager("Summary.json");
+            RaceManager manager = new RaceManager();
 
             services.AddSingleton<RaceManager>(manager);
 
