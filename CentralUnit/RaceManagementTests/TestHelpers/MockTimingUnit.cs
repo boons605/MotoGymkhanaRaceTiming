@@ -18,7 +18,7 @@ namespace RaceManagementTests.TestHelpers
 
         public void EmitTriggerEvent(long microseconds, string unitId, int gateId, DateTime received) => OnTrigger.Invoke(this, new TimingTriggeredEventArgs(microseconds, unitId, gateId, received));
 
-        public void SetDisplayTime(int milliSeconds, int secondsToClear)
+        public void SetDisplayTime(int milliSeconds)
         {
             CurrentDisplay = milliSeconds;
         }

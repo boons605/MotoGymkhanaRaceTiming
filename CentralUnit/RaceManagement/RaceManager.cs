@@ -145,7 +145,7 @@ namespace RaceManagement
 
             foreach (var display in displays)
             {
-                display.SetDisplayTime((int)(e.Finish.LapTime / 1000), 30);
+                display.SetDisplayTime((int)(e.Finish.LapTime / 1000));
             }
         }
 

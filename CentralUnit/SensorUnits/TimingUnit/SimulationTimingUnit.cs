@@ -35,7 +35,7 @@ namespace SensorUnits.TimingUnit
             OnTrigger?.Invoke(this, new TimingTriggeredEventArgs(raceEvent.Microseconds, "SimulatedTimer", raceEvent.GateId, raceEvent.Time));
         }
 
-        public void SetDisplayTime(int milliSeconds, int secondsToClear)
+        public void SetDisplayTime(int milliSeconds)
         {
             CurrentDisplay = milliSeconds;
         }
