@@ -21,5 +21,15 @@ namespace RaceManagementTests.TestHelpers
         {
             return Task.FromResult(new RaceSummary());
         }
+
+        public void AddRider(Rider rider)
+        {
+            //no action
+        }
+
+        public void RemoveRider(string name)
+        {
+            //no action
+        }
     }
 }

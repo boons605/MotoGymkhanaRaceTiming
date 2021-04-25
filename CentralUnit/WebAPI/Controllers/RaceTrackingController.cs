@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using WebAPI.Models;
 
 namespace WebAPI.Controllers
 {
@@ -50,6 +51,31 @@ namespace WebAPI.Controllers
         public JsonResult GetLapsByRider()
         {
             return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
+        }
+
+        [HttpPost]
+        [Route("[controller]/Config")]
+        public StatusCodeResult SetConfiguration([FromBody] RaceConfig config)
+        {
+            manager.Start(config.TimingUnitId, config.StartIdUnitId, config.EndIdUnitId, config.StartTimingGateId, config.EndTimingGateId, new List<Rider>());
+
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/Rider")]
+        public StatusCodeResult AddRider([FromBody] Rider rider)
+        {
+            manager.AddRider(rider);
+            return new StatusCodeResult(200);
+        }
+
+        [HttpDelete]
+        [Route("[controller]/Rider")]
+        public StatusCodeResult DeleteRider([FromQuery] string name)
+        {
+            manager.RemoveRider(name);
+            return new StatusCodeResult(200);
         }
     }
 }

@@ -20,5 +20,7 @@ namespace RaceManagement
         event EventHandler OnStartEmpty;
 
         Task<RaceSummary> Run(CancellationToken token);
+        void AddRider(Rider rider);
+        void RemoveRider(string name);
     }
 }

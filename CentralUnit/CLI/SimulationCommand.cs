@@ -23,10 +23,10 @@ namespace CLI
 
         protected override int OnExecute(CommandLineApplication app)
         {
-            RaceManager manager = new RaceManager(SummaryFile);
+            RaceManager manager = new RaceManager();
+            manager.Start(SummaryFile);
 
-
-            manager.combinedTasks.Wait();
+            manager.CombinedTasks.Wait();
 
             return 0;
         }
