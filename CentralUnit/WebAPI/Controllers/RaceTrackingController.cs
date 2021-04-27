@@ -57,7 +57,7 @@ namespace WebAPI.Controllers
         [Route("[controller]/Config")]
         public StatusCodeResult SetConfiguration([FromBody] RaceConfig config)
         {
-            manager.Start(config.TimingUnitId, config.StartIdUnitId, config.EndIdUnitId, config.StartTimingGateId, config.EndTimingGateId, new List<Rider>());
+            manager.Start(config.TimingUnitId, config.StartIdUnitId, config.EndIdUnitId, config.StartTimingGateId, config.EndTimingGateId, config.StartIdRange, config.EndIdRange, new List<Rider>());
 
             return new StatusCodeResult(200);
         }

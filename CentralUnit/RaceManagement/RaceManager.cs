@@ -96,7 +96,7 @@ namespace RaceManagement
         /// <param name="riders">These rider will be added to the start id unit and are elgibile to start right away</param>
         /// <param name="endTimingGateId">The id reported for the end timing gate by the timiing unit</param>
         /// <param name="startTimingGateId">The id reported for the start timing gate by the timiing unit</param>
-        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, List<Rider> riders)
+        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, double startIdRange, double endIdRange, List<Rider> riders)
         {
             Stop();
 
@@ -105,8 +105,8 @@ namespace RaceManagement
             SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingGateId, endTimingGateId);
             timing = timer;
             displays.Add(timer);
-            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", 2.0, source.Token);
-            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", 2.0, source.Token);
+            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", startIdRange, source.Token);
+            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", endIdRange, source.Token);
             
             startGate.AddKnownRiders(riders);
             endGate.AddKnownRiders(riders);

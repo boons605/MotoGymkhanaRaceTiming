@@ -12,5 +12,8 @@ namespace WebAPI.Models
         public string EndIdUnitId { get; set; }
         public int StartTimingGateId { get; set; }
         public int EndTimingGateId { get; set; }
+        public double StartIdRange { get; set; }
+        public double EndIdRange { get; set; }
+
     }
 }
