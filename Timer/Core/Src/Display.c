@@ -64,15 +64,15 @@ void ResetRunningDisplayTime(uint32_t startTime)
 
 static void UpdateDisplayAfterTimeElapsed(uint32_t timeStamp)
 {
-	switch (timeExpiredAction)
-	{
-	case DTEA_ClearDisplay:
-		UpdateDisplayedTime(0, 0U);
-		break;
-	default:
-		UpdateDisplayedTime(timeStamp - runningTimeStartTime, 1U);
-		break;
-	}
+    switch(timeExpiredAction)
+    {
+        case DTEA_ClearDisplay:
+            UpdateDisplayedTime(0, 0U);
+            break;
+        default:
+            UpdateDisplayedTime(timeStamp - runningTimeStartTime, 1U);
+            break;
+    }
 }
 
 void RunDisplay(void)
@@ -92,7 +92,7 @@ void RunDisplay(void)
     {
         if((lastDisplayUpdate + 100U) < timeStamp)
         {
-        	UpdateDisplayAfterTimeElapsed(timeStamp);
+            UpdateDisplayAfterTimeElapsed(timeStamp);
         }
     }
 

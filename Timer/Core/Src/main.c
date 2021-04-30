@@ -445,7 +445,6 @@ static void MX_USART1_UART_Init(void)
     LL_USART_Init(USART1, &USART_InitStruct);
     LL_USART_ConfigAsyncMode(USART1);
     LL_USART_Enable(USART1);
-
     /* USER CODE BEGIN USART1_Init 2 */
     UARTBuffer* buff = UARTBufferGetUART(0);
     if(buff != (UARTBuffer*)0)
@@ -543,7 +542,7 @@ static void MX_GPIO_Init(void)
     LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_4);
 
     /**/
-    LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_12);
+    LL_GPIO_ResetOutputPin(GPIOB, DisplayLine1Ena_Pin | DisplayLine2Ena_Pin | LL_GPIO_PIN_12);
 
     /**/
     GPIO_InitStruct.Pin = LED_Pin;
@@ -565,16 +564,16 @@ static void MX_GPIO_Init(void)
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /**/
-    GPIO_InitStruct.Pin = SpecialOpMode_Pin | OperationMode_Pin | SensorCount_Pin;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    /**/
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_12;
+    GPIO_InitStruct.Pin = DisplayLine1Ena_Pin | DisplayLine2Ena_Pin | LL_GPIO_PIN_12;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /**/
+    GPIO_InitStruct.Pin = SpecialOpMode_Pin | OperationMode_Pin | SensorCount_Pin;
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_DOWN;
     LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /**/

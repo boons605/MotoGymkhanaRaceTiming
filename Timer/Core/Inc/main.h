@@ -77,6 +77,10 @@ void ProcessUARTByte(uint8_t uartId, uint8_t uartByte);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin LL_GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
+#define DisplayLine1Ena_Pin LL_GPIO_PIN_0
+#define DisplayLine1Ena_GPIO_Port GPIOB
+#define DisplayLine2Ena_Pin LL_GPIO_PIN_1
+#define DisplayLine2Ena_GPIO_Port GPIOB
 #define SpecialOpMode_Pin LL_GPIO_PIN_10
 #define SpecialOpMode_GPIO_Port GPIOB
 #define PPS_In_Pin LL_GPIO_PIN_11

@@ -12,8 +12,8 @@
 
 typedef enum
 {
-	DTEA_ClearDisplay = 0U,
-	DTEA_ShowRunningTime = 1U
+    DTEA_ClearDisplay = 0U,
+    DTEA_ShowRunningTime = 1U
 } DisplayTimeExpiredAction;
 
 void UpdateDisplay(uint32_t newTimeInMs, uint32_t displayDurationInMs, DisplayTimeExpiredAction whatsNext);
