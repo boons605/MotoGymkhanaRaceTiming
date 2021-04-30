@@ -145,6 +145,13 @@ int main(void)
             LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_13);
             ppsTick = 0U;
         }
+
+        if (enableDisplayLines != 0U)
+        {
+        	LL_GPIO_SetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
+        	LL_GPIO_SetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
+        }
+
         if(autoConfigurationDone == 0U)
         {
             RunAutoConfiguration();

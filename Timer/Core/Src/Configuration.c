@@ -18,6 +18,7 @@ OperationModes operationMode = NoTimerOperation;
 SensorModes sensorMode = NoSensors;
 uint8_t autoConfigurationDone = 0U;
 uint8_t displayLines = 2U;
+uint8_t enableDisplayLines = 0U;
 static OperationModes localOperationMode = NoTimerOperation;
 
 static RTCInitStates RTCInitState = RTCInit_SendStartCondition;
@@ -114,6 +115,11 @@ void RunAutoConfiguration(void)
 {
     InitRTC();
     uint32_t sysTime = GetSystemTimeStampMs();
+
+    if(sysTime > 750U)
+	{
+		enableDisplayLines = 1U;
+	}
 
     //For now, this isn't anything exciting. Just finish auto configuration after 2000ms
     if((sysTime > 5000U)
