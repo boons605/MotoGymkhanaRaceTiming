@@ -14,6 +14,7 @@ namespace Models.Config
         public int StartTimingGateId { get; set; }
         [JsonRequired]
         public int EndTimingGateId { get; set; }
+        [JsonRequired]
         /// <summary>
         /// The maximum distance in meters where a bluetooth signal is considered in range of the start id unit
         /// </summary>
