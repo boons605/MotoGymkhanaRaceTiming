@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using DisplayUnit;
 using Models.Config;
+using StartLightUnit;
 
 namespace RaceManagement
 {
@@ -26,6 +27,7 @@ namespace RaceManagement
         private List<IDisplayUnit> displays = new List<IDisplayUnit>();
         private IRiderIdUnit startGate, endGate;
         private IRaceTracker tracker;
+        private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
 
         //DNF of Finished
@@ -105,9 +107,13 @@ namespace RaceManagement
             SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(config.TimingUnitId), "timerUnit", source.Token, config.StartTimingGateId, config.EndTimingGateId);
             timing = timer;
             displays.Add(timer);
-            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.StartIdUnitId), "startUnit", config.StartIdRange, source.Token);
+            BLERiderIdUnit realStartId = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.StartIdUnitId), "startUnit", config.StartIdRange, source.Token);
             endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.EndIdUnitId), "finishUnit", config.EndIdRange, source.Token);
-            
+
+            startGate = realStartId;
+            startLight = realStartId;
+            startLight.SetStartLightColor(StartLightColor.YELLOW);
+
             startGate.AddKnownRiders(riders);
             endGate.AddKnownRiders(riders);
 
@@ -137,6 +143,9 @@ namespace RaceManagement
             tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
             tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
+
+            tracker.OnRiderWaiting += (o, e) => startLight?.SetStartLightColor(StartLightColor.GREEN);
+            tracker.OnStartEmpty += (o, e) => startLight?.SetStartLightColor(StartLightColor.YELLOW);
         }
 
         private void HandleFinish(object o, FinishedRiderEventArgs e)
@@ -156,6 +165,11 @@ namespace RaceManagement
 
         public void Stop()
         {
+            startGate?.ClearKnownRiders();
+            endGate?.ClearKnownRiders();
+            //give the units time to process the commaands
+            Thread.Sleep(1000);
+
             source.Cancel();
             CombinedTasks?.Wait();
             source = new CancellationTokenSource();
