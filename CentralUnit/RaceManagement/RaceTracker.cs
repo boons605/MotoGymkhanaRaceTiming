@@ -19,6 +19,8 @@ namespace RaceManagement
     /// </summary>
     public class RaceTracker : IRaceTracker
     {
+        private const int MaxTimeBetweenEndIdAndEndTime = 20;
+
         /// <summary>
         /// The timing unit that contains the timing gates at the start and stop box
         /// </summary>
@@ -257,7 +259,7 @@ namespace RaceManagement
                     }
                 }
 
-                if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= MaxTimeBetweenEndIdAndEndTime)
                 {
                     closest.SetRider(newEvent.Rider);
                     endTimes.Remove(closest);
@@ -333,7 +335,7 @@ namespace RaceManagement
                     }
                 }
 
-                if ((closest.Time - args.Received).Duration().TotalSeconds <= 10)
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= MaxTimeBetweenEndIdAndEndTime)
                 {
                     newEvent.SetRider(closest.Rider);
                     endIds.Remove(closest);

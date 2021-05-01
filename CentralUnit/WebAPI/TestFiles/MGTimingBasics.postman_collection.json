@@ -1,0 +1,239 @@
+{
+	"info": {
+		"_postman_id": "dcdfeee6-016a-447e-bf68-ab4357a02db6",
+		"name": "MGTimingBasics",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Send Config",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"TimingUnitId\" : \"directserial:/dev/ttyAMA3\",\r\n  \"StartIdUnitId\": \"xbee:/dev/ttyAMA4:0013A20041CC4818\",\r\n  \"EndIdUnitId\":  \"xbee:/dev/ttyAMA4:0013A20041CC1895\",\r\n  \"StartTimingGateId\": 1,\r\n  \"EndTimingGateId\": 2\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Config",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddRomkeCBR",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"RomkeCBR\",\r\n    \"Beacon\": {\r\n        \"Rssi\": 0,\r\n        \"MeasuredPower\": 0,\r\n        \"Identifier\": \"CF824FC220A3\",\r\n        \"CorrectionFactor\": 15,\r\n        \"Distance\": 0.0\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Rider",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Rider"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add864B",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"Beacon864B\",\r\n    \"Beacon\": {\r\n        \"Rssi\": 0,\r\n        \"MeasuredPower\": 0,\r\n        \"Identifier\": \"ECB9A0A5864B\",\r\n        \"CorrectionFactor\": 15,\r\n        \"Distance\": 0.0\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Rider",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Rider"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add2EDA",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"Beacon2EDA\",\r\n    \"Beacon\": {\r\n        \"Rssi\": 0,\r\n        \"MeasuredPower\": 0,\r\n        \"Identifier\": \"DB504C5A2EDA\",\r\n        \"CorrectionFactor\": 15,\r\n        \"Distance\": 0.0\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Rider",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Rider"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddEDC2GrB2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"BeaconEDC2GrB2\",\r\n    \"Beacon\": {\r\n        \"Rssi\": 0,\r\n        \"MeasuredPower\": 0,\r\n        \"Identifier\": \"5FCC1100EDC2\",\r\n        \"CorrectionFactor\": 0,\r\n        \"Distance\": 0.0\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Rider",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Rider"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddBBDEGrB1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Name\": \"BeaconBBDEGrB1\",\r\n    \"Beacon\": {\r\n        \"Rssi\": 0,\r\n        \"MeasuredPower\": 0,\r\n        \"Identifier\": \"91951B06BBDE\",\r\n        \"CorrectionFactor\": 0,\r\n        \"Distance\": 0.0\r\n    }\r\n}"
+				},
+				"url": {
+					"raw": "http://{{WebServerAddr}}/RaceTracking/Rider",
+					"protocol": "http",
+					"host": [
+						"{{WebServerAddr}}"
+					],
+					"path": [
+						"RaceTracking",
+						"Rider"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "WebServerAddr",
+			"value": "172.23.186.183"
+		}
+	]
+}

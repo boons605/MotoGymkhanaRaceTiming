@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DisplayUnit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Models;
 using RaceManagement;
@@ -35,7 +36,7 @@ namespace RaceManagementTests
             tracker = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider>());
 
             subject = new RaceManager();
-            subject.Start(tracker);
+            subject.Start(tracker, new List<IDisplayUnit> { timer });
 
             SimulateRace();
 
@@ -138,7 +139,7 @@ namespace RaceManagementTests
         {
             MockRaceTracker tracker = new MockRaceTracker();
             RaceManager manager = new RaceManager();
-            manager.Start(tracker);
+            manager.Start(tracker, new List<IDisplayUnit> { });
 
             List<Lap>laps = manager.GetLapTimes();
 
@@ -171,7 +172,7 @@ namespace RaceManagementTests
         {
             MockRaceTracker tracker = new MockRaceTracker();
             RaceManager manager = new RaceManager();
-            manager.Start(tracker);
+            manager.Start(tracker, new List<IDisplayUnit> { });
 
             List<Lap> laps = manager.GetBestLaps();
 

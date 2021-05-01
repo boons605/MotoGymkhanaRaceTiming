@@ -41,6 +41,7 @@ namespace SensorUnits.TimingUnit
             this.timingEvents = new ConcurrentQueue<TimingTriggeredEventArgs>();
             this.StartId = startId;
             this.EndId = endId;
+            this.commandQueue.Enqueue(new CommandData((ushort)SerialTimerCommands.UpdateOpMode, 0, new byte[] { 2 }));
         }
 
         /// <inheritdoc/>

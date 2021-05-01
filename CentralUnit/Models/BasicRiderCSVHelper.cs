@@ -20,11 +20,6 @@ namespace Models
         protected static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
-        /// Regex to validate and split a string representation of a MAC address.
-        /// </summary>
-        private static string macRegEx = "([0-9a-fA-F]{2})(?:[-:]){0,1}";
-
-        /// <summary>
         /// Parse a rider line.
         /// </summary>
         /// <param name="line">A rider line, semicolon separated: MACAddress;Correction;RiderName</param>
@@ -37,7 +32,7 @@ namespace Models
             {
                 string[] elements = line.Split(';');
 
-                byte[] ident = TextToMacBytes(elements[0]);
+                byte[] ident = Beacon.TextToMacBytes(elements[0]);
                 ushort correction = 0;
                 if (elements.Length > 1)
                 {
@@ -57,41 +52,6 @@ namespace Models
             }
 
             return rider;
-        }
-
-        /// <summary>
-        /// Parses a string representation of a MAC address to a byte array.
-        /// </summary>
-        /// <param name="text">The MAC Address in a hexadecimal string</param>
-        /// <returns>The MAC address as a byte array</returns>
-        private static byte[] TextToMacBytes(string text)
-        {
-            byte[] macBytes = new byte[6];
-
-            if (!string.IsNullOrEmpty(text))
-            {
-                if (Regex.IsMatch(text, macRegEx))
-                {
-                    MatchCollection bytes = Regex.Matches(text, macRegEx);
-
-                    if (bytes.Count == 6)
-                    {
-                        for (int i = 0; i < bytes.Count; i++)
-                        {
-                            if (bytes[i].Groups.Count == 2)
-                            {
-                                macBytes[i] = Convert.ToByte("0x" + bytes[i].Groups[1], 16);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    Log.Warn($"Not a valid address: {text}");
-                }
-            }
-
-            return macBytes;
         }
     }
 }

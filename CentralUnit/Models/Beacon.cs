@@ -7,6 +7,9 @@ namespace Models
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Text;
+    using System.Text.RegularExpressions;
+    using log4net;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This class represents a BLE Beacon used for identifying riders.
@@ -14,6 +17,11 @@ namespace Models
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1121:UseBuiltInTypeAlias", Justification = "Used for communication, exact sizing required.")]
     public class Beacon
     {
+        /// <summary>
+        /// Logger object used to display data in a console or file.
+        /// </summary>
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         /// <summary>
         /// Length of a BLE MAC address.
         /// </summary>
@@ -23,6 +31,11 @@ namespace Models
         /// Environmental correction factor for the distance calculation.
         /// </summary>
         private const double DistanceEnvironmentFactor = 4.0;
+
+        /// <summary>
+        /// Regex to validate and split a string representation of a MAC address.
+        /// </summary>
+        private static string macRegEx = "([0-9a-fA-F]{2})(?:[-:]){0,1}";
 
         /// <summary>
         /// The BLE MAC address of this beacon.
@@ -70,6 +83,18 @@ namespace Models
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Beacon" /> class based on an identifier and a correction factor for 
+        /// </summary>
+        /// <param name="identifier">The 6-byte BLE MAC address</param>
+        /// <param name="correctionFactor">The correction factor for cheap Chinese iBeacons</param>
+        /// <exception cref="ArgumentNullException">When the <paramref name="identifier"/> is null</exception>
+        /// <exception cref="ArgumentException">When the <paramref name="identifier"/> is not exactly 6 bytes long</exception>
+        [JsonConstructor]
+        public Beacon(string identifier, UInt16 correctionFactor) : this (TextToMacBytes(identifier), correctionFactor)
+        {
+        }
+
+        /// <summary>
         /// Gets the calculated the distance based on the calibrated RSSI at 1m distance and the measured RSSI.
         /// </summary>
         public double Distance
@@ -83,6 +108,55 @@ namespace Models
 
                 return Math.Pow(10, ((double)this.MeasuredPower - (double)this.Rssi) / (10.0 * DistanceEnvironmentFactor));
             }
+        }
+
+        /// <summary>
+        /// Update the beacon from a received beacon.
+        /// </summary>
+        /// <param name="b"></param>
+        public void UpdateFromReceivedBeacon(Beacon b)
+        {
+            if (this.Equals(b))
+            {
+                this.Rssi = b.Rssi;
+                this.CorrectionFactor = b.CorrectionFactor;
+                this.MeasuredPower = b.MeasuredPower;
+            }
+        }
+
+        /// <summary>
+        /// Parses a string representation of a MAC address to a byte array.
+        /// </summary>
+        /// <param name="text">The MAC Address in a hexadecimal string</param>
+        /// <returns>The MAC address as a byte array</returns>
+        public static byte[] TextToMacBytes(string text)
+        {
+            byte[] macBytes = new byte[IdentifierLength];
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                if (Regex.IsMatch(text, macRegEx))
+                {
+                    MatchCollection bytes = Regex.Matches(text, macRegEx);
+
+                    if (bytes.Count == IdentifierLength)
+                    {
+                        for (int i = 0; i < bytes.Count; i++)
+                        {
+                            if (bytes[i].Groups.Count == 2)
+                            {
+                                macBytes[i] = Convert.ToByte("0x" + bytes[i].Groups[1], 16);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException($"Not a valid address: {text}", "text");
+                }
+            }
+
+            return macBytes;
         }
 
         /// <summary>

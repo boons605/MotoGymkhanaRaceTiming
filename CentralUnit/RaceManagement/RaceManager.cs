@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
+using DisplayUnit;
 
 namespace RaceManagement
 {
@@ -21,6 +22,7 @@ namespace RaceManagement
         protected static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private ITimingUnit timing;
+        private List<IDisplayUnit> displays = new List<IDisplayUnit>();
         private IRiderIdUnit startGate, endGate;
         private IRaceTracker tracker;
         private CancellationTokenSource source = new CancellationTokenSource();
@@ -56,6 +58,7 @@ namespace RaceManagement
             SimulationRiderIdUnit startId = new SimulationRiderIdUnit(race.StartId, race);
             SimulationRiderIdUnit endId = new SimulationRiderIdUnit(race.EndId, race);
             SimulationTimingUnit timingUnit = new SimulationTimingUnit(race);
+            displays.Add(timingUnit);
             startGate = startId;
             endGate = endId;
             timing = timingUnit;
@@ -84,16 +87,6 @@ namespace RaceManagement
             });
         }
 
-        public void RemoveRider(string name)
-        {
-            tracker?.RemoveRider(name);
-        }
-
-        public void AddRider(Rider rider)
-        {
-            tracker?.AddRider(rider);
-        }
-
         /// <summary>
         /// Manage a race from real sensor data
         /// </summary>
@@ -103,15 +96,17 @@ namespace RaceManagement
         /// <param name="riders">These rider will be added to the start id unit and are elgibile to start right away</param>
         /// <param name="endTimingGateId">The id reported for the end timing gate by the timiing unit</param>
         /// <param name="startTimingGateId">The id reported for the start timing gate by the timiing unit</param>
-        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, List<Rider> riders)
+        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, double startIdRange, double endIdRange, List<Rider> riders)
         {
             Stop();
 
             CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
 
-            timing = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingGateId, endTimingGateId);
-            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", 2.0, source.Token);
-            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", 2.0, source.Token);
+            SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingGateId, endTimingGateId);
+            timing = timer;
+            displays.Add(timer);
+            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", startIdRange, source.Token);
+            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", endIdRange, source.Token);
             
             startGate.AddKnownRiders(riders);
             endGate.AddKnownRiders(riders);
@@ -122,9 +117,10 @@ namespace RaceManagement
             CombinedTasks = tracker.Run(source.Token);
         }
 
-        public void Start(IRaceTracker tracker)
+        public void Start(IRaceTracker tracker, List<IDisplayUnit> displays)
         {
             Stop();
+            this.displays = displays;
 
             this.tracker = tracker;
             HookEvents(tracker);
@@ -146,6 +142,11 @@ namespace RaceManagement
         private void HandleFinish(object o, FinishedRiderEventArgs e)
         {
             laps.Add(new Lap(e.Finish));
+
+            foreach (var display in displays)
+            {
+                display.SetDisplayTime((int)(e.Finish.LapTime / 1000));
+            }
         }
 
         private void HandleDNF(object o, DNFRiderEventArgs e)
@@ -158,6 +159,7 @@ namespace RaceManagement
             source.Cancel();
             CombinedTasks?.Wait();
             source = new CancellationTokenSource();
+            displays.Clear();
         }
 
         public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
@@ -196,6 +198,16 @@ namespace RaceManagement
             fastestLaps.Sort();
 
             return fastestLaps;
+        }
+
+        public void RemoveRider(string name)
+        {
+            tracker?.RemoveRider(name);
+        }
+
+        public void AddRider(Rider rider)
+        {
+            tracker?.AddRider(rider);
         }
     }
 }
