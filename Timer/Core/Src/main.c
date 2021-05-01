@@ -151,6 +151,11 @@ int main(void)
         	LL_GPIO_SetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
         	LL_GPIO_SetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
         }
+        else
+        {
+        	LL_GPIO_ResetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
+        	LL_GPIO_ResetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
+        }
 
         if(autoConfigurationDone == 0U)
         {
