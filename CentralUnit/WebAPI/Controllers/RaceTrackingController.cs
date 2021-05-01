@@ -27,8 +27,7 @@ namespace WebAPI.Controllers
         [Route("[controller]/State")]
         public JsonResult GetState()
         {
-            //The combined task of running race management is only null before its first run
-            if (manager.CombinedTasks != null)
+            if (manager.HasState)
             {
                 JObject result = new JObject();
                 (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;

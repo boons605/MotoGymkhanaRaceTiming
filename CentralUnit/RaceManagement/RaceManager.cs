@@ -33,6 +33,11 @@ namespace RaceManagement
         public Task CombinedTasks { get; private set; }
 
         /// <summary>
+        /// State is produced by a running RaceTracker. Before the first Start call there is no meanigful state
+        /// </summary>
+        public bool HasState => CombinedTasks != null;
+
+        /// <summary>
         /// Make a new RaceManager. This does not run anything yet
         /// You can (re)start the manager with any of the Start methods
         /// </summary>

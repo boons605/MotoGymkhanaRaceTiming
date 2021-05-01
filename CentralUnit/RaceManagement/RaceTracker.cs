@@ -19,7 +19,7 @@ namespace RaceManagement
     /// </summary>
     public class RaceTracker : IRaceTracker
     {
-        private const int MaxTimeBetweenEndIdAndEndTime = 20;
+        private const int MaxTimeBetweenEndIdAndEndTime = 10;
 
         /// <summary>
         /// The timing unit that contains the timing gates at the start and stop box
