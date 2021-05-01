@@ -15,12 +15,12 @@ namespace Models.Config
         [JsonRequired]
         public int EndTimingGateId { get; set; }
         /// <summary>
-        /// The maximum distance in meters where a bluetooth singal is considered in range of the start id unit
+        /// The maximum distance in meters where a bluetooth signal is considered in range of the start id unit
         /// </summary>
         public double StartIdRange { get; set; }
         [JsonRequired]
         /// <summary>
-        /// The maximum distance in meters where a bluetooth singal is considered in range of the end id unit
+        /// The maximum distance in meters where a bluetooth signal is considered in range of the end id unit
         /// </summary>
         public double EndIdRange { get; set; }
         [JsonRequired]
