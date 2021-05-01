@@ -68,11 +68,11 @@ static void UpdateDisplayedTimeValue(uint32_t* data)
 
 static void PrepareIDData(void)
 {
-	uint32_t bcdConfig = GetConfigBCDDisplay();
-	pendingResponse.data[0] = (uint8_t)(DeviceTypeTimer | DeviceTypeDisplay);
-	pendingResponse.dataLength = 1U;
-	memcpy(&pendingResponse.data[1], &bcdConfig, sizeof(uint32_t));
-	pendingResponse.dataLength += sizeof(uint32_t);
+    uint32_t bcdConfig = GetConfigBCDDisplay();
+    pendingResponse.data[0] = (uint8_t)(DeviceTypeTimer | DeviceTypeDisplay);
+    pendingResponse.dataLength = 1U;
+    memcpy(&pendingResponse.data[1], &bcdConfig, sizeof(uint32_t));
+    pendingResponse.dataLength += sizeof(uint32_t);
 }
 
 static void ProcessCommand(MGBTCommandData* command)
@@ -123,7 +123,7 @@ static void ProcessCommand(MGBTCommandData* command)
             lastResponseSent = 1U;
             if(command->dataLength >= sizeof(uint32_t))
             {
-            	UpdateDisplayedTimeValue((uint32_t*)command->data);
+                UpdateDisplayedTimeValue((uint32_t*)command->data);
                 pendingResponse.status = 0U;
             }
             else
@@ -229,11 +229,11 @@ uint32_t CommMgrGetNewDisplayValue(void)
 
 uint8_t CommMgrGetNewConfig(void)
 {
-	uint8_t retVal = 0U;
-	if (newConfig != 0U)
-	{
-		retVal = newConfig;
-		newConfig = 0U;
-	}
-	return retVal;
+    uint8_t retVal = 0U;
+    if(newConfig != 0U)
+    {
+        retVal = newConfig;
+        newConfig = 0U;
+    }
+    return retVal;
 }

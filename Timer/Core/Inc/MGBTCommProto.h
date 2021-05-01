@@ -62,11 +62,11 @@ typedef struct
 
 typedef enum
 {
-	DeviceTypeNone = 0U,
-	DeviceTypeTimer = 1U,
-	DeviceTypeIdentifier = 2U,
-	DeviceTypeDisplay = 4U,
-	DeviceTypeStartRelease = 8U
+    DeviceTypeNone = 0U,
+    DeviceTypeTimer = 1U,
+    DeviceTypeIdentifier = 2U,
+    DeviceTypeDisplay = 4U,
+    DeviceTypeStartRelease = 8U
 } DeviceTypes;
 
 uint8_t CommandAvailable(void);

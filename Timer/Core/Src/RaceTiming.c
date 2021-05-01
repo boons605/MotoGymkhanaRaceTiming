@@ -33,9 +33,9 @@ static void RunCommunication(void)
         lastCommunicationRun = timeStmp;
         RunCommunicationManager();
         uint8_t newConfig = CommMgrGetNewConfig();
-        if (newConfig != 0U)
+        if(newConfig != 0U)
         {
-        	SetNewConfigMode(newConfig);
+            SetNewConfigMode(newConfig);
         }
 
     }
@@ -163,9 +163,9 @@ static void RunConnectedTimer(void)
 {
     RunConnectedTimestampCollector();
 
-    if (CommMgrHasNewDisplayUpdate() == 1U)
+    if(CommMgrHasNewDisplayUpdate() == 1U)
     {
-    	UpdateDisplay(CommMgrGetNewDisplayValue(), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
+        UpdateDisplay(CommMgrGetNewDisplayValue(), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
     }
 
 }

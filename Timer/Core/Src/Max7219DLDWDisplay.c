@@ -62,9 +62,23 @@ static const uint16_t maxtrixLines[] =
     REG_DIGIT_7
 };
 
-static const uint16_t max7219InitActions[4] =
+static const uint16_t max7219InitActions[] =
 {
-    REG_SHUTDOWN | 0x01,
+	REG_NO_OP		| 0x00,
+	REG_DIGIT_0 	| 0x00,
+	REG_DIGIT_1 	| 0x00,
+	REG_DIGIT_2 	| 0x00,
+	REG_DIGIT_3 	| 0x00,
+	REG_DIGIT_4 	| 0x00,
+	REG_DIGIT_5 	| 0x00,
+	REG_DIGIT_6 	| 0x00,
+	REG_DIGIT_7 	| 0x00,
+	REG_DECODE_MODE | 0x00,
+	REG_INTENSITY 	| 0x00,
+	REG_SCAN_LIMIT 	| 0x00,
+	REG_SHUTDOWN 	| 0x00,
+	REG_DISPLAY_TEST| 0x00,
+	REG_SHUTDOWN | 0x01,
     REG_DECODE_MODE | 0x00,
     REG_SCAN_LIMIT | 0x07,
     REG_INTENSITY | DISPLAYBRIGHTNESS
@@ -151,9 +165,13 @@ static void InitMax7219DLDWDisplay(void)
     {
         if(max7219dataTransmissionState[line] == 0U)
         {
-
             if(initState[line] < (sizeof(max7219InitActions) / sizeof(uint16_t)))
             {
+            	if (initState[line] == 0U)
+				{
+					LL_GPIO_SetOutputPin(csGpio[line], csPin[line]);
+				}
+
                 uint8_t index = 0U;
                 for(index = 0U; index < DISPLAYCOUNT; index++)
                 {
