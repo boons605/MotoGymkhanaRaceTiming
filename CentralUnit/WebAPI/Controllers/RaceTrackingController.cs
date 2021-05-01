@@ -27,16 +27,32 @@ namespace WebAPI.Controllers
         [Route("[controller]/State")]
         public JsonResult GetState()
         {
-            JObject result = new JObject();
-            (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
+            //The combined task of running race management is only null before its first run
+            if (manager.CombinedTasks != null)
+            {
+                JObject result = new JObject();
+                (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
-            result["waiting"] = JArray.FromObject(waiting);
-            result["onTrack"] = JArray.FromObject(onTrack);
-            result["unmatchedEndIds"] = JArray.FromObject(unmatchedIds);
-            result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
+                result["waiting"] = JArray.FromObject(waiting);
+                result["onTrack"] = JArray.FromObject(onTrack);
+                result["unmatchedEndIds"] = JArray.FromObject(unmatchedIds);
+                result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
 
-            return new JsonResult(result);
+                return new JsonResult(result);
+            }
+            else
+            {
+                JObject body = new JObject
+                {
+                    { "Error", "Race tracking is not running. Provide a config first" }
+                };
+
+                JsonResult response = new JsonResult(body);
+                response.StatusCode = 500;
+
+                return response;
+            }
         }
 
         [HttpGet]
