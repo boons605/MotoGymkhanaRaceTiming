@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DisplayUnit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Models;
+using Models.Config;
 using RaceManagement;
 using RaceManagementTests.TestHelpers;
 
@@ -32,8 +33,15 @@ namespace RaceManagementTests
 
             source = new CancellationTokenSource();
 
+            TrackerConfig config = new TrackerConfig
+            {
+                EndMatchTimeout = 20,
+                StartTimingGateId = 0,
+                EndTimingGateId = 1
+            };
+
             //mock id units do not really use the rider add/remove calls  so the rider list is irrelevant
-            tracker = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider>());
+            tracker = new RaceTracker(timer, startId, endId, config, new List<Rider>());
 
             subject = new RaceManager();
             subject.Start(tracker, new List<IDisplayUnit> { timer });

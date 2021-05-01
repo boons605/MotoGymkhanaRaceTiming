@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using DisplayUnit;
+using Models.Config;
 
 namespace RaceManagement
 {
@@ -72,7 +73,7 @@ namespace RaceManagement
             endId.Initialize();
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, startId, endId, timingUnit.StartId, timingUnit.EndId, race.Riders);
+            tracker = new RaceTracker(timing, startId, endId, race.Config, race.Riders);
             HookEvents(tracker);
 
             var trackTask = tracker.Run(source.Token);
@@ -95,28 +96,22 @@ namespace RaceManagement
         /// <summary>
         /// Manage a race from real sensor data
         /// </summary>
-        /// <param name="timingUnitId"></param>
-        /// <param name="startIdUnitId"></param>
-        /// <param name="endIdUnitId"></param>
-        /// <param name="riders">These rider will be added to the start id unit and are elgibile to start right away</param>
-        /// <param name="endTimingGateId">The id reported for the end timing gate by the timiing unit</param>
-        /// <param name="startTimingGateId">The id reported for the start timing gate by the timiing unit</param>
-        public void Start(string timingUnitId, string startIdUnitId, string endIdUnitId, int startTimingGateId, int endTimingGateId, double startIdRange, double endIdRange, List<Rider> riders)
+        public void Start(RaceConfig config, List<Rider> riders)
         {
             Stop();
 
             CommunicationManager CommunicationManager = new CommunicationManager(source.Token);
 
-            SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(timingUnitId), "timerUnit", source.Token, startTimingGateId, endTimingGateId);
+            SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(config.TimingUnitId), "timerUnit", source.Token, config.StartTimingGateId, config.EndTimingGateId);
             timing = timer;
             displays.Add(timer);
-            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(startIdUnitId), "startUnit", startIdRange, source.Token);
-            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(endIdUnitId), "finishUnit", endIdRange, source.Token);
+            startGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.StartIdUnitId), "startUnit", config.StartIdRange, source.Token);
+            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.EndIdUnitId), "finishUnit", config.EndIdRange, source.Token);
             
             startGate.AddKnownRiders(riders);
             endGate.AddKnownRiders(riders);
 
-            tracker = new RaceTracker(timing, startGate, endGate, timing.StartId, timing.EndId, riders);
+            tracker = new RaceTracker(timing, startGate, endGate, config.ExtractTrackerConfig(), riders);
             HookEvents(tracker);
 
             CombinedTasks = tracker.Run(source.Token);

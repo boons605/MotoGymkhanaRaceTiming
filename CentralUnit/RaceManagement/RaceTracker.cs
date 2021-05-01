@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
+using Models.Config;
 using SensorUnits.RiderIdUnit;
 using SensorUnits.TimingUnit;
 
@@ -19,8 +20,7 @@ namespace RaceManagement
     /// </summary>
     public class RaceTracker : IRaceTracker
     {
-        private const int MaxTimeBetweenEndIdAndEndTime = 10;
-
+        private TrackerConfig config;
         /// <summary>
         /// The timing unit that contains the timing gates at the start and stop box
         /// </summary>
@@ -35,16 +35,6 @@ namespace RaceManagement
         /// The id unit at the stop box
         /// </summary>
         private IRiderIdUnit endGate;
-
-        /// <summary>
-        /// The sensor id for the start timing gate connected to <see cref="timing"/>
-        /// </summary>
-        private int timingStartId;
-
-        /// <summary>
-        /// The sensor id for the end timing gate connected to <see cref="timing"/>
-        /// </summary>
-        private int timingEndId;
 
         /// <summary>
         /// The events triggered by riders entering the start box. In FIFO order so the first rider to enter the box is the first to start
@@ -76,12 +66,6 @@ namespace RaceManagement
         /// </summary>
         private ConcurrentQueue<EventArgs> toProcess = new ConcurrentQueue<EventArgs>();
 
-
-        /// <summary>
-        /// All riders participating in the current session
-        /// </summary>
-        private List<Rider> knownRiders;
-
         /// <summary>
         /// Fired when the system is ready for the next rider to trigger the start timing gate
         /// </summary>
@@ -99,16 +83,13 @@ namespace RaceManagement
         /// </summary>
         public event EventHandler OnStartEmpty;
 
-        public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, int timingStartId, int timingEndId, List<Rider> knownRiders)
+        public RaceTracker(ITimingUnit timing, IRiderIdUnit startGate, IRiderIdUnit endGate, TrackerConfig config, List<Rider> knownRiders)
         {
             this.timing = timing;
             this.startGate = startGate;
             this.endGate = endGate;
-            this.timingStartId = timingStartId;
-            this.timingEndId = timingEndId;
-            this.knownRiders = knownRiders;
-
             this.startGate.AddKnownRiders(knownRiders);
+            this.config = config;
         }
 
         /// <summary>
@@ -150,7 +131,7 @@ namespace RaceManagement
                     }
                 }
 
-                return new RaceSummary(raceState.ToList(), startGate.UnitId, endGate.UnitId);
+                return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
             });
         }
 
@@ -259,7 +240,7 @@ namespace RaceManagement
                     }
                 }
 
-                if ((closest.Time - args.Received).Duration().TotalSeconds <= MaxTimeBetweenEndIdAndEndTime)
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
                     closest.SetRider(newEvent.Rider);
                     endTimes.Remove(closest);
@@ -281,7 +262,7 @@ namespace RaceManagement
         private void OnTimer(TimingTriggeredEventArgs args)
         {
             //When a waiting rider triggers the start timing unit, they are recorded as on track
-            if (args.GateId == timingStartId)
+            if (args.GateId == config.StartTimingGateId)
             {
                 bool hasWaitingRider = waitingRiders.Count > 0;
 
@@ -309,7 +290,7 @@ namespace RaceManagement
                     }
                 } //if we dont have a waiting rider, disregard event somebody probably walked through the beam
             }
-            else if (args.GateId == timingEndId)
+            else if (args.GateId == config.EndTimingGateId)
             {
                 //when a rider triggers the end timing unit, that must be matched to an end id unit event
                 //if there is such a match, then it must be matched to an on track rider
@@ -335,7 +316,7 @@ namespace RaceManagement
                     }
                 }
 
-                if ((closest.Time - args.Received).Duration().TotalSeconds <= MaxTimeBetweenEndIdAndEndTime)
+                if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
                     newEvent.SetRider(closest.Rider);
                     endIds.Remove(closest);
@@ -349,7 +330,7 @@ namespace RaceManagement
             }
             else
             {
-                throw new ArgumentException($"Found unkown gate id in timing event: {args.GateId}. Known gates are start: {timingStartId}, end: {timingEndId}");
+                throw new ArgumentException($"Found unkown gate id in timing event: {args.GateId}. Known gates are start: {config.StartTimingGateId}, end: {config.EndTimingGateId}");
             }
         }
 

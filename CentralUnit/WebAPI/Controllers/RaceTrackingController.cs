@@ -1,13 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Models;
+using Models.Config;
 using Newtonsoft.Json.Linq;
 using RaceManagement;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using WebAPI.Models;
 
 namespace WebAPI.Controllers
 {
@@ -72,7 +69,7 @@ namespace WebAPI.Controllers
         [Route("[controller]/Config")]
         public StatusCodeResult SetConfiguration([FromBody] RaceConfig config)
         {
-            manager.Start(config.TimingUnitId, config.StartIdUnitId, config.EndIdUnitId, config.StartTimingGateId, config.EndTimingGateId, config.StartIdRange, config.EndIdRange, new List<Rider>());
+            manager.Start(config, new List<Rider>());
 
             return new StatusCodeResult(200);
         }

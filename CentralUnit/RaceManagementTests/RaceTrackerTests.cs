@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Models;
+using Models.Config;
 using RaceManagement;
 using RaceManagementTests.TestHelpers;
 
@@ -36,7 +37,14 @@ namespace RaceManagementTests
 
             source = new CancellationTokenSource();
 
-            subject = new RaceTracker(timer, startId, endId, 0, 1, new List<Rider> { });
+            TrackerConfig config = new TrackerConfig
+            {
+                EndMatchTimeout = 10,
+                StartTimingGateId = 0,
+                EndTimingGateId = 1
+            };
+
+            subject = new RaceTracker(timer, startId, endId, config, new List<Rider> { });
 
             race = subject.Run(source.Token);
         }
