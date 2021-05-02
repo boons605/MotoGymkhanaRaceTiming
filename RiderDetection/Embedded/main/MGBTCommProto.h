@@ -42,6 +42,7 @@ typedef enum
     ListDetectedDevices = 4U,
     GetClosestDevice = 5U,
 	SetStartLightState = 6U,
+	ClearAllowedDevices = 7U,
 
     GetLatestTimeStamp = 101U,
     GetAllLaps = 102U,

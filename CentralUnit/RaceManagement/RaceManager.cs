@@ -114,7 +114,9 @@ namespace RaceManagement
             startLight = realStartId;
             startLight.SetStartLightColor(StartLightColor.YELLOW);
 
-            startGate.AddKnownRiders(riders);
+            //startGate.AddKnownRiders(riders);
+            startGate.ClearKnownRiders();
+            endGate.ClearKnownRiders();
 
             tracker = new RaceTracker(timing, startGate, endGate, config.ExtractTrackerConfig(), riders);
             HookEvents(tracker);
