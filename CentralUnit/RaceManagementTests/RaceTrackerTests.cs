@@ -385,7 +385,7 @@ namespace RaceManagementTests
             var state = subject.GetState;
 
             List<FinishedEvent> finishes = summary.Events.Where(e => e is FinishedEvent).Select(e => e as FinishedEvent).ToList();
-            DNFEvent dnf = summary.Events.Last() as DNFEvent;
+            UnitDNFEvent dnf = summary.Events.Last() as UnitDNFEvent;
 
             Assert.AreEqual("Martijn", finishes[0].Rider.Name);
             Assert.AreEqual("Bert", finishes[1].Rider.Name);
@@ -520,7 +520,7 @@ namespace RaceManagementTests
         {
             List<string> finished = new List<string>();
 
-            subject.OnRiderFinished += (obj, args) => finished.Add(args.Finish.Rider.Name);
+            subject.OnRiderFinished += (obj, args) => finished.Add(args.Lap.Rider.Name);
 
             SimulateRaceWithDNF();
 

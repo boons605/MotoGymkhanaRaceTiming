@@ -6,15 +6,15 @@ namespace Models
 {
     public class Lap: IComparable<Lap>
     {
-        RaceEvent end;
+        public RaceEvent End { get; private set;}
 
-        public Rider Rider => end.Rider;
+        public Rider Rider => End.Rider;
 
         public long LapTime 
         {
             get
             {
-                if(end is FinishedEvent f)
+                if(End is FinishedEvent f)
                 {
                     return f.LapTime;
                 }
@@ -27,23 +27,28 @@ namespace Models
 
         public Lap(FinishedEvent finish)
         {
-            end = finish;
+            End = finish;
         }
 
-        public Lap(DNFEvent dnf)
+        public Lap(UnitDNFEvent dnf)
         {
-            end = dnf;
+            End = dnf;
+        }
+
+        public Lap(ManualDNFEvent dnf)
+        {
+            End = dnf;
         }
 
         public int CompareTo(Lap other)
         {
             {
-                if (this.end is FinishedEvent fa && other.end is FinishedEvent fb)
+                if (this.End is FinishedEvent fa && other.End is FinishedEvent fb)
                 {
                     //when both laps have actually finished compare lap times
                     return fa.LapTime.CompareTo(fb.LapTime);
                 }
-                else if (this.end is FinishedEvent)
+                else if (this.End is FinishedEvent)
                 {
                     return -1;
                 }

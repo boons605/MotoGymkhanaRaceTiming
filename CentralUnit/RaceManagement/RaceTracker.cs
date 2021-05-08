@@ -39,12 +39,12 @@ namespace RaceManagement
         /// <summary>
         /// The events triggered by riders entering the start box. In FIFO order so the first rider to enter the box is the first to start
         /// </summary>
-        private LinkedList<IdEvent> waitingRiders = new LinkedList<IdEvent>();
+        private IndexedQueue<string, IdEvent> waitingRiders = new IndexedQueue<string, IdEvent>(id => id.Rider.Name);
 
         /// <summary>
         /// The matched id and time events that indicate a driver has left the start box and is on track. in FIFO order so the first element in this queue represent the rider that entered the track first
         /// </summary>
-        private Queue<(IdEvent id, TimingEvent timer)> onTrackRiders = new Queue<(IdEvent id, TimingEvent timer)>();
+        private IndexedQueue<string, (IdEvent id, TimingEvent timer)> onTrackRiders = new IndexedQueue<string, (IdEvent id, TimingEvent timer)>(tuple => tuple.id.Rider.Name);
 
         /// <summary>
         /// The complete list of events in chronological order
@@ -66,6 +66,8 @@ namespace RaceManagement
         /// </summary>
         private ConcurrentQueue<EventArgs> toProcess = new ConcurrentQueue<EventArgs>();
 
+        private List<Lap> laps = new List<Lap>();
+
         /// <summary>
         /// Fired when the system is ready for the next rider to trigger the start timing gate
         /// </summary>
@@ -76,7 +78,7 @@ namespace RaceManagement
         /// </summary>
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
 
-        public event EventHandler<DNFRiderEventArgs> OnRiderDNF;
+        public event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
 
         /// <summary>
         /// Fired when the system has no riders waiting to start
@@ -98,6 +100,11 @@ namespace RaceManagement
         /// </summary>
         public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState =>
             (waitingRiders.ToList(), onTrackRiders.ToList(), endIds.ToList(), endTimes.ToList());
+
+        /// <summary>
+        /// Returns a list of all laps driven so far
+        /// </summary>
+        public List<Lap> Laps => laps.ToList();
 
         /// <summary>
         /// Run a task that communicates with the timing and rider units to track the state of a race
@@ -125,6 +132,15 @@ namespace RaceManagement
                             case TimingTriggeredEventArgs time:
                                 OnTimer(time);
                                 break;
+                            case PenaltyEventArgs penalty:
+                                OnPenalty(penalty);
+                                break;
+                            case DSQEventArgs dsq:
+                                OnDSQ(dsq);
+                                break;
+                            case ManualDNFEventArgs dnf:
+                                OnManualDNF(dnf);
+                                break;
                             default:
                                 throw new ArgumentException($"Unknown event type: {e.GetType()}");
                         }
@@ -133,11 +149,6 @@ namespace RaceManagement
 
                 return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
             });
-        }
-
-        public void AddRider(Rider rider)
-        {
-            startGate.AddKnownRiders(new List<Rider> { rider });
         }
 
         public void RemoveRider(string name)
@@ -176,7 +187,7 @@ namespace RaceManagement
                 if (!waiting && !onTrack)
                 {
                     IdEvent newEvent = new IdEvent(args.Received, args.Rider, args.UnitId, args.IdType);
-                    waitingRiders.AddLast(newEvent);
+                    waitingRiders.Enqueue(newEvent);
                     raceState.Enqueue(newEvent);
 
                     if (waitingRiders.Count == 1)
@@ -189,7 +200,7 @@ namespace RaceManagement
             {
                 if(waiting)
                 {
-                    waitingRiders.Remove(waitingRiders.Where(e => e.Rider == args.Rider).First());
+                    waitingRiders.Remove(args.Rider.Name);
 
                     if(waitingRiders.Count == 0)
                     {
@@ -268,8 +279,7 @@ namespace RaceManagement
 
                 if (hasWaitingRider)
                 {
-                    IdEvent rider = waitingRiders.First();
-                    waitingRiders.RemoveFirst();
+                    IdEvent rider = waitingRiders.Dequeue();
 
                     TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
 
@@ -334,6 +344,38 @@ namespace RaceManagement
             }
         }
 
+        private void OnManualDNF(ManualDNFEventArgs raceEvent)
+        {
+            if (onTrackRiders.Contains(raceEvent.RiderName))
+            {
+                var onTrack = onTrackRiders.Remove(raceEvent.RiderName);
+
+                ManualDNFEvent dnf = new ManualDNFEvent(onTrack.id, raceEvent.StaffName);
+
+                raceState.Enqueue(dnf);
+
+                Lap lap = new Lap(dnf);
+                this.laps.Add(lap);
+
+                OnRiderDNF?.Invoke(this, new FinishedRiderEventArgs(lap));
+            }
+        }
+
+        private void OnDSQ(DSQEventArgs raceEvent)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void OnPenalty(PenaltyEventArgs raceEvent)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddRider(Rider rider)
+        {
+            startGate.AddKnownRiders(new List<Rider> { rider });
+        }
+
         /// <summary>
         /// This method tries to match a lap end, with an on track rider
         /// if the lap end matches the oldest on track rider, this rider gets a Finished event
@@ -349,11 +391,16 @@ namespace RaceManagement
             while (onTrackRiders.Count > 0)
             {
                 (IdEvent startId, TimingEvent startTime) onTrack = onTrackRiders.Dequeue();
+
                 if (onTrack.startId.Rider == endId.Rider)
                 {
                     finish = new FinishedEvent(onTrack.startId, onTrack.startTime, endTime, endId);
                     raceState.Enqueue(finish);
-                    OnRiderFinished?.Invoke(this, new FinishedRiderEventArgs(finish));
+
+                    Lap lap = new Lap(finish);
+
+                    laps.Add(lap);
+                    OnRiderFinished?.Invoke(this, new FinishedRiderEventArgs(lap));
 
                     endGate.RemoveKnownRider(endId.Rider.Name);
                     startGate.AddKnownRiders(new List<Rider> { endId.Rider });
@@ -370,9 +417,13 @@ namespace RaceManagement
 
             foreach ((IdEvent startId, TimingEvent startTime) in dnf)
             {
-                DNFEvent dnfEvent = new DNFEvent(finish, startId);
+                UnitDNFEvent dnfEvent = new UnitDNFEvent(finish, startId);
                 raceState.Enqueue(dnfEvent);
-                OnRiderDNF?.Invoke(this, new DNFRiderEventArgs(dnfEvent));
+
+                Lap lap = new Lap(dnfEvent);
+
+                laps.Add(lap);
+                OnRiderDNF?.Invoke(this, new FinishedRiderEventArgs(lap));
 
                 endGate.RemoveKnownRider(dnfEvent.Rider.Name);
                 startGate.AddKnownRiders(new List<Rider> { dnfEvent.Rider });
@@ -383,35 +434,39 @@ namespace RaceManagement
             endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
             endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
         }
-    }
 
-    public class FinishedRiderEventArgs
-    {
-        public FinishedEvent Finish { get; private set; }
-
-        public FinishedRiderEventArgs(FinishedEvent finish)
+        public void AddEvent<T>(T raceEvent) where T : ManualEventArgs
         {
-            Finish = finish;
+            OnEvent(raceEvent);
         }
     }
 
-    public class WaitingRiderEventArgs
+    public class TypedEventArgs<T> :EventArgs where T : RaceEvent
+    {
+        public T RaceEvent;
+        public TypedEventArgs(T raceEvent)
+        {
+            RaceEvent = raceEvent;
+        }
+    }
+
+    public class FinishedRiderEventArgs : EventArgs
+    {
+        public Lap Lap { get; private set; }
+
+        public FinishedRiderEventArgs(Lap lap)
+        {
+            Lap = lap;
+        }
+    }
+
+    public class WaitingRiderEventArgs : EventArgs
     {
         public IdEvent Rider { get; private set; }
 
         public WaitingRiderEventArgs(IdEvent rider)
         {
             Rider = rider;
-        }
-    }
-
-    public class DNFRiderEventArgs
-    {
-        public DNFEvent Dnf { get; private set; }
-
-        public DNFRiderEventArgs(DNFEvent dnf)
-        {
-            Dnf = dnf;
         }
     }
 }

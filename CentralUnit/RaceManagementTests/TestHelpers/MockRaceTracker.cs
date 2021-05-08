@@ -12,7 +12,9 @@ namespace RaceManagementTests.TestHelpers
     {
         public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
 
-        public event EventHandler<DNFRiderEventArgs> OnRiderDNF;
+        public List<Lap> Laps => new List<Lap>();
+
+        public event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
         public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         public event EventHandler OnStartEmpty;
@@ -30,6 +32,11 @@ namespace RaceManagementTests.TestHelpers
         public void RemoveRider(string name)
         {
             //no action
+        }
+
+        public void AddEvent<T>(T raceEvent) where T : ManualEventArgs
+        {
+            throw new NotImplementedException();
         }
     }
 }
