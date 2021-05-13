@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace Models
 {
     public class Lap: IComparable<Lap>
     {
-        public RaceEvent End { get; private set;}
+        private List<PenaltyEvent> penalties = new List<PenaltyEvent>();
+
+        public RaceEvent End { get; private set; }
+        public DSQEvent Dsq { get; private set; }
 
         public Rider Rider => End.Rider;
+
+        public bool Disqualified => Dsq != null;
+        public List<PenaltyEvent> Penalties => penalties.ToList();
 
         public long LapTime 
         {
@@ -38,6 +44,23 @@ namespace Models
         public Lap(ManualDNFEvent dnf)
         {
             End = dnf;
+        }
+
+        public void AddPenalties(List<PenaltyEvent> penalties)
+        {
+            this.penalties.AddRange(penalties);
+        }
+
+        public void SetDsq(DSQEvent dsq)
+        {
+            if(this.Disqualified)
+            {
+                throw new InvalidOperationException("Cannot set the DSQ event of a lap that already has one");
+            }
+            else
+            {
+                Dsq = dsq;
+            }
         }
 
         public int CompareTo(Lap other)

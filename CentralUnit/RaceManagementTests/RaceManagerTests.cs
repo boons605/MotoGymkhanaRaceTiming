@@ -40,7 +40,7 @@ namespace RaceManagementTests
                 EndTimingGateId = 1
             };
 
-            //mock id units do not really use the rider add/remove calls  so the rider list is irrelevant
+            //riders are addded in the SimulateRace method
             tracker = new RaceTracker(timer, startId, endId, config, new List<Rider>());
 
             subject = new RaceManager();
@@ -52,46 +52,6 @@ namespace RaceManagementTests
             Thread.Sleep(2000);
 
             subject.Stop();
-        }
-
-        /// <summary>
-        /// Simulates a race that features 4 riders
-        /// Rider-0: lap1 dnf, lap2 finish
-        /// Rider-1: lap1 finish, lap2 dnf
-        /// Rider-2: lap1 fast, lap2 slow
-        /// Rider-3: lap1 slow, lap2 fast
-        /// </summary>
-        private void SimulateRace()
-        {
-            List<Rider> riders = new List<Rider>();
-            for(byte i = 0; i<4; i++)
-            {
-                Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, i }, 0);
-                Rider rider = new Rider($"Rider-{i}", beacon);
-                riders.Add(rider);
-            }
-
-            DateTime currentTime = new DateTime(2000, 1, 1);
-
-            //first laps for all riders
-            MakeDNF(riders[0], currentTime, startId, timer);
-            currentTime = currentTime.AddSeconds(1);
-
-            currentTime = MakeLap(riders[1], currentTime, 10000000, startId, endId, timer);
-
-            currentTime = MakeLap(riders[2], currentTime, 20000000, startId, endId, timer);
-
-            currentTime = MakeLap(riders[3], currentTime, 30000000, startId, endId, timer);
-
-            //second laps for all riders
-            currentTime = MakeLap(riders[0], currentTime, 50000000, startId, endId, timer);
-
-            MakeDNF(riders[1], currentTime, startId, timer);
-            currentTime = currentTime.AddSeconds(1);
-
-            currentTime = MakeLap(riders[2], currentTime, 40000000, startId, endId, timer);
-
-            MakeLap(riders[3], currentTime, 15000000, startId, endId, timer);
         }
 
         [TestMethod]
@@ -185,6 +145,47 @@ namespace RaceManagementTests
             List<Lap> laps = manager.GetBestLaps();
 
             Assert.AreEqual(0, laps.Count);
+        }
+
+        /// <summary>
+        /// Simulates a race that features 4 riders
+        /// Rider-0: lap1 dnf, lap2 finish
+        /// Rider-1: lap1 finish, lap2 dnf
+        /// Rider-2: lap1 fast, lap2 slow
+        /// Rider-3: lap1 slow, lap2 fast
+        /// </summary>
+        private void SimulateRace()
+        {
+            List<Rider> riders = new List<Rider>();
+            for (byte i = 0; i < 4; i++)
+            {
+                Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, i }, 0);
+                Rider rider = new Rider($"Rider-{i}", beacon);
+                riders.Add(rider);
+                tracker.AddRider(rider);
+            }
+
+            DateTime currentTime = new DateTime(2000, 1, 1);
+
+            //first laps for all riders
+            MakeDNF(riders[0], currentTime, startId, timer);
+            currentTime = currentTime.AddSeconds(1);
+
+            currentTime = MakeLap(riders[1], currentTime, 10000000, startId, endId, timer);
+
+            currentTime = MakeLap(riders[2], currentTime, 20000000, startId, endId, timer);
+
+            currentTime = MakeLap(riders[3], currentTime, 30000000, startId, endId, timer);
+
+            //second laps for all riders
+            currentTime = MakeLap(riders[0], currentTime, 50000000, startId, endId, timer);
+
+            MakeDNF(riders[1], currentTime, startId, timer);
+            currentTime = currentTime.AddSeconds(1);
+
+            currentTime = MakeLap(riders[2], currentTime, 40000000, startId, endId, timer);
+
+            MakeLap(riders[3], currentTime, 15000000, startId, endId, timer);
         }
 
         /// <summary>
