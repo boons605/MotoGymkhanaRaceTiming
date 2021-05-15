@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace RaceManagement
 {
@@ -9,13 +8,15 @@ namespace RaceManagement
         /// <summary>
         /// Name of the official that issued the event
         /// </summary>
+        [JsonRequired]
         public readonly string StaffName;
 
         public readonly DateTime Received;
-        
+
         /// <summary>
         /// The rider this event applies to
         /// </summary>
+        [JsonRequired]
         public readonly string RiderName;
 
         public ManualEventArgs(DateTime received, string riderName, string staffName)
@@ -40,6 +41,7 @@ namespace RaceManagement
     /// </summary>
     public class DSQEventArgs : ManualEventArgs
     {
+        [JsonRequired]
         public readonly string Reason;
 
         public DSQEventArgs(DateTime received, string riderName, string staffName, string reason) 
@@ -51,7 +53,10 @@ namespace RaceManagement
 
     public class PenaltyEventArgs : ManualEventArgs
     {
+        [JsonRequired]
         public readonly string Reason;
+
+        [JsonRequired]
         public readonly int Seconds;
 
         public PenaltyEventArgs(DateTime received, string riderName, string staffName, string reason, int seconds) : base(received, riderName, staffName)

@@ -201,6 +201,10 @@ namespace RaceManagement
 
             return fastestLaps;
         }
+        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+        {
+            tracker?.AddEvent(manualEvent);
+        }
 
         public void RemoveRider(string name)
         {
