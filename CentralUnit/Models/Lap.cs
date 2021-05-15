@@ -22,7 +22,7 @@ namespace Models
             {
                 if(End is FinishedEvent f)
                 {
-                    return f.LapTime;
+                    return f.LapTime + (penalties.Sum(p => p.Seconds) * 1000000);
                 }
                 else
                 {
