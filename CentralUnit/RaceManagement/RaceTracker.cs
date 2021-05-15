@@ -390,7 +390,7 @@ namespace RaceManagement
         {
             Rider rider = knownRiders.Where(r => r.Name == raceEvent.RiderName).FirstOrDefault();
 
-            DSQEvent dsq = new DSQEvent(raceEvent.Received, rider, raceEvent.StaffName);
+            DSQEvent dsq = new DSQEvent(raceEvent.Received, rider, raceEvent.StaffName, raceEvent.Reason);
 
             raceState.Enqueue(dsq);
 

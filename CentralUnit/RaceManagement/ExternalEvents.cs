@@ -40,9 +40,12 @@ namespace RaceManagement
     /// </summary>
     public class DSQEventArgs : ManualEventArgs
     {
-        public DSQEventArgs(DateTime received, string riderName, string staffName) 
+        public readonly string Reason;
+
+        public DSQEventArgs(DateTime received, string riderName, string staffName, string reason) 
             : base(received, riderName, staffName)
         {
+            Reason = reason;
         }
     }
 

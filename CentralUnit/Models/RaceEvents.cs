@@ -179,9 +179,12 @@ namespace Models
     /// </summary>
     public class DSQEvent : ManualEvent
     {
-        public DSQEvent(DateTime time, Rider rider, string staffName) 
+        public readonly string Reason;
+
+        public DSQEvent(DateTime time, Rider rider, string staffName, string reason) 
             : base(time, rider, Guid.NewGuid(), staffName)
         {
+            Reason = reason;
         }
     }
 
