@@ -683,7 +683,7 @@ namespace RaceManagementTests
             Lap lap = subject.Laps[0];
 
             Assert.IsTrue(lap.End is ManualDNFEvent);
-            Assert.AreEqual(-1, lap.LapTime);
+            Assert.AreEqual(-1, lap.GetLapTime());
             Assert.IsFalse(lap.Disqualified);
         }
 
@@ -763,7 +763,7 @@ namespace RaceManagementTests
             Lap lap = subject.Laps[0];
 
             Assert.IsTrue(lap.End is ManualDNFEvent);
-            Assert.AreEqual(-1, lap.LapTime);
+            Assert.AreEqual(-1, lap.GetLapTime());
             Assert.IsFalse(lap.Disqualified);
             Assert.AreEqual(bert, lap.Rider);
         }
@@ -821,14 +821,14 @@ namespace RaceManagementTests
 
             Assert.IsTrue(penaltyLap.End is FinishedEvent);
             //100 micros lap time, 3 second penalty
-            Assert.AreEqual(3000100, penaltyLap.LapTime);
+            Assert.AreEqual(3000100, penaltyLap.GetLapTime());
             Assert.IsFalse(penaltyLap.Disqualified);
 
             Lap normalLap = subject.Laps[1];
 
             Assert.IsTrue(normalLap.End is FinishedEvent);
             //Lap from MakeEvent methods has nonsense lap time
-            Assert.AreEqual(0, normalLap.LapTime);
+            Assert.AreEqual(0, normalLap.GetLapTime());
             Assert.IsFalse(normalLap.Disqualified);
         }
 
@@ -987,14 +987,14 @@ namespace RaceManagementTests
 
             Assert.IsTrue(dsqLap.End is FinishedEvent);
             //dsq still have a laptime based on microseconds
-            Assert.AreEqual(100, dsqLap.LapTime);
+            Assert.AreEqual(100, dsqLap.GetLapTime());
             Assert.IsTrue(dsqLap.Disqualified);
 
             Lap normalLap = subject.Laps[1];
 
             Assert.IsTrue(normalLap.End is FinishedEvent);
             //Lap from MakeEvent methods has nonsense lap time
-            Assert.AreEqual(0, normalLap.LapTime);
+            Assert.AreEqual(0, normalLap.GetLapTime());
             Assert.IsFalse(normalLap.Disqualified);
         }
 

@@ -16,21 +16,6 @@ namespace Models
         public bool Disqualified => Dsq != null;
         public List<PenaltyEvent> Penalties => penalties.ToList();
 
-        public long LapTime 
-        {
-            get
-            {
-                if(End is FinishedEvent f)
-                {
-                    return f.LapTime + (penalties.Sum(p => p.Seconds) * 1000000);
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-        }
-
         public Lap(FinishedEvent finish)
         {
             End = finish;
@@ -51,6 +36,31 @@ namespace Models
             this.penalties.AddRange(penalties);
         }
 
+        /// <summary>
+        /// Get lap time in microseconds. Laps with a DNF get a lap time of -1
+        /// Laps with a DSQ get a normally calulcated lap time
+        /// </summary>
+        /// <param name="includePenalties">if true add the lap penalties to the calculated lap time</param>
+        /// <returns></returns>
+        public long GetLapTime(bool includePenalties=true)
+        {
+            if (End is FinishedEvent f)
+            {
+                if (includePenalties)
+                {
+                    return f.LapTime + (penalties.Sum(p => p.Seconds) * 1000000);//1 penalty second is 1000000 microseconds
+                }
+                else
+                {
+                    return f.LapTime;
+                }
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
         public void SetDsq(DSQEvent dsq)
         {
             if(this.Disqualified)
@@ -63,23 +73,38 @@ namespace Models
             }
         }
 
+        /// <summary>
+        /// Maps to <see cref="CompareTo(Lap, bool)"/> with includePenalties=true
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
         public int CompareTo(Lap other)
         {
+            return CompareTo(other, true);
+        }
+
+        /// <summary>
+        /// Compates two laps by their lap time. Maps the regular returns of compare methods to lap times.
+        /// Laps with a DNF are always slower than finished laps. There is no defined ordering between laps with a DNF
+        /// </summary>
+        /// <param name="other"></param>
+        /// <param name="includePenalties"></param>
+        /// <returns>-1 this lap is fater, 1 the other lap is faster, 0 the laps are equal</returns>
+        public int CompareTo(Lap other, bool includePenalties)
+        {
+            if (this.End is FinishedEvent fa && other.End is FinishedEvent fb)
             {
-                if (this.End is FinishedEvent fa && other.End is FinishedEvent fb)
-                {
-                    //when both laps have actually finished compare lap times
-                    return fa.LapTime.CompareTo(fb.LapTime);
-                }
-                else if (this.End is FinishedEvent)
-                {
-                    return -1;
-                }
-                else
-                {
-                    //if only b has finished b is faster, or both are DNF and then order is irrelevant
-                    return 1;
-                }
+                //when both laps have actually finished compare lap times
+                return this.GetLapTime(includePenalties).CompareTo(other.GetLapTime(includePenalties));
+            }
+            else if (this.End is FinishedEvent)
+            {
+                return -1;
+            }
+            else
+            {
+                //if only b has finished b is faster, or both are DNF and then order is irrelevant
+                return 1;
             }
         }
     }

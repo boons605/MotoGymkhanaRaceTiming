@@ -64,30 +64,30 @@ namespace RaceManagementTests
             Assert.AreEqual(8, laps.Count);
 
             Assert.AreEqual("Rider-1", laps[0].Rider.Name);
-            Assert.AreEqual(10000000, laps[0].LapTime);
+            Assert.AreEqual(10000000, laps[0].GetLapTime());
 
             //A DNF
             Assert.AreEqual("Rider-0", laps[1].Rider.Name);
-            Assert.AreEqual(-1, laps[1].LapTime);
+            Assert.AreEqual(-1, laps[1].GetLapTime());
 
             Assert.AreEqual("Rider-2", laps[2].Rider.Name);
-            Assert.AreEqual(20000000, laps[2].LapTime);
+            Assert.AreEqual(20000000, laps[2].GetLapTime());
 
             Assert.AreEqual("Rider-3", laps[3].Rider.Name);
-            Assert.AreEqual(30000000, laps[3].LapTime);
+            Assert.AreEqual(30000000, laps[3].GetLapTime());
 
             //second set of laps
             Assert.AreEqual("Rider-0", laps[4].Rider.Name);
-            Assert.AreEqual(50000000, laps[4].LapTime);
+            Assert.AreEqual(50000000, laps[4].GetLapTime());
 
             Assert.AreEqual("Rider-2", laps[5].Rider.Name);
-            Assert.AreEqual(40000000, laps[5].LapTime);
+            Assert.AreEqual(40000000, laps[5].GetLapTime());
 
             Assert.AreEqual("Rider-1", laps[6].Rider.Name);
-            Assert.AreEqual(-1, laps[6].LapTime);
+            Assert.AreEqual(-1, laps[6].GetLapTime());
 
             Assert.AreEqual("Rider-3", laps[7].Rider.Name);
-            Assert.AreEqual(15000000, laps[7].LapTime);
+            Assert.AreEqual(15000000, laps[7].GetLapTime());
         }
 
         [TestMethod]
@@ -123,16 +123,16 @@ namespace RaceManagementTests
             Assert.AreEqual(4, laps.Count);
 
             Assert.AreEqual("Rider-1", laps[0].Rider.Name);
-            Assert.AreEqual(10000000, laps[0].LapTime);
+            Assert.AreEqual(10000000, laps[0].GetLapTime());
 
             Assert.AreEqual("Rider-3", laps[1].Rider.Name);
-            Assert.AreEqual(15000000, laps[1].LapTime);
+            Assert.AreEqual(15000000, laps[1].GetLapTime());
 
             Assert.AreEqual("Rider-2", laps[2].Rider.Name);
-            Assert.AreEqual(20000000, laps[2].LapTime);
+            Assert.AreEqual(20000000, laps[2].GetLapTime());
 
             Assert.AreEqual("Rider-0", laps[3].Rider.Name);
-            Assert.AreEqual(50000000, laps[3].LapTime);
+            Assert.AreEqual(50000000, laps[3].GetLapTime());
         }
 
         [TestMethod]
