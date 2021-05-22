@@ -30,9 +30,6 @@ namespace RaceManagement
         private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
 
-        //DNF of Finished
-        private List<Lap> laps = new List<Lap>();
-
         public Task CombinedTasks { get; private set; }
 
         /// <summary>
@@ -136,10 +133,9 @@ namespace RaceManagement
         private void HookEvents(IRaceTracker tracker)
         {
             tracker.OnRiderFinished += HandleFinish;
-            tracker.OnRiderDNF += HandleDNF;
 
-            tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Finish.Rider.Name} finished with a lap time of {e.Finish.LapTime} microseconds");
-            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Dnf.Rider.Name} did not finish since {e.Dnf.OtherRider.Rider.Name} finshed before them");
+            tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
+            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish since {(e.Lap.End as UnitDNFEvent).OtherRider} finshed before them");
             tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
 
@@ -149,17 +145,10 @@ namespace RaceManagement
 
         private void HandleFinish(object o, FinishedRiderEventArgs e)
         {
-            laps.Add(new Lap(e.Finish));
-
             foreach (var display in displays)
             {
-                display.SetDisplayTime((int)(e.Finish.LapTime / 1000));
+                display.SetDisplayTime((int)(e.Lap.GetLapTime() / 1000));
             }
-        }
-
-        private void HandleDNF(object o, DNFRiderEventArgs e)
-        {
-            laps.Add(new Lap(e.Dnf));
         }
 
         public void Stop()
@@ -184,7 +173,7 @@ namespace RaceManagement
         /// <returns></returns>
         public List<Lap> GetLapTimes(int start = 0)
         {
-            return laps.Skip(start).ToList();
+            return tracker.Laps.Skip(start).ToList();
         }
 
         /// <summary>
@@ -195,7 +184,7 @@ namespace RaceManagement
         {
             Dictionary<string, Lap> lapsByRider = new Dictionary<string, Lap>();
 
-            foreach(Lap lap in laps)
+            foreach(Lap lap in tracker.Laps)
             {
                 if (!lapsByRider.ContainsKey(lap.Rider.Name))
                 {
@@ -211,6 +200,10 @@ namespace RaceManagement
             fastestLaps.Sort();
 
             return fastestLaps;
+        }
+        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+        {
+            tracker?.AddEvent(manualEvent);
         }
 
         public void RemoveRider(string name)

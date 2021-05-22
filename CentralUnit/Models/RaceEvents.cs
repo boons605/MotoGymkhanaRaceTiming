@@ -15,12 +15,12 @@ namespace Models
         /// <summary>
         /// The moment the event was processed
         /// </summary>
-        public DateTime Time;
+        public readonly DateTime Time;
 
         /// <summary>
         /// Unique id to refer to this event
         /// </summary>
-        public Guid EventId;
+        public readonly Guid EventId;
 
         /// <summary>
         /// The rider this event happened to
@@ -32,6 +32,19 @@ namespace Models
             Time = time;
             Rider = rider;
             EventId = eventId;
+        }
+    }
+
+    public class ManualEvent : RaceEvent
+    {
+        /// <summary>
+        /// Name of the official that issued the event
+        /// </summary>
+        public readonly string StaffName;
+
+        public ManualEvent(DateTime time, Rider rider, Guid eventId, string staffName) : base(time, rider, eventId)
+        {
+            StaffName = staffName;
         }
     }
 
@@ -126,7 +139,7 @@ namespace Models
     /// <summary>
     /// Event when a rider does not finish their lap. This is detected when a rider that started after them finished earlier
     /// </summary>
-    public class DNFEvent : RaceEvent
+    public class UnitDNFEvent : RaceEvent
     {
         /// <summary>
         /// A DNF happens when a driver who started later finished before this driver did
@@ -138,11 +151,53 @@ namespace Models
         /// </summary>
         public readonly IdEvent ThisRider;
 
-        public DNFEvent(FinishedEvent otherRider, IdEvent thisRider)
+        public UnitDNFEvent(FinishedEvent otherRider, IdEvent thisRider)
             : base(otherRider.Time, thisRider.Rider, Guid.NewGuid())
         {
             OtherRider = otherRider;
             ThisRider = thisRider;
+        }
+
+    }
+
+    public class ManualDNFEvent : ManualEvent
+    {
+        /// <summary>
+        /// The event where this driver was picked up at the start gate
+        /// </summary>
+        public readonly IdEvent ThisRider;
+
+        public ManualDNFEvent(IdEvent started, string staffName) 
+            : base(started.Time, started.Rider, Guid.NewGuid(), staffName)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Event when a race official disqualifies a lap
+    /// Can be issued while the rider is on track as well as after a rider is finished
+    /// </summary>
+    public class DSQEvent : ManualEvent
+    {
+        public readonly string Reason;
+
+        public DSQEvent(DateTime time, Rider rider, string staffName, string reason) 
+            : base(time, rider, Guid.NewGuid(), staffName)
+        {
+            Reason = reason;
+        }
+    }
+
+    public class PenaltyEvent : ManualEvent
+    {
+        public readonly string Reason;
+        public readonly int Seconds;
+
+        public PenaltyEvent(DateTime time, Rider rider, string reason, int seconds, string staffName) 
+            : base(time, rider, Guid.NewGuid(), staffName)
+        {
+            Reason = reason;
+            Seconds = seconds;
         }
     }
 

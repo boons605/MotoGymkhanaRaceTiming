@@ -4,6 +4,7 @@ using Models;
 using Models.Config;
 using Newtonsoft.Json.Linq;
 using RaceManagement;
+using System;
 using System.Collections.Generic;
 
 namespace WebAPI.Controllers
@@ -87,6 +88,30 @@ namespace WebAPI.Controllers
         public StatusCodeResult DeleteRider([FromQuery] string name)
         {
             manager.RemoveRider(name);
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/Penalty")]
+        public StatusCodeResult AddPenalty([FromBody] PenaltyEventArgs penalty)
+        {
+            manager.AddEvent(new PenaltyEventArgs(DateTime.Now, penalty.RiderName, penalty.StaffName, penalty.Reason, penalty.Seconds));
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/DNF")]
+        public StatusCodeResult AddDNF([FromBody] ManualDNFEventArgs dnf)
+        {
+            manager.AddEvent(new ManualDNFEventArgs(DateTime.Now, dnf.RiderName, dnf.StaffName));
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/DSQ")]
+        public StatusCodeResult AddDSQ([FromBody] DSQEventArgs dsq)
+        {
+            manager.AddEvent(new DSQEventArgs(DateTime.Now, dsq.RiderName, dsq.StaffName, dsq.Reason));
             return new StatusCodeResult(200);
         }
     }
