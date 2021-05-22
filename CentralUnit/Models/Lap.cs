@@ -92,12 +92,26 @@ namespace Models
         /// <returns>-1 this lap is fater, 1 the other lap is faster, 0 the laps are equal</returns>
         public int CompareTo(Lap other, bool includePenalties)
         {
-            if (this.End is FinishedEvent fa && other.End is FinishedEvent fb)
+            if (this.End is FinishedEvent fa && other.End is FinishedEvent fb)//both have finished
             {
-                //when both laps have actually finished compare lap times
-                return this.GetLapTime(includePenalties).CompareTo(other.GetLapTime(includePenalties));
+                if (this.Disqualified == other.Disqualified)//if both laps are dsq or both are not dsq lap time decides ordering
+                {
+                    //when both laps have actually finished compare lap times
+                    return this.GetLapTime(includePenalties).CompareTo(other.GetLapTime(includePenalties));
+                }
+                else
+                {
+                    if(this.Disqualified)//disqualified is slower than not disqualified
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+                }
             }
-            else if (this.End is FinishedEvent)
+            else if (this.End is FinishedEvent)//this has finished, other DNF
             {
                 return -1;
             }
