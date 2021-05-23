@@ -56,6 +56,8 @@ namespace WebPusher
 
                 List<Lap> laps = parsedLaps.ToObject<List<Lap>>();
 
+                lapIndex += laps.Count;
+
                 foreach(Lap lap in laps)
                 {
                     await webService.NewTime(lap);
