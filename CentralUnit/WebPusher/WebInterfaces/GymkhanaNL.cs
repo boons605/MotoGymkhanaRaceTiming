@@ -67,7 +67,7 @@ namespace WebPusher.WebInterfaces
             }
             else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
             {
-                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}&dnf=1");
+                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dnf=1");
                 Console.WriteLine($"Gymkhana response (DNF): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
 
                 result = await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Name}&uniqueId={GetId(startId)}");
@@ -75,14 +75,14 @@ namespace WebPusher.WebInterfaces
             }
             else
             {
-                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/new_time?auth={authToken}&tag={lap.Rider.Name}&uniqueId={GetId(startId)}&time={lap.GetLapTime(false)}");
+                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/new_time?auth={authToken}&tag={lap.Rider.Name}&uniqueId={GetId(startId)}&time={lap.GetLapTime(false)/1000}");
                 Console.WriteLine($"Gymkhana response (NEW): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
 
                 int penalty = lap.Penalties.Sum(p => p.Seconds);
 
                 if (penalty > 0)
                 {
-                    result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}&time={penalty}");
+                    result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&time={penalty}");
                     Console.WriteLine($"Gymkhana response (PENALTY): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
                 }
             }
