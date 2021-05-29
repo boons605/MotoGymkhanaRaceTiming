@@ -88,7 +88,7 @@ namespace WebPusher.WebInterfaces
             }
         }
 
-        public async Task CLear()
+        public async Task Clear()
         {
             await http.GetAsync($"{baseUrl}/delete_todays_results?auth={authToken}");
         }

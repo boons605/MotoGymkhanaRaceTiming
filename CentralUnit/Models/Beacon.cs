@@ -40,6 +40,7 @@ namespace Models
         /// <summary>
         /// The BLE MAC address of this beacon.
         /// </summary>
+        [JsonConverter(typeof(IdentifierConverter))]
         public byte[] Identifier { get; private set; }
 
         /// <summary>
@@ -80,18 +81,6 @@ namespace Models
 
             this.Identifier = identifier;
             this.CorrectionFactor = correctionFactor;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Beacon" /> class based on an identifier and a correction factor for 
-        /// </summary>
-        /// <param name="identifier">The 6-byte BLE MAC address</param>
-        /// <param name="correctionFactor">The correction factor for cheap Chinese iBeacons</param>
-        /// <exception cref="ArgumentNullException">When the <paramref name="identifier"/> is null</exception>
-        /// <exception cref="ArgumentException">When the <paramref name="identifier"/> is not exactly 6 bytes long</exception>
-        [JsonConstructor]
-        public Beacon(string identifier, UInt16 correctionFactor) : this (TextToMacBytes(identifier), correctionFactor)
-        {
         }
 
         /// <summary>
@@ -160,6 +149,17 @@ namespace Models
         }
 
         /// <summary>
+        /// The inverse of <see cref="TextToMacBytes(string)"/>. The output here may not be the exact same that was entered into the json for this object.
+        /// But the output from this method will always represent and be parsed into the exact same byte array
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        public static string IdentifierBytesToText(byte[] identifier)
+        {
+            return BitConverter.ToString(identifier);
+        }
+
+        /// <summary>
         /// Represents this Beacon as a string.
         /// </summary>
         /// <returns>String representation of this Beacon object.</returns>
@@ -212,6 +212,21 @@ namespace Models
             }
 
             return false;
+        }
+
+        private class IdentifierConverter : JsonConverter<byte[]>
+        {
+            public override byte[] ReadJson(JsonReader reader, Type objectType, byte[] existingValue, bool hasExistingValue, JsonSerializer serializer)
+            {
+                string text = (string)reader.Value;
+
+                return TextToMacBytes(text);
+            }
+
+            public override void WriteJson(JsonWriter writer, byte[] value, JsonSerializer serializer)
+            {
+                writer.WriteValue(IdentifierBytesToText(value));
+            }
         }
     }
 }
