@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using Models;
+using Newtonsoft.Json;
 
 namespace WebPusher
 {
@@ -43,6 +44,7 @@ namespace WebPusher
                 try
                 {
                     HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
+                    stateResponse.EnsureSuccessStatusCode();
 
                     string stateString = await stateResponse.Content.ReadAsStringAsync();
 
@@ -57,9 +59,7 @@ namespace WebPusher
                     }
 
                     string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
-                    JObject parsedLaps = JObject.Parse(lapsString);
-
-                    List<Lap> laps = parsedLaps.ToObject<List<Lap>>();
+                    List<Lap> laps = JsonConvert.DeserializeObject<List<Lap>>(lapsString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
 
                     lapIndex += laps.Count;
 

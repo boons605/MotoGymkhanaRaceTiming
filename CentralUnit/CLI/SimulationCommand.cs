@@ -24,7 +24,15 @@ namespace CLI
         protected override int OnExecute(CommandLineApplication app)
         {
             RaceManager manager = new RaceManager();
-            manager.Start(SummaryFile);
+            RaceSummary summary;
+
+            using (Stream reader = new FileStream(SummaryFile, FileMode.Open))
+            {
+                summary = RaceSummary.ReadSummary(reader);
+            }
+
+
+            manager.Start(summary);
 
             manager.CombinedTasks.Wait();
 

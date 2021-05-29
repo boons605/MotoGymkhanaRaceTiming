@@ -36,23 +36,23 @@ namespace WebPusher.WebInterfaces
 
             if (lap.Disqualified)
             {
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dsq=1");
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dsq=1");
             }
             else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
             {
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dnf=1");
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dnf=1");
             }
             else
             {
                 int penalty = lap.Penalties.Sum(p => p.Seconds);
 
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$time={penalty}");
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&time={penalty}");
             }
         }
 
         public async Task EndLap(IdEvent end)
         {
-            await http.GetAsync($"{baseUrl}/end_ride?auth={authToken}&tag={end.Rider.Beacon.Identifier}");
+            await http.GetAsync($"{baseUrl}/end_ride?auth={authToken}&tag={end.Rider.Name}");
         }
 
         public async Task NewTime(Lap lap)
@@ -62,21 +62,29 @@ namespace WebPusher.WebInterfaces
 
             if (lap.Disqualified)
             {
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dsq=1");
-                await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Beacon.Identifier}&uniqueId={startId.GetHashCode()}");
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}$dsq=1");
+                await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Name}&uniqueId={GetId(startId)}");
             }
             else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
             {
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dnf=1");
-                await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Beacon.Identifier}&uniqueId={startId.GetHashCode()}");
+                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}&dnf=1");
+                Console.WriteLine($"Gymkhana response (DNF): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
+
+                result = await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Name}&uniqueId={GetId(startId)}");
+                Console.WriteLine($"Gymkhana response (END): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
             }
             else
             {
-                await http.GetAsync($"{baseUrl}/new_time?auth={authToken}&tag={lap.Rider.Beacon.Identifier}&uniqueId={startId.GetHashCode()}$time={lap.GetLapTime(false)}");
+                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/new_time?auth={authToken}&tag={lap.Rider.Name}&uniqueId={GetId(startId)}&time={lap.GetLapTime(false)}");
+                Console.WriteLine($"Gymkhana response (NEW): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
 
                 int penalty = lap.Penalties.Sum(p => p.Seconds);
 
-                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$time={penalty}");
+                if (penalty > 0)
+                {
+                    result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}&time={penalty}");
+                    Console.WriteLine($"Gymkhana response (PENALTY): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
+                }
             }
         }
 
@@ -84,7 +92,8 @@ namespace WebPusher.WebInterfaces
         {
             if(!onTrack.Contains(start.EventId))
             {
-                await http.GetAsync($"{baseUrl}/start_ride?auth={authToken}&tag={start.Rider.Beacon.Identifier}&uniqueId={start.EventId.GetHashCode()}");
+                HttpResponseMessage result = await http.GetAsync($"{baseUrl}/start_ride?auth={authToken}&tag={start.Rider.Name}&uniqueId={GetId(start.EventId)}");
+                Console.WriteLine($"Gymkhana response (START): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
             }
         }
 
@@ -107,5 +116,7 @@ namespace WebPusher.WebInterfaces
                     throw new ArgumentException($"Unkown lap event type: {lap.End.GetType()}");
             }
         }
+
+        private int GetId(Guid g) => g.GetHashCode() < 0 ? -g.GetHashCode() : g.GetHashCode();
     }
 }

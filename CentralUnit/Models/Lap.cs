@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,6 +16,18 @@ namespace Models
 
         public bool Disqualified => Dsq != null;
         public List<PenaltyEvent> Penalties => penalties.ToList();
+
+        /// <summary>
+        /// ONLY FOR USE BY JSON DESERIALIZATION
+        /// </summary>
+        /// <param name="end"></param>
+        /// <param name="dsq"></param>
+        [JsonConstructor]
+        public Lap(RaceEvent end, DSQEvent dsq)
+        {
+            End = end;
+            Dsq = dsq;
+        }
 
         public Lap(FinishedEvent finish)
         {
