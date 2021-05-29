@@ -38,6 +38,8 @@ namespace WebPusher
 
             while(!token.IsCancellationRequested)
             {
+                Console.WriteLine("Polling");
+
                 HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
 
                 string stateString = await stateResponse.Content.ReadAsStringAsync();
@@ -48,6 +50,7 @@ namespace WebPusher
 
                 foreach((var id, _) in onTrack)
                 {
+                    Console.WriteLine($"Starting a new lap for {id.Rider.Name}");
                     await webService.StartLap(id);
                 }
 
@@ -60,6 +63,7 @@ namespace WebPusher
 
                 foreach(Lap lap in laps)
                 {
+                    Console.WriteLine($"Reporting a new time for {lap.Rider.Name}");
                     await webService.NewTime(lap);
                 }
 
