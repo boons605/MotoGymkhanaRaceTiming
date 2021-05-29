@@ -40,31 +40,38 @@ namespace WebPusher
             {
                 Console.WriteLine("Polling");
 
-                HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
-
-                string stateString = await stateResponse.Content.ReadAsStringAsync();
-
-                JObject parsedContent = JObject.Parse(stateString);
-
-                List<(IdEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(IdEvent id, TimingEvent timer)>>();
-
-                foreach((var id, _) in onTrack)
+                try
                 {
-                    Console.WriteLine($"Starting a new lap for {id.Rider.Name}");
-                    await webService.StartLap(id);
+                    HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
+
+                    string stateString = await stateResponse.Content.ReadAsStringAsync();
+
+                    JObject parsedContent = JObject.Parse(stateString);
+
+                    List<(IdEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(IdEvent id, TimingEvent timer)>>();
+
+                    foreach ((var id, _) in onTrack)
+                    {
+                        Console.WriteLine($"Starting a new lap for {id.Rider.Name}");
+                        await webService.StartLap(id);
+                    }
+
+                    string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
+                    JObject parsedLaps = JObject.Parse(lapsString);
+
+                    List<Lap> laps = parsedLaps.ToObject<List<Lap>>();
+
+                    lapIndex += laps.Count;
+
+                    foreach (Lap lap in laps)
+                    {
+                        Console.WriteLine($"Reporting a new time for {lap.Rider.Name}");
+                        await webService.NewTime(lap);
+                    }
                 }
-
-                string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
-                JObject parsedLaps = JObject.Parse(lapsString);
-
-                List<Lap> laps = parsedLaps.ToObject<List<Lap>>();
-
-                lapIndex += laps.Count;
-
-                foreach(Lap lap in laps)
+                catch (HttpRequestException e)
                 {
-                    Console.WriteLine($"Reporting a new time for {lap.Rider.Name}");
-                    await webService.NewTime(lap);
+                    Console.WriteLine($"Polling loop encountered error in http communication: {e.Message}");
                 }
 
                 // lets not DoS the WebAPI
