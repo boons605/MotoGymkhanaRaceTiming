@@ -22,12 +22,12 @@ namespace WebPusher
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="handler">The request handler, unless you're mocking just use <see cref="HttpClientHandler"/></param>
+        /// <param name="handler">The http client to poll with, if you're mocking pass one with a cutom <see cref="HttpClientHandler"/></param>
         /// <param name="webService">The web service to post updates to</param>
         /// <param name="baseUrl">The root url of the webAPI to get updates from like localhost:4000</param>
-        public Pusher(HttpMessageHandler handler, IWebInterface webService, string baseUrl)
+        public Pusher(HttpClient http, IWebInterface webService, string baseUrl)
         {
-            this.http = new HttpClient(handler);
+            this.http = http;
             this.webService = webService;
             this.baseUrl = baseUrl;
         }

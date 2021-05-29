@@ -19,42 +19,17 @@ namespace WebPusher.WebInterfaces
         /// This class provides an interface to the endpoints at https://timing.motogymkhana.nl
         /// Also keeps some internal state to avoid doing duplicate/unnecessary requests
         /// </summary>
-        /// <param name="handler">The request handler, unless you're mocking just use <see cref="HttpClientHandler"/></param>
+        /// <param name="http">The http client to poll with, if you're mocking pass one with a cutom <see cref="HttpClientHandler"/></param>
         /// <param name="authToken">Authorization token necessary to access the endpoints</param>
         /// <param name="baseUrl">The url for the score keeping part of the dutch gykhana site</param>
-        public GymkhanaNL(HttpMessageHandler handler, string authToken, string baseUrl = "https://timing.motogymkhana.nl")
+        public GymkhanaNL(HttpClient http, string authToken, string baseUrl = "https://timing.motogymkhana.nl")
         {
-            http = new HttpClient(handler);
+            this.http = http;
             this.authToken = authToken;
             this.baseUrl = baseUrl;
         }
 
-        public Task AddPenalty(Lap lap, PenaltyEvent penalty)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddPenalty(Lap lap, ManualDNFEvent dnf)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AddPenalty(Lap lap, DSQEvent dsq)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Clear()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task EndLap(IdEvent end)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task NewTime(Lap lap)
+        public async Task AddPenalty(Lap lap)
         {
             Guid startId = GetStartGuid(lap);
             onTrack.Remove(startId);
@@ -66,6 +41,34 @@ namespace WebPusher.WebInterfaces
             else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
             {
                 await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dnf=1");
+            }
+            else
+            {
+                int penalty = lap.Penalties.Sum(p => p.Seconds);
+
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$time={penalty}");
+            }
+        }
+
+        public async Task EndLap(IdEvent end)
+        {
+            await http.GetAsync($"{baseUrl}/end_ride?auth={authToken}&tag={end.Rider.Beacon.Identifier}");
+        }
+
+        public async Task NewTime(Lap lap)
+        {
+            Guid startId = GetStartGuid(lap);
+            onTrack.Remove(startId);
+
+            if (lap.Disqualified)
+            {
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dsq=1");
+                await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Beacon.Identifier}&uniqueId={startId.GetHashCode()}");
+            }
+            else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
+            {
+                await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={startId.GetHashCode()}$dnf=1");
+                await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Beacon.Identifier}&uniqueId={startId.GetHashCode()}");
             }
             else
             {
@@ -83,6 +86,11 @@ namespace WebPusher.WebInterfaces
             {
                 await http.GetAsync($"{baseUrl}/start_ride?auth={authToken}&tag={start.Rider.Beacon.Identifier}&uniqueId={start.EventId.GetHashCode()}");
             }
+        }
+
+        public async Task CLear()
+        {
+            await http.GetAsync($"{baseUrl}/delete_todays_results?auth={authToken}");
         }
 
         private Guid GetStartGuid(Lap lap)

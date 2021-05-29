@@ -34,26 +34,11 @@ namespace WebPusher.WebInterfaces
 
         /// <summary>
         /// Adds a penalty to a lap that was posted previously with <see cref="NewTime(Lap)"/>
-        /// Or to a lap in progress with <see cref="StartLap(IdEvent)"/>
+        /// Or to a lap in progress with <see cref="StartLap(IdEvent)"/>.
+        /// Penalties on lap object are time penalties, DNF of DSQ. If a DNF or DSQ is recorded, the lap also ends
         /// </summary>
         /// <param name="lap"></param>
-        /// <param name="penalty"></param>
-        public Task AddPenalty(Lap lap, PenaltyEvent penalty);
-
-        /// <summary>
-        /// Marks a lap that is in progress with <see cref="StartLap(IdEvent)"/> as DNF
-        /// </summary>
-        /// <param name="lap"></param>
-        /// <param name="dnf"></param>
-        public Task AddPenalty(Lap lap, ManualDNFEvent dnf);
-
-        /// <summary>
-        /// Marks a lap that was posted previously with <see cref="NewTime(Lap)"/> as DSQ
-        /// Or marks a lap that is in progress with <see cref="StartLap(IdEvent)"/> as DSQ
-        /// </summary>
-        /// <param name="lap"></param>
-        /// <param name="dsq"></param>
-        public Task AddPenalty(Lap lap, DSQEvent dsq);
+        public Task AddPenalty(Lap lap);
 
         /// <summary>
         /// Clear everything thats currently displayed
