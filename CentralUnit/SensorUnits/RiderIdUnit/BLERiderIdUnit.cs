@@ -163,6 +163,7 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public void ClearKnownRiders()
         {
+            Log.Info($"{this.unitId}: Clearing known riders");
             this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ListAllowed, 0, new byte[2]));
         }
 
@@ -478,7 +479,7 @@ namespace SensorUnits.RiderIdUnit
             }
             catch (Exception ex)
             {
-                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command", ex);
+                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command, {packet}", ex);
             }
         }
 

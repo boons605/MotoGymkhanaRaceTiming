@@ -109,6 +109,10 @@ namespace RaceManagement
 
             startGate = realStartId;
             startLight = realStartId;
+
+            startGate?.ClearKnownRiders();
+            endGate?.ClearKnownRiders();
+
             startLight.SetStartLightColor(StartLightColor.YELLOW);
 
             startGate.AddKnownRiders(riders);

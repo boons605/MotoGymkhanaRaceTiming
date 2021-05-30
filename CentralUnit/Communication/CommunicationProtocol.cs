@@ -284,7 +284,7 @@ namespace Communication
             {
                 Array.Copy(e.Data, 0, this.dataBuffer, this.bufferPosition, this.dataBuffer.Length - this.bufferPosition);
                 this.bufferPosition += this.dataBuffer.Length - this.bufferPosition;
-                Log.Warn($"Data buffer overrun, ignoring {e.Data.Length - (dataBuffer.Length - bufferPosition)} bytes");
+                Log.Warn($"{communicationChannel.Name}: Data buffer overrun, ignoring {e.Data.Length - (dataBuffer.Length - bufferPosition)} bytes");
             }
         }
 
@@ -358,7 +358,7 @@ namespace Communication
         /// <param name="e">The event data.</param>
         private void TimeoutTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Log.Error($"Timeout on data reception, clearing buffer, discarding {bufferPosition} bytes");
+            Log.Error($"{communicationChannel.Name}: Timeout on data reception, clearing buffer, discarding {bufferPosition} bytes");
             this.ClearBufferResetState();
             this.SendPendingCommand();
         }
