@@ -420,6 +420,14 @@ static void ProcessCommand(MGBTCommandData* command)
             lastResponseSent = 1U;
             break;
         }
+        case ClearAllowedDevices:
+        {
+        	ESP_LOGI(AppName, "Clear allowed devices");
+			memcpy(&pendingResponse, command, GetCommandDataSize(command));
+			memset(deviceList, 0U, sizeof(deviceList));
+			lastResponseSent = 1U;
+        	break;
+        }
         case ListAllowedDevices:
         {
             ESP_LOGI(AppName, "List allowed devices");

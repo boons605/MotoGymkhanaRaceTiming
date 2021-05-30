@@ -11,7 +11,7 @@
 #include "esp_gap_ble_api.h"
 #include "esp_ibeacon_api.h"
 
-#define RSSISAMPLES 4
+#define RSSISAMPLES 3
 #define ACTIVEDEVICETIMEOUT 10000
 #define MAXDISTEXPONENT 0.85
 #define DISTANCEENVFACTOR 4

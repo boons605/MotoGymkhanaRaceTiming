@@ -128,9 +128,14 @@ namespace SensorUnits.RiderIdUnit
             GetClosest = 0x0005,
 
             /// <summary>
-            /// Set the start light color
+            /// Set the start light color.
             /// </summary>
-            SetStartColor = 0x0006
+            SetStartColor = 0x0006,
+
+            /// <summary>
+            /// Clear all allowed riders.
+            /// </summary>
+            ClearAllowed = 0x0007
         }
 
         /// <summary>
@@ -164,7 +169,7 @@ namespace SensorUnits.RiderIdUnit
         public void ClearKnownRiders()
         {
             Log.Info($"{this.unitId}: Clearing known riders");
-            this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ListAllowed, 0, new byte[2]));
+            this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ClearAllowed, 0, new byte[2]));
         }
 
         /// <summary>
@@ -281,9 +286,28 @@ namespace SensorUnits.RiderIdUnit
                 case (ushort)BLERiderIDCommands.SetStartColor:
                     this.HandleSetStartColorResponse(packet);
                     break;
+                case (ushort)BLERiderIDCommands.ClearAllowed:
+                    this.HandleClearAllowed(packet);
+                    break;
                 default:
                     Log.Error($"{this.unitId}:Got invalid packet {packet}");
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Handle a 'Clear all allowed' response.
+        /// </summary>
+        /// <param name="packet">The packet to check.</param>
+        private void HandleClearAllowed(CommandData packet)
+        {
+            try
+            {
+                Log.Info($"{this.unitId}: Cleared allowed status {packet.Status}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -479,7 +503,7 @@ namespace SensorUnits.RiderIdUnit
             }
             catch (Exception ex)
             {
-                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command, {packet}", ex);
+                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command", ex);
             }
         }
 
