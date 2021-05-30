@@ -55,13 +55,13 @@ namespace WebPusher
 
         public class RunCommand : CommandBase
         {
-            [Option("Base url for the gymkhana website defaults to https://timing.motogymkhana.nl")]
-            public string WebApiUrl { get; set; } = "https://timing.motogymkhana.nl";
+            [Option(Description = "Base url for the gymkhana website")]
+            public string WebApiUrl { get; set; }
 
-            [Option("Base url for the timing system web api")]
+            [Option(Description = "Base url for the timing system web api")]
             public string TimingUrl { get; set; }
 
-            [Option("Token to be used for authentication to the web api")]
+            [Option(Description ="Token to be used for authentication to the gymkhana website")]
             [Required]
             public string AuthToken { get; set; }
 

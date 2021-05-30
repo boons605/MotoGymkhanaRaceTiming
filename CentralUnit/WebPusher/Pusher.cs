@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using Models;
+using Newtonsoft.Json;
 
 namespace WebPusher
 {
@@ -22,7 +23,7 @@ namespace WebPusher
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="handler">The http client to poll with, if you're mocking pass one with a cutom <see cref="HttpClientHandler"/></param>
+        /// <param name="http">The http client to poll with, if you're mocking pass one with a cutom <see cref="HttpClientHandler"/></param>
         /// <param name="webService">The web service to post updates to</param>
         /// <param name="baseUrl">The root url of the webAPI to get updates from like localhost:4000</param>
         public Pusher(HttpClient http, IWebInterface webService, string baseUrl)
@@ -38,29 +39,39 @@ namespace WebPusher
 
             while(!token.IsCancellationRequested)
             {
-                HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
+                Console.WriteLine("Polling");
 
-                string stateString = await stateResponse.Content.ReadAsStringAsync();
-
-                JObject parsedContent = JObject.Parse(stateString);
-
-                List<(IdEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(IdEvent id, TimingEvent timer)>>();
-
-                foreach((var id, _) in onTrack)
+                try
                 {
-                    await webService.StartLap(id);
+                    HttpResponseMessage stateResponse = await http.GetAsync($"{baseUrl}/racetracking/State");
+                    stateResponse.EnsureSuccessStatusCode();
+
+                    string stateString = await stateResponse.Content.ReadAsStringAsync();
+
+                    JObject parsedContent = JObject.Parse(stateString);
+
+                    List<(IdEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(IdEvent id, TimingEvent timer)>>();
+
+                    foreach ((var id, _) in onTrack)
+                    {
+                        Console.WriteLine($"Starting a new lap for {id.Rider.Name}");
+                        await webService.StartLap(id);
+                    }
+
+                    string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
+                    List<Lap> laps = JsonConvert.DeserializeObject<List<Lap>>(lapsString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+
+                    lapIndex += laps.Count;
+
+                    foreach (Lap lap in laps)
+                    {
+                        Console.WriteLine($"Reporting a new time for {lap.Rider.Name}");
+                        await webService.NewTime(lap);
+                    }
                 }
-
-                string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
-                JObject parsedLaps = JObject.Parse(lapsString);
-
-                List<Lap> laps = parsedLaps.ToObject<List<Lap>>();
-
-                lapIndex += laps.Count;
-
-                foreach(Lap lap in laps)
+                catch (HttpRequestException e)
                 {
-                    await webService.NewTime(lap);
+                    Console.WriteLine($"Polling loop encountered error in http communication: {e.Message}");
                 }
 
                 // lets not DoS the WebAPI

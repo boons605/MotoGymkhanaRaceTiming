@@ -38,7 +38,10 @@ namespace WebAPI
 
             services.AddSingleton<RaceManager>(manager);
 
-            services.AddMvc().AddNewtonsoftJson();
+            services.AddMvc().AddNewtonsoftJson((MvcNewtonsoftJsonOptions opt) =>
+            {
+                opt.SerializerSettings.TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

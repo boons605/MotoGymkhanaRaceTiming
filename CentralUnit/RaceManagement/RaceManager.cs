@@ -49,20 +49,16 @@ namespace RaceManagement
         /// Simulates a race from a json that contains all the race events
         /// </summary>
         /// <param name="simulationData"></param>
-        public void Start(string simulationData)
+        public void Start(RaceSummary simulationData)
         {
             Stop();
 
             XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
-
-            RaceSummary race;
-            using (Stream input = new FileStream(simulationData, FileMode.Open))
-                race = RaceSummary.ReadSummary(input);
             
             //we need the simulation specific methods in the constructor
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(race.StartId, race);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(race.EndId, race);
-            SimulationTimingUnit timingUnit = new SimulationTimingUnit(race);
+            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(simulationData.StartId, simulationData);
+            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(simulationData.EndId, simulationData);
+            SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
             displays.Add(timingUnit);
             startGate = startId;
             endGate = endId;
@@ -72,7 +68,7 @@ namespace RaceManagement
             endId.Initialize();
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, startId, endId, race.Config, race.Riders);
+            tracker = new RaceTracker(timing, startId, endId, simulationData.Config, simulationData.Riders);
             HookEvents(tracker);
 
             var trackTask = tracker.Run(source.Token);
