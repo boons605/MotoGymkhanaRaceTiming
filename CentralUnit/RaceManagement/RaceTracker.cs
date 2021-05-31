@@ -208,6 +208,7 @@ namespace RaceManagement
             {
                 if(waiting)
                 {
+                    Log.Info($"Removing rider {args.Rider} from waiting list.");
                     waitingRiders.Remove(args.Rider.Name);
 
                     if(waitingRiders.Count == 0)
@@ -218,6 +219,7 @@ namespace RaceManagement
 
                 if(onTrack)
                 {
+                    Log.Info($"Removing on track rider {args.Rider} from start device.");
                     startGate.RemoveKnownRider(args.Rider.Name);
                 }            
             }
@@ -306,7 +308,11 @@ namespace RaceManagement
                     {
                         OnStartEmpty?.Invoke(this, EventArgs.Empty);
                     }
-                } //if we dont have a waiting rider, disregard event somebody probably walked through the beam
+                } 
+                else
+                {
+                    Log.Info($"Discarding timestamp from gate {args.GateId} at {args.Microseconds} us");
+                }
             }
             else if (args.GateId == config.EndTimingGateId)
             {
@@ -357,6 +363,8 @@ namespace RaceManagement
             if (onTrackRiders.Contains(raceEvent.RiderName))
             {
                 var onTrack = onTrackRiders.Remove(raceEvent.RiderName);
+
+                Log.Info($"Received DNF event for rider {raceEvent.RiderName}");
 
                 ManualDNFEvent dnf = new ManualDNFEvent(onTrack.id, raceEvent.StaffName);
 
@@ -551,8 +559,8 @@ namespace RaceManagement
 
             //filter out all older events that can never be matched
             //if an event is more than 10 seconds older than its most recently finished counterpart it will never be matched
-            endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
-            endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
+            endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -config.EndMatchTimeout).ToList();
+            endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -config.EndMatchTimeout).ToList();
         }
 
         public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
