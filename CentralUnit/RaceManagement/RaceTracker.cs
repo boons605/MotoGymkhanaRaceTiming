@@ -328,6 +328,7 @@ namespace RaceManagement
                 //if the rider id unit's range is smaller than the stop box, we may receive the rider id later
                 if (closest == null)
                 {
+                    Log.Info($"Queueing timestamp from gate {args.GateId} at {args.Microseconds} us");
                     endTimes.Add(newEvent);
                     return;
                 }
@@ -342,6 +343,7 @@ namespace RaceManagement
 
                 if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
+                    Log.Info($"Matching timestamp from gate {args.GateId} at {args.Microseconds} to rider {closest.Rider}");
                     newEvent.SetRider(closest.Rider);
                     endIds.Remove(closest);
 
@@ -349,6 +351,7 @@ namespace RaceManagement
                 }
                 else
                 {
+                    Log.Info($"Queueing timestamp from gate {args.GateId} at {args.Microseconds} us, since last ID event was more than {config.EndMatchTimeout} seconds ago");
                     endTimes.Add(newEvent);
                 }
             }
