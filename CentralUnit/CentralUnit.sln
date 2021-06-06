@@ -29,7 +29,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebAPI", "WebAPI\WebAPI.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StartLightUnit", "StartLightUnit\StartLightUnit.csproj", "{4916A03E-AF15-4CF0-8B01-0B2A065D0383}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebPusher", "WebPusher\WebPusher.csproj", "{703A1BBD-C394-479F-AB4F-AED38B6DE836}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebPusher", "WebPusher\WebPusher.csproj", "{703A1BBD-C394-479F-AB4F-AED38B6DE836}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
