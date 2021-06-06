@@ -13,7 +13,6 @@ namespace ModelsTests
     public class RaceSummaryTests
     {
         [TestMethod]
-        [Ignore ("New Json constructor of Beacon does some special parsing for the id bytes. Implement reverse method in serialization")]
         public void RaceSummary_ReadAndWrite_ShouldBeSymmetric()
         {
             Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);

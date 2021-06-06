@@ -128,9 +128,14 @@ namespace SensorUnits.RiderIdUnit
             GetClosest = 0x0005,
 
             /// <summary>
-            /// Set the start light color
+            /// Set the start light color.
             /// </summary>
-            SetStartColor = 0x0006
+            SetStartColor = 0x0006,
+
+            /// <summary>
+            /// Clear all allowed riders.
+            /// </summary>
+            ClearAllowed = 0x0007
         }
 
         /// <summary>
@@ -150,10 +155,18 @@ namespace SensorUnits.RiderIdUnit
                 {
                     if (!this.knownRiders.Any(rid => rid.Name == rider.Name))
                     {
-                        Log.Info($"{this.unitId}: Adding known rider {rider}");
+                        Log.Info($"{this.unitId}: Adding new known rider {rider}");
                         this.knownRiders.Add(rider);
                         this.commandQueue.Enqueue(this.GenerateAddRiderCommand(rider.Beacon));
                     }
+                    else
+                    {
+                        Log.Info($"{this.unitId}: Known rider {rider} already exists");
+                    }
+                }
+                else
+                {
+                    Log.Warn($"{this.unitId}: Can't add rider {rider} without a beacon");
                 }
             }
         }
@@ -163,7 +176,8 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public void ClearKnownRiders()
         {
-            this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ListAllowed, 0, new byte[2]));
+            Log.Info($"{this.unitId}: Clearing known riders");
+            this.commandQueue.Enqueue(new CommandData((ushort)BLERiderIDCommands.ClearAllowed, 0, new byte[2]));
         }
 
         /// <summary>
@@ -177,6 +191,10 @@ namespace SensorUnits.RiderIdUnit
                 Rider r = this.knownRiders.First(rid => rid.Name == name);
                 Log.Info($"{this.unitId}: Removing known rider {r}");
                 this.commandQueue.Enqueue(this.GenerateRemoveRiderCommand(r.Beacon));
+            }
+            else
+            {
+                Log.Warn($"{this.unitId}: Can not remove rider with name {name}, it does not exist");
             }
         }
 
@@ -280,9 +298,37 @@ namespace SensorUnits.RiderIdUnit
                 case (ushort)BLERiderIDCommands.SetStartColor:
                     this.HandleSetStartColorResponse(packet);
                     break;
+                case (ushort)BLERiderIDCommands.ClearAllowed:
+                    this.HandleClearAllowed(packet);
+                    break;
                 default:
                     Log.Error($"{this.unitId}:Got invalid packet {packet}");
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Handle a 'Clear all allowed' response.
+        /// </summary>
+        /// <param name="packet">The packet to check.</param>
+        private void HandleClearAllowed(CommandData packet)
+        {
+            try
+            {
+                if (packet.Status == 0)
+                {
+                    Log.Info($"{this.unitId}: Cleared allowed");
+                    this.knownRiders.Clear();
+                }
+                else
+                {
+                    Log.Warn($"{this.unitId}: Failure while clearing known riders, got packet status {packet.Status}");
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -416,7 +462,7 @@ namespace SensorUnits.RiderIdUnit
                 List<Beacon> beacons = RiderIdUnit.RiderIDCommandDataParser.ParseClosestDeviceResponse(packet.Status, packet.Data);
                 foreach (Beacon b in beacons)
                 {
-                    if (!b.Equals(this.closestRider))
+                    if (!b.Equals(this.closestRider?.Beacon))
                     {
                         Log.Info($"{this.unitId}: Got closest device: {b}");
                     }
@@ -494,16 +540,25 @@ namespace SensorUnits.RiderIdUnit
 
                 if (packet.Status == 0)
                 {
+                    Log.Info($"{this.unitId}: Succesfully removed Beacon {receivedBeacon}");
                     this.knownRiders.RemoveAll(rid => rid.Beacon.Equals(receivedBeacon));
                 }
                 else
                 {
-                    Log.Warn($"{this.unitId}:Failure while removing rider");
+                    switch (packet.Status)
+                    {
+                        case (ushort)0xFFFFU:
+                            Log.Warn($"{this.unitId}: Failure while removing rider with beacon {receivedBeacon}, device not found");
+                            break;
+                        default:
+                            Log.Warn($"{this.unitId}: Failure while removing rider, got packet status {packet.Status}");
+                            break;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"{this.unitId}:Received bad response for {packet.CommandType} command", ex);
+                Log.Error($"{this.unitId}: Received bad response for {packet.CommandType} command", ex);
             }
         }
 
@@ -521,12 +576,29 @@ namespace SensorUnits.RiderIdUnit
                 {
                     if (this.knownRiders.Any(rid => rid.Beacon.Equals(receivedBeacon)))
                     {
-                        Log.Info($"{this.unitId}:Successfully added rider {this.knownRiders.First(rid => rid.Beacon.Equals(receivedBeacon)).Name} with beacon {receivedBeacon}");
+                        Log.Info($"{this.unitId}: Successfully added rider {this.knownRiders.First(rid => rid.Beacon.Equals(receivedBeacon)).Name} with beacon {receivedBeacon}");
+                    }
+                    else
+                    {
+                        Log.Warn($"{this.unitId}: Successfully added beacon {receivedBeacon}, but no rider was found with that beacon. Sending remove command");
+                        this.commandQueue.Enqueue(this.GenerateRemoveRiderCommand(receivedBeacon));
                     }
                 }
                 else
                 {
-                    Log.Warn($"{this.unitId}:Failure while adding rider");
+                    switch (packet.Status)
+                    {
+                        case (ushort)0xFFFFU:
+                            Log.Warn($"{this.unitId}: Failure while adding rider with beacon {receivedBeacon}, device already exists");
+                            break;
+                        case (ushort)0xFFFEU:
+                            Log.Warn($"{this.unitId}: Failure while adding rider with beacon {receivedBeacon}, maximum number of devices reached");
+                            break;
+                        default:
+                            Log.Warn($"{this.unitId}: Failure while adding rider, got packet status {packet.Status}");
+                            break;
+                    }
+                    
                 }
             }
             catch (Exception ex)

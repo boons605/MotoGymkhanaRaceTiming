@@ -2,10 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Models;
 using Models.Config;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RaceManagement;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace WebAPI.Controllers
 {
@@ -56,7 +59,7 @@ namespace WebAPI.Controllers
         [Route("[controller]/Laps")]
         public JsonResult GetLaps(int start = 0)
         {
-            return new JsonResult(JArray.FromObject(manager.GetLapTimes(start)));
+            return new JsonResult(manager.GetLapTimes(start), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All});
         }
 
         [HttpGet]
@@ -72,6 +75,20 @@ namespace WebAPI.Controllers
         {
             manager.Start(config, new List<Rider>());
 
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/Simulate")]
+        public StatusCodeResult Simulate([FromBody] JObject summary)
+        {
+            byte[] text = Encoding.UTF8.GetBytes(summary.ToString());
+            RaceSummary parsed;
+            using (MemoryStream stream = new MemoryStream(text))
+            {
+                parsed = RaceSummary.ReadSummary(stream);
+            }
+            manager.Start(parsed);
             return new StatusCodeResult(200);
         }
 

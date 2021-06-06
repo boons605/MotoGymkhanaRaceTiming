@@ -37,10 +37,10 @@ namespace SensorUnits.RiderIdUnit
 
             if (status == 0)
             {
-                CheckDataInput(data, 12);
-
                 try
                 {
+                    CheckDataInput(data, 12);
+
                     var reader = new BinaryReader(new MemoryStream(data));
 
                     while (reader.BaseStream.Position < reader.BaseStream.Length)
@@ -75,10 +75,10 @@ namespace SensorUnits.RiderIdUnit
         {
             Beacon beacon = null;
 
-            CheckDataInput(data, 8);
-
             try
             {
+                CheckDataInput(data, 8);
+
                 var reader = new BinaryReader(new MemoryStream(data));
 
                 while (reader.BaseStream.Position < reader.BaseStream.Length)

@@ -25,17 +25,17 @@ namespace SensorUnits.RiderIdUnit
 
         public void AddKnownRiders(List<Rider> riders)
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public void ClearKnownRiders()
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public void RemoveKnownRider(string name)
         {
-            throw new NotImplementedException();
+            //do nothing
         }
 
         public override void Initialize()

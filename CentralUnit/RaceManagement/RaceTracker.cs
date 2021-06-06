@@ -208,6 +208,7 @@ namespace RaceManagement
             {
                 if(waiting)
                 {
+                    Log.Info($"Removing rider {args.Rider} from waiting list.");
                     waitingRiders.Remove(args.Rider.Name);
 
                     if(waitingRiders.Count == 0)
@@ -218,6 +219,7 @@ namespace RaceManagement
 
                 if(onTrack)
                 {
+                    Log.Info($"Removing on track rider {args.Rider} from start device.");
                     startGate.RemoveKnownRider(args.Rider.Name);
                 }            
             }
@@ -237,6 +239,7 @@ namespace RaceManagement
                 //if we receive an end id for a rider that is not on track ignore it
                 if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
                 {
+                    Log.Warn($"Ignoring end ID for rider {args.Rider}, since rider is not on track");
                     return;
                 }
 
@@ -247,6 +250,7 @@ namespace RaceManagement
                 //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
                 if (closest == null)
                 {
+                    Log.Warn($"Queueing end ID for rider {args.Rider}, since no timing event is in queue");
                     endIds.Add(newEvent);
                     return;
                 }
@@ -261,6 +265,7 @@ namespace RaceManagement
 
                 if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
+                    Log.Info($"Matching timestamp from gate {closest.GateId} at {closest.Microseconds} to rider {newEvent.Rider}");
                     closest.SetRider(newEvent.Rider);
                     endTimes.Remove(closest);
 
@@ -268,6 +273,7 @@ namespace RaceManagement
                 }
                 else
                 {
+                    Log.Info($"Queueing end ID for rider {args.Rider}, since last timing event is more than {config.EndMatchTimeout} seconds ago");
                     endIds.Add(newEvent);
                 }
             }
@@ -290,7 +296,7 @@ namespace RaceManagement
                     IdEvent rider = waitingRiders.Dequeue();
 
                     TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
-
+                    Log.Info($"Rider {rider.Rider} is now on track with timestamp {args.Microseconds}");
                     onTrackRiders.Enqueue((rider, newEvent));
                     raceState.Enqueue(newEvent);
 
@@ -306,7 +312,11 @@ namespace RaceManagement
                     {
                         OnStartEmpty?.Invoke(this, EventArgs.Empty);
                     }
-                } //if we dont have a waiting rider, disregard event somebody probably walked through the beam
+                } 
+                else
+                {
+                    Log.Info($"Discarding timestamp from gate {args.GateId} at {args.Microseconds} us");
+                }
             }
             else if (args.GateId == config.EndTimingGateId)
             {
@@ -322,6 +332,7 @@ namespace RaceManagement
                 //if the rider id unit's range is smaller than the stop box, we may receive the rider id later
                 if (closest == null)
                 {
+                    Log.Info($"Queueing timestamp from gate {args.GateId} at {args.Microseconds} us");
                     endTimes.Add(newEvent);
                     return;
                 }
@@ -336,6 +347,7 @@ namespace RaceManagement
 
                 if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
+                    Log.Info($"Matching timestamp from gate {args.GateId} at {args.Microseconds} to rider {closest.Rider}");
                     newEvent.SetRider(closest.Rider);
                     endIds.Remove(closest);
 
@@ -343,6 +355,7 @@ namespace RaceManagement
                 }
                 else
                 {
+                    Log.Info($"Queueing timestamp from gate {args.GateId} at {args.Microseconds} us, since last ID event with rider {closest.Rider} was more than {config.EndMatchTimeout} seconds ago");
                     endTimes.Add(newEvent);
                 }
             }
@@ -357,6 +370,8 @@ namespace RaceManagement
             if (onTrackRiders.Contains(raceEvent.RiderName))
             {
                 var onTrack = onTrackRiders.Remove(raceEvent.RiderName);
+
+                Log.Info($"Received DNF event for rider {raceEvent.RiderName}");
 
                 ManualDNFEvent dnf = new ManualDNFEvent(onTrack.id, raceEvent.StaffName);
 
@@ -551,8 +566,8 @@ namespace RaceManagement
 
             //filter out all older events that can never be matched
             //if an event is more than 10 seconds older than its most recently finished counterpart it will never be matched
-            endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -10).ToList();
-            endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -10).ToList();
+            endIds = endIds.Where(e => (e.Time - finish.TimeEnd.Time).TotalSeconds > -config.EndMatchTimeout).ToList();
+            endTimes = endTimes.Where(e => (e.Time - finish.Left.Time).TotalSeconds > -config.EndMatchTimeout).ToList();
         }
 
         public void AddEvent<T>(T manualEvent) where T : ManualEventArgs

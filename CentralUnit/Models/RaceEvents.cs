@@ -78,8 +78,8 @@ namespace Models
         /// </summary>
         public readonly IdEvent Left;
 
-        public FinishedEvent(IdEvent entered, TimingEvent timeStart, TimingEvent timeEnd, IdEvent left)
-            : base(timeEnd.Time, timeEnd.Rider, Guid.NewGuid())
+        public FinishedEvent(IdEvent entered, TimingEvent timeStart, TimingEvent timeEnd, IdEvent left, Guid eventId = new Guid())
+            : base(timeEnd.Time, timeEnd.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
         {
             Entered = entered;
             TimeStart = timeStart;
@@ -96,8 +96,8 @@ namespace Models
         public readonly string UnitId;
         public readonly Direction IdType;
 
-        public IdEvent(DateTime time, Rider rider, string unitId, Direction idType)
-            : base(time, rider, Guid.NewGuid()) 
+        public IdEvent(DateTime time, Rider rider, string unitId, Direction idType, Guid eventId = new Guid())
+            : base(time, rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId) 
         {
             UnitId = unitId;
             IdType = idType;
@@ -119,7 +119,8 @@ namespace Models
         /// </summary>
         public readonly int GateId;
 
-        public TimingEvent(DateTime time, Rider rider, long microseconds, int gateId) : base(time, rider, Guid.NewGuid())
+        public TimingEvent(DateTime time, Rider rider, long microseconds, int gateId, Guid eventId = new Guid()) 
+            : base(time, rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
         {
             Microseconds = microseconds;
             GateId = gateId;
@@ -151,8 +152,8 @@ namespace Models
         /// </summary>
         public readonly IdEvent ThisRider;
 
-        public UnitDNFEvent(FinishedEvent otherRider, IdEvent thisRider)
-            : base(otherRider.Time, thisRider.Rider, Guid.NewGuid())
+        public UnitDNFEvent(FinishedEvent otherRider, IdEvent thisRider, Guid eventId = new Guid())
+            : base(otherRider.Time, thisRider.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
         {
             OtherRider = otherRider;
             ThisRider = thisRider;
@@ -167,8 +168,8 @@ namespace Models
         /// </summary>
         public readonly IdEvent ThisRider;
 
-        public ManualDNFEvent(IdEvent started, string staffName) 
-            : base(started.Time, started.Rider, Guid.NewGuid(), staffName)
+        public ManualDNFEvent(IdEvent started, string staffName, Guid eventId = new Guid()) 
+            : base(started.Time, started.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
         {
         }
     }
@@ -181,8 +182,8 @@ namespace Models
     {
         public readonly string Reason;
 
-        public DSQEvent(DateTime time, Rider rider, string staffName, string reason) 
-            : base(time, rider, Guid.NewGuid(), staffName)
+        public DSQEvent(DateTime time, Rider rider, string staffName, string reason, Guid eventId = new Guid()) 
+            : base(time, rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
         {
             Reason = reason;
         }
@@ -193,8 +194,8 @@ namespace Models
         public readonly string Reason;
         public readonly int Seconds;
 
-        public PenaltyEvent(DateTime time, Rider rider, string reason, int seconds, string staffName) 
-            : base(time, rider, Guid.NewGuid(), staffName)
+        public PenaltyEvent(DateTime time, Rider rider, string reason, int seconds, string staffName, Guid eventId = new Guid()) 
+            : base(time, rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
         {
             Reason = reason;
             Seconds = seconds;
