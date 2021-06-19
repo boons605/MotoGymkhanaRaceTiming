@@ -59,14 +59,44 @@ namespace WebAPI.Controllers
         [Route("[controller]/Laps")]
         public JsonResult GetLaps(int start = 0)
         {
-            return new JsonResult(manager.GetLapTimes(start), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All});
+            if (manager.HasState)
+            {
+                return new JsonResult(manager.GetLapTimes(start), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+            }
+            else
+            {
+                JObject body = new JObject
+                {
+                    { "Error", "Race tracking is not running. Provide a config first" }
+                };
+
+                JsonResult response = new JsonResult(body);
+                response.StatusCode = 500;
+
+                return response;
+            }
         }
 
         [HttpGet]
         [Route("[controller]/BestLapsByRider")]
         public JsonResult GetLapsByRider()
         {
-            return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
+            if (manager.HasState)
+            {
+                return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
+            }
+            else
+            {
+                JObject body = new JObject
+                {
+                    { "Error", "Race tracking is not running. Provide a config first" }
+                };
+
+                JsonResult response = new JsonResult(body);
+                response.StatusCode = 500;
+
+                return response;
+            }
         }
 
         [HttpPost]
