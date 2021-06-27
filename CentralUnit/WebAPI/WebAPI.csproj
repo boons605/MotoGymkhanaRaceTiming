@@ -7,14 +7,26 @@
 
   <ItemGroup>
     <None Remove="logConfig.xml" />
-    <None Remove="StaticFiles\test.js" />
+    <None Remove="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css" />
+    <None Remove="StaticFiles\bootstrap\3.7.7\js\bootstrap.min.js.js" />
+    <None Remove="StaticFiles\schep.jpg" />
+    <None Remove="StaticFiles\timingInterface.js" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="logConfig.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="StaticFiles\test.js">
+    <Content Include="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StaticFiles\bootstrap\3.7.7\js\bootstrap.min.js.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StaticFiles\schep.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StaticFiles\timingInterface.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
