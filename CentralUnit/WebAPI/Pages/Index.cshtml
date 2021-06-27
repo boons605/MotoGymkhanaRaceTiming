@@ -2,6 +2,125 @@
 @model WebAPI.Pages.IndexModel
 @{
 }
-<h1>
-    Test Page 1
-</h1>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <title>
+        Race Manager
+    </title>
+
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!--<script src="~/Pages/timingInterface.js"></script>-->
+
+    <script>
+        function refrPage() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState === 4 && this.status === 200) {
+
+                    var text = this.responseText;
+                    var obj = JSON.parse(text);
+                    var waiting = obj.waiting;
+                    var onTrack = obj.onTrack;
+
+                    document.getElementById("waiting").innerHTML = "";
+                    var waitingTxt = "";
+
+                    if (waiting.length > 0) {
+                        waiting.forEach((element) => { waitingTxt += element["Rider"]["Beacon"]["Identifier"] + ": " + element["Rider"]["Name"] + ";<br>"; })
+                    }
+                    else {
+                        waitingTxt = "-";
+                    }
+
+                    document.getElementById("waiting").innerHTML = "<p>" + waitingTxt + "</p>";
+
+
+                    document.getElementById("track").innerHTML = "";
+                    var trackTxt = "";
+
+                    if(onTrack.length > 0) {
+                        onTrack.forEach((element) => { trackTxt += element["Item1"]["Rider"]["Beacon"]["Identifier"] + ": " + element["Item1"]["Rider"]["Name"] + ";<br>"; })
+                    }
+                    else {
+                        trackTxt = "-";
+                    }
+
+                    document.getElementById("track").innerHTML = "<p>" + trackTxt + "</p>";
+
+
+
+                }
+            };
+            xhttp.open("GET", "https://localhost:44330/racetracking/State", true);
+            xhttp.send();
+
+
+
+            var xhttp1 = new XMLHttpRequest();
+            xhttp1.onreadystatechange = function () {
+                if (this.readyState === 4 && this.status === 200) {
+                    var text = this.responseText;
+                    var obj = JSON.parse(text);
+                    var results = obj.$values;
+
+                    document.getElementById("times").innerHTML = "";
+                    var timesTxt = "";
+
+                    if (results.length > 0) {
+                        results.forEach((element) => { timesTxt += element["End"]["LapTime"] + ";<br>"; })
+                    }
+
+                    document.getElementById("times").innerHTML = timesTxt;
+                }
+            };
+            xhttp1.open("GET", "https://localhost:44330/racetracking/Laps", true);
+            xhttp1.send();
+        }
+    </script>
+
+</head>
+
+<body>
+
+
+    <h1>
+        Race Manager
+    </h1>
+
+    <!-- Waarom werkt dit niet??
+    <img src="https://localhost:44330/Pages/schep.jpg" alt="Schep" />
+    -->
+
+
+    <h3>In startvak</h3>
+    <div id="waiting"></div>
+
+    <h3>Op de baan</h3>
+    <div id="track"></div>
+
+    <h3>Tijden</h3>
+    <div id="times"></div>
+
+
+
+
+    <script>
+
+        // Refresh every xxx milliseconds:
+        var intervalId = window.setInterval(function () {
+            refrPage();
+        }, 1000);
+
+    </script>
+
+</body>
+</html>
