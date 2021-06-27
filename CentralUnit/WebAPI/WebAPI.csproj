@@ -7,10 +7,14 @@
 
   <ItemGroup>
     <None Remove="logConfig.xml" />
+    <None Remove="StaticFiles\test.js" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="logConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StaticFiles\test.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -22,10 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\RaceManagement\RaceManagement.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="StaticFiles\" />
   </ItemGroup>
 
 
