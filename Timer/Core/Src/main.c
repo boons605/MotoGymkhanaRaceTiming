@@ -146,15 +146,15 @@ int main(void)
             ppsTick = 0U;
         }
 
-        if (enableDisplayLines != 0U)
+        if(enableDisplayLines != 0U)
         {
-        	LL_GPIO_SetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
-        	LL_GPIO_SetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
+            LL_GPIO_SetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
+            LL_GPIO_SetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
         }
         else
         {
-        	LL_GPIO_ResetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
-        	LL_GPIO_ResetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
+            LL_GPIO_ResetOutputPin(DisplayLine1Ena_GPIO_Port, DisplayLine1Ena_Pin);
+            LL_GPIO_ResetOutputPin(DisplayLine2Ena_GPIO_Port, DisplayLine2Ena_Pin);
         }
 
         if(autoConfigurationDone == 0U)
