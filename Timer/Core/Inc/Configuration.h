@@ -45,6 +45,7 @@ extern SensorModes sensorMode;
 extern uint8_t autoConfigurationDone;
 extern uint8_t enableDisplayLines;
 extern uint8_t displayLines;
+extern uint8_t displayLineMode;
 
 void RunAutoConfiguration(void);
 uint8_t RTCInitSuccesful(void);
