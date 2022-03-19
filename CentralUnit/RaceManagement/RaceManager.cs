@@ -164,7 +164,15 @@ namespace RaceManagement
             displays.Clear();
         }
 
+        /// <summary>
+        /// Gets a summary of the current state of the race
+        /// </summary>
         public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
+
+        /// <summary>
+        /// Get the beacons currently detected by the start and end id units
+        /// </summary>
+        public (List<Beacon> startBeacons, List<Beacon> endBeacons) GetBeacons => (startGate.Beacons, endGate.Beacons);
 
         /// <summary>
         /// Returns all lap times driven so far

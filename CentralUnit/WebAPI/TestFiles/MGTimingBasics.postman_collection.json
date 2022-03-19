@@ -233,7 +233,7 @@
 	"variable": [
 		{
 			"key": "WebServerAddr",
-			"value": "172.23.186.183"
+			"value": "localhost:56781"
 		}
 	]
 }

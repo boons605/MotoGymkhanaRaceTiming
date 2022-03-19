@@ -143,6 +143,8 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public string UnitId => this.unitId;
 
+        public List<Beacon> Beacons => this.foundBeacons;
+
         /// <summary>
         /// Add a list of known <see cref="Rider"/> object.
         /// </summary>
