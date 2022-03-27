@@ -272,7 +272,20 @@ namespace SensorUnits.RiderIdUnit
                 this.OnThreadException(ex);
             }
 
-            Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId}");
+            if (this.cancellationToken.IsCancellationRequested)
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} because cancellation was requested");
+            }
+            else if (!this.keepEventThreadAlive)
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} because event thread was not kept alive");
+            }
+            else
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} for other reasons");
+            }
+
+            
         }
 
         /// <inheritdoc/>
