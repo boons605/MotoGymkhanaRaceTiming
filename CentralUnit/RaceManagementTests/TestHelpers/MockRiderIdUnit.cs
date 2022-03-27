@@ -13,7 +13,7 @@ namespace RaceManagementTests.TestHelpers
     {
         public string UnitId { get; private set; }
 
-        public List<Beacon> Beacons => new List<Beacon>();
+        public Beacon Closest => new Beacon(new byte[] { 0, 0, 0, 0, 0, 0 }, 0);
 
         public event EventHandler<RiderIdEventArgs> OnRiderId;
         public event EventHandler<RiderIdEventArgs> OnRiderExit;

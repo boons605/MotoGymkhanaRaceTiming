@@ -61,10 +61,17 @@ namespace WebAPI.Controllers
             if (manager.HasState)
             {
                 JObject result = new JObject();
-                (List<Beacon> start, List<Beacon> end) = manager.GetBeacons;
+                (Beacon start, Beacon end) = manager.GetBeacons;
 
-                result["start"] = JArray.FromObject(start);
-                result["end"] = JArray.FromObject(end);
+                if (start != null)
+                {
+                    result["start"] = JObject.FromObject(start);
+                }
+
+                if (end != null)
+                {
+                    result["end"] = JObject.FromObject(end);
+                }
 
                 return new JsonResult(result);
             }

@@ -157,18 +157,15 @@
             xhttp1.send();
 
 
-            var parseBeacon = function (beacons) {
+            var parseBeacon = function (beacon) {
                 var result = "";
 
-                if (beacons.length > 0) {
-                    beacons.forEach((element) => {
-
-                        result += element["Identifier"]
-                            + ", Power: "
-                            + element["MeasuredPower"]
-                            + ", Distance: "
-                            + element["Distance"] + ";<br>";
-                    })
+                if (beacon) {
+                    result += beacon["Identifier"]
+                        + ", Power: "
+                        + beacon["MeasuredPower"]
+                        + ", Distance: "
+                        + beacon["Distance"] + ";<br>";
                 }
 
                 return result;

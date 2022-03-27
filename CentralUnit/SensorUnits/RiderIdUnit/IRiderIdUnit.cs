@@ -42,8 +42,8 @@ namespace SensorUnits.RiderIdUnit
         void RemoveKnownRider(string name);
 
         /// <summary>
-        /// Return the list of id beacons in range
+        /// Return the closest beacon at this time
         /// </summary>
-        List<Beacon> Beacons { get; }
+        Beacon Closest { get; }
     }
 }

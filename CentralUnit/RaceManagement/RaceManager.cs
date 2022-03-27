@@ -172,7 +172,7 @@ namespace RaceManagement
         /// <summary>
         /// Get the beacons currently detected by the start and end id units
         /// </summary>
-        public (List<Beacon> startBeacons, List<Beacon> endBeacons) GetBeacons => (startGate?.Beacons ?? new List<Beacon>(), endGate?.Beacons ?? new List<Beacon>());
+        public (Beacon startBeacons, Beacon endBeacons) GetBeacons => (startGate?.Closest, endGate?.Closest);
 
         /// <summary>
         /// Returns all lap times driven so far
