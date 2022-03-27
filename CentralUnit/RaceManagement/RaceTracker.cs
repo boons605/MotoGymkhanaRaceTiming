@@ -131,37 +131,55 @@ namespace RaceManagement
 
             return Task.Run(() =>
             {
-                while (!(token.IsCancellationRequested && toProcess.Count == 0))
+                try
                 {
-                    if (toProcess.TryDequeue(out EventArgs e))
+                    while (!(token.IsCancellationRequested && toProcess.Count == 0))
                     {
-                        switch (e)
+                        if (toProcess.TryDequeue(out EventArgs e))
                         {
-                            case RiderIdEventArgs rider when rider.UnitId == startGate.UnitId:
-                                OnStartId(rider);
-                                break;
-                            case RiderIdEventArgs rider when rider.UnitId == endGate.UnitId:
-                                OnEndId(rider);
-                                break;
-                            case TimingTriggeredEventArgs time:
-                                OnTimer(time);
-                                break;
-                            case PenaltyEventArgs penalty:
-                                OnPenalty(penalty);
-                                break;
-                            case DSQEventArgs dsq:
-                                OnDSQ(dsq);
-                                break;
-                            case ManualDNFEventArgs dnf:
-                                OnManualDNF(dnf);
-                                break;
-                            default:
-                                throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                            switch (e)
+                            {
+                                case RiderIdEventArgs rider when rider.UnitId == startGate.UnitId:
+                                    OnStartId(rider);
+                                    break;
+                                case RiderIdEventArgs rider when rider.UnitId == endGate.UnitId:
+                                    OnEndId(rider);
+                                    break;
+                                case TimingTriggeredEventArgs time:
+                                    OnTimer(time);
+                                    break;
+                                case PenaltyEventArgs penalty:
+                                    OnPenalty(penalty);
+                                    break;
+                                case DSQEventArgs dsq:
+                                    OnDSQ(dsq);
+                                    break;
+                                case ManualDNFEventArgs dnf:
+                                    OnManualDNF(dnf);
+                                    break;
+                                default:
+                                    throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                            }
                         }
                     }
+
+                    if (token.IsCancellationRequested)
+                    {
+                        Log.Info($"RaceTracker thread ended because cancellation was requested");
+                    }
+                    else
+                    {
+                        Log.Info($"RaceTracker thread ended for other reasons");
+                    }
+
+                    return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Exception in RaceTracker task: {ex.Message}", ex);
                 }
 
-                return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
+                return new RaceSummary();
             });
         }
 
