@@ -30,12 +30,22 @@
                     var obj = JSON.parse(text);
                     var waiting = obj.waiting;
                     var onTrack = obj.onTrack;
+                    var unmatchedIds = obj.unmatchedEndIds;
+                    var unmatchedTimes = obj.unmatchedEndTimes
+
 
                     document.getElementById("waiting").innerHTML = "";
                     var waitingTxt = "";
 
                     if (waiting.length > 0) {
-                        waiting.forEach((element) => { waitingTxt += element["Rider"]["Beacon"]["Identifier"] + ": " + element["Rider"]["Name"] + ";<br>"; })
+                        waiting.forEach((element) => {
+                            waitingTxt += element["Rider"]["Beacon"]["Identifier"] + ": "
+                                + element["Rider"]["Name"]
+                                + ", Power: "
+                                + element["Rider"]["Beacon"]["MeasuredPower"]
+                                + ", Distance: "
+                                + element["Rider"]["Beacon"]["Distance"] + ";<br>";
+                        })
                     }
                     else {
                         waitingTxt = "-";
@@ -56,14 +66,53 @@
 
                     document.getElementById("track").innerHTML = "<p>" + trackTxt + "</p>";
 
+                    document.getElementById("unmatchedIds").innerHTML = "";
+                    unmatchedIdText = "";
 
+                    if (unmatchedIds.length > 0) {
+                        unmatchedIds.forEach((element) => {
+                            unmatchedIdText += element["Rider"]["Beacon"]["Identifier"] + ": "
+                                + element["Rider"]["Name"]
+                                + ", Power: "
+                                + element["Rider"]["Beacon"]["MeasuredPower"]
+                                + ", Distance: "
+                                + element["Rider"]["Beacon"]["Distance"] + ";<br>";
+                        })
+                    }
+                    else {
+                        unmatchedIdText = "-"
+                    }
+
+                    document.getElementById("unmatchedIds").innerHTML = "<p>" + unmatchedIdText + "</p>";
+
+                    document.getElementById("unmatchedTimes").innerHTML = "";
+                    unmatchedTimesText = "";
+
+                    if (unmatchedTimes.length > 0) {
+                        unmatchedTimes.forEach((element) => {
+
+                            var totalMicroseconds = parseInt(element["Microseconds"]);
+
+                            var totalSpan = new TimeSpan(totalMicroseconds);
+
+                            totalTime = totalSpan.GetMinutes() + ":" + totalSpan.GetSeconds() + ":" + totalSpan.GetMilliseconds();
+
+                            unmatchedTimesText += "Gate: " + element["GateId"]
+                                + ", Timer value: "
+                                + totalTime
+                                + ";<br>";
+                        })
+                    }
+                    else {
+                        unmatchedTimesText = "-"
+                    }
+
+                    document.getElementById("unmatchedTimes").innerHTML = "<p>" + unmatchedTimesText + "</p>";
 
                 }
             };
-            xhttp.open("GET", "https://localhost:44330/racetracking/State", true);
+            xhttp.open("GET", "/racetracking/State", true);
             xhttp.send();
-
-
 
             var xhttp1 = new XMLHttpRequest();
             xhttp1.onreadystatechange = function () {
@@ -76,14 +125,76 @@
                     var timesTxt = "";
 
                     if (results.length > 0) {
-                        results.forEach((element) => { timesTxt += element["End"]["LapTime"] + ";<br>"; })
+                        results.forEach((element) => {
+                            var lapTime;
+                            if (element["End"]["LapTime"] !== undefined) {
+                                var lapMicroseconds = parseInt(element["End"]["LapTime"]);
+
+                                var lapSpan = new TimeSpan(lapMicroseconds);
+
+                                lapTime = lapSpan.GetMinutes() + ":" + lapSpan.GetSeconds() + ":" + lapSpan.GetMilliseconds();
+                            }
+                            else {
+                                lapTime = "DNF"
+                            }
+
+                            var rider = element["Rider"]["Beacon"]["Identifier"] + ": "+ element["Rider"]["Name"]
+
+                            timesTxt += rider
+                                + ", Time: "
+                                + lapTime
+                                + ", Power: "
+                                + element["Rider"]["Beacon"]["MeasuredPower"]
+                                + ", Distance: "
+                                + element["Rider"]["Beacon"]["Distance"] + ";<br>";
+                        })
                     }
 
                     document.getElementById("times").innerHTML = timesTxt;
                 }
             };
-            xhttp1.open("GET", "https://localhost:44330/racetracking/Laps", true);
+            xhttp1.open("GET", "/racetracking/Laps", true);
             xhttp1.send();
+
+
+            var parseBeacon = function (beacons) {
+                var result = "";
+
+                if (beacons.length > 0) {
+                    beacons.forEach((element) => {
+
+                        result += element["Identifier"]
+                            + ", Power: "
+                            + element["MeasuredPower"]
+                            + ", Distance: "
+                            + element["Distance"] + ";<br>";
+                    })
+                }
+
+                return result;
+            }
+
+            var beaconsRequest = new XMLHttpRequest();
+            beaconsRequest.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status === 200) {
+                    var text = this.responseText;
+                    var obj = JSON.parse(text);
+                    var startBeacons = obj.start;
+                    var endBeacons = obj.end;
+
+                    document.getElementById("startBeacons").innerHTML = "";
+                    var startText = parseBeacon(startBeacons);
+
+                    document.getElementById("startBeacons").innerHTML = startText;
+
+                    document.getElementById("endBeacons").innerHTML = "";
+                    var endText = parseBeacon(endBeacons);
+
+                    document.getElementById("endBeacons").innerHTML = endText;
+                }
+            }
+            beaconsRequest.open("GET", "/racetracking/Beacons", true);
+            beaconsRequest.send();
         }
     </script>
 
@@ -96,8 +207,17 @@
         Race Manager
     </h1>
 
-    <img src="~/StaticFiles/schep.jpg" alt="Schep" />
+    <h3>Beacons voor start gate</h3>
+    <div id="startBeacons"></div>
 
+    <h3>Beacons voor end gate</h3>
+    <div id="endBeacons"></div>
+
+    <h3>Losse ids</h3>
+    <div id="unmatchedIds"></div>
+
+    <h3>Losse times</h3>
+    <div id="unmatchedTimes"></div>
 
     <h3>In startvak</h3>
     <div id="waiting"></div>
@@ -107,8 +227,6 @@
 
     <h3>Tijden</h3>
     <div id="times"></div>
-
-
 
 
     <script>
