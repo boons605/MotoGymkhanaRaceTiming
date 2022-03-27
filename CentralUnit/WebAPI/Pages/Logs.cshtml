@@ -1,0 +1,66 @@
+﻿@page
+@model WebAPI.Pages.LogsModel
+@{
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>
+        Logs
+    </title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="~/StaticFiles/bootstrap/3.7.7/css/bootstrap.min.css">
+    <script src="~/StaticFiles/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="~/StaticFiles/bootstrap/3.7.7/js/bootstrap.min.js.js"></script>
+    <script src="~/StaticFiles/timingInterface.js"></script>
+
+    <script>
+        function refrPage() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState === 4 && this.status === 200) {
+
+                    var text = this.responseText;
+                    var obj = JSON.parse(text);
+
+                    document.getElementById("lines").innerHTML = "";
+                    var lines = "";
+
+                    if (obj.length > 0) {
+                        obj.forEach((element) => {
+                            lines += element + "<br>";
+                        })
+                    }
+                    else {
+                        lines = "-";
+                    }
+
+                    document.getElementById("lines").innerHTML = "<p>" + lines + "</p>";
+                }
+            };
+            xhttp.open("GET", "http://localhost:56781/management/LogEntries", true);
+            xhttp.send();
+        }
+    </script>
+</head>
+
+<body>
+    <h1>
+        Logs
+    </h1>
+
+    <div id="lines"></div>
+
+    <script>
+
+        // Refresh every xxx milliseconds:
+        var intervalId = window.setInterval(function () {
+            refrPage();
+        }, 1000);
+
+    </script>
+</body>
+</html>

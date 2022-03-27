@@ -8,11 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
 using Models;
 using Models.Config;
 using SensorUnits.RiderIdUnit;
 using SensorUnits.TimingUnit;
+using log4net;
 
 namespace RaceManagement
 {

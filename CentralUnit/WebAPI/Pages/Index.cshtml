@@ -30,6 +30,9 @@
                     var obj = JSON.parse(text);
                     var waiting = obj.waiting;
                     var onTrack = obj.onTrack;
+                    var unmatchedIds = obj.unmatchedEndIds;
+                    var unmatchedTimes = obj.unmatchedEndTimes
+
 
                     document.getElementById("waiting").innerHTML = "";
                     var waitingTxt = "";
@@ -63,12 +66,53 @@
 
                     document.getElementById("track").innerHTML = "<p>" + trackTxt + "</p>";
 
+                    document.getElementById("unmatchedIds").innerHTML = "";
+                    unmatchedIdText = "";
+
+                    if (unmatchedIds.length > 0) {
+                        unmatchedIds.forEach((element) => {
+                            unmatchedIdText += element["Rider"]["Beacon"]["Identifier"] + ": "
+                                + element["Rider"]["Name"]
+                                + ", Power: "
+                                + element["Rider"]["Beacon"]["MeasuredPower"]
+                                + ", Distance: "
+                                + element["Rider"]["Beacon"]["Distance"] + ";<br>";
+                        })
+                    }
+                    else {
+                        unmatchedIdText = "-"
+                    }
+
+                    document.getElementById("unmatchedIds").innerHTML = "<p>" + unmatchedIdText + "</p>";
+
+                    document.getElementById("unmatchedTimes").innerHTML = "";
+                    unmatchedTimesText = "";
+
+                    if (unmatchedTimes.length > 0) {
+                        unmatchedTimes.forEach((element) => {
+
+                            var totalMicroseconds = parseInt(element["Microseconds"]);
+
+                            var totalSpan = new TimeSpan(totalMicroseconds);
+
+                            totalTime = totalSpan.GetMinutes() + ":" + totalSpan.GetSeconds() + ":" + totalSpan.GetMilliseconds();
+
+                            unmatchedTimesText += "Gate: " + element["GateId"]
+                                + ", Timer value: "
+                                + totalTime
+                                + ";<br>";
+                        })
+                    }
+                    else {
+                        unmatchedTimesText = "-"
+                    }
+
+                    document.getElementById("unmatchedTimes").innerHTML = "<p>" + unmatchedTimesText + "</p>";
+
                 }
             };
             xhttp.open("GET", "http://localhost:56781/racetracking/State", true);
             xhttp.send();
-
-
 
             var xhttp1 = new XMLHttpRequest();
             xhttp1.onreadystatechange = function () {
@@ -168,6 +212,12 @@
 
     <h3>Beacons voor end gate</h3>
     <div id="endBeacons"></div>
+
+    <h3>Losse ids</h3>
+    <div id="unmatchedIds"></div>
+
+    <h3>Losse times</h3>
+    <div id="unmatchedTimes"></div>
 
     <h3>In startvak</h3>
     <div id="waiting"></div>
