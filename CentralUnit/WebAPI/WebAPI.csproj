@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <None Remove="logConfig.xml" />
+    <None Remove="StaticFiles\ajax\libs\jquery\3.5.1\jquery.min.js" />
     <None Remove="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css" />
     <None Remove="StaticFiles\bootstrap\3.7.7\js\bootstrap.min.js.js" />
     <None Remove="StaticFiles\schep.jpg" />
@@ -15,6 +16,9 @@
 
   <ItemGroup>
     <Content Include="logConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StaticFiles\ajax\libs\jquery\3.5.1\jquery.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css">

@@ -143,7 +143,7 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public string UnitId => this.unitId;
 
-        public Beacon Closest => this.closestRider?.Beacon;
+        public Rider Closest => this.closestRider;
 
         /// <summary>
         /// Add a list of known <see cref="Rider"/> object.

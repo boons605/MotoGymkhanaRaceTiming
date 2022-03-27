@@ -44,6 +44,6 @@ namespace SensorUnits.RiderIdUnit
         /// <summary>
         /// Return the closest beacon at this time
         /// </summary>
-        Beacon Closest { get; }
+        Rider Closest { get; }
     }
 }

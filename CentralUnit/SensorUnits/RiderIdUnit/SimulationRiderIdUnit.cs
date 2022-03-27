@@ -13,7 +13,7 @@ namespace SensorUnits.RiderIdUnit
 
         public string UnitId { get; private set; }
 
-        public Beacon Closest => new Beacon(new byte[] { 0, 0, 0, 0, 0, 0 }, 0);
+        public Rider Closest => new Rider("JohnDoe", new Beacon(new byte[] { 0, 0, 0, 0, 0, 0 }, 0));
 
         /// <summary>
         /// Creates a new Rider id unit that simulates the events fom the provided race

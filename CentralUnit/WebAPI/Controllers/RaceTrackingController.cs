@@ -61,7 +61,7 @@ namespace WebAPI.Controllers
             if (manager.HasState)
             {
                 JObject result = new JObject();
-                (Beacon start, Beacon end) = manager.GetBeacons;
+                (Rider start, Rider end) = manager.GetBeacons;
 
                 if (start != null)
                 {
