@@ -135,7 +135,7 @@ namespace RaceManagement
             tracker.OnRiderFinished += HandleFinish;
 
             tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
-            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish since {(e.Lap.End as UnitDNFEvent).OtherRider} finshed before them");
+            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish since {(e.Lap.End as UnitDNFEvent).OtherRider.Rider.Name} finshed before them");
             tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
 
