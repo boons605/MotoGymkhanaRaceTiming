@@ -63,7 +63,6 @@ namespace WebAPI.Controllers
                 JObject result = new JObject();
                 (List<Beacon> start, List<Beacon> end) = manager.GetBeacons;
 
-
                 result["start"] = JArray.FromObject(start);
                 result["end"] = JArray.FromObject(end);
 
