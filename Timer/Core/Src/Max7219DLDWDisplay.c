@@ -64,21 +64,21 @@ static const uint16_t maxtrixLines[] =
 
 static const uint16_t max7219InitActions[] =
 {
-	REG_NO_OP		| 0x00,
-	REG_DIGIT_0 	| 0x00,
-	REG_DIGIT_1 	| 0x00,
-	REG_DIGIT_2 	| 0x00,
-	REG_DIGIT_3 	| 0x00,
-	REG_DIGIT_4 	| 0x00,
-	REG_DIGIT_5 	| 0x00,
-	REG_DIGIT_6 	| 0x00,
-	REG_DIGIT_7 	| 0x00,
-	REG_DECODE_MODE | 0x00,
-	REG_INTENSITY 	| 0x00,
-	REG_SCAN_LIMIT 	| 0x00,
-	REG_SHUTDOWN 	| 0x00,
-	REG_DISPLAY_TEST| 0x00,
-	REG_SHUTDOWN | 0x01,
+    REG_NO_OP		| 0x00,
+    REG_DIGIT_0 	| 0x00,
+    REG_DIGIT_1 	| 0x00,
+    REG_DIGIT_2 	| 0x00,
+    REG_DIGIT_3 	| 0x00,
+    REG_DIGIT_4 	| 0x00,
+    REG_DIGIT_5 	| 0x00,
+    REG_DIGIT_6 	| 0x00,
+    REG_DIGIT_7 	| 0x00,
+    REG_DECODE_MODE | 0x00,
+    REG_INTENSITY 	| 0x00,
+    REG_SCAN_LIMIT 	| 0x00,
+    REG_SHUTDOWN 	| 0x00,
+    REG_DISPLAY_TEST | 0x00,
+    REG_SHUTDOWN | 0x01,
     REG_DECODE_MODE | 0x00,
     REG_SCAN_LIMIT | 0x07,
     REG_INTENSITY | DISPLAYBRIGHTNESS
@@ -97,6 +97,37 @@ static uint32_t timeDataBCD = 0U;
 static uint8_t characterLine = 0U;
 static uint8_t initDone = 0U;
 
+static SPI_TypeDef* GetSPIForLine(uint8_t lineNo)
+{
+    SPI_TypeDef* retVal = spiBus[lineNo];
+    if(displayLineMode == 1U)
+    {
+        retVal = spiBus[1U];
+    }
+
+    return retVal;
+}
+
+static GPIO_TypeDef* GetCSGPIOForLine(uint8_t lineNo)
+{
+    GPIO_TypeDef* retVal = csGpio[lineNo];
+    if(displayLineMode == 1U)
+    {
+        retVal = csGpio[1U];
+    }
+    return retVal;
+}
+
+static uint32_t GetCSPinForLine(uint8_t lineNo)
+{
+    uint32_t retVal = csPin[lineNo];
+    if(displayLineMode == 1U)
+    {
+        retVal = csPin[1U];
+    }
+
+    return retVal;
+}
 
 static void sendData(uint16_t data, uint8_t index, uint8_t line)
 {
@@ -110,40 +141,64 @@ static void sendData(uint16_t data, uint8_t index, uint8_t line)
 
 static void SendSPIBuffer(uint8_t line)
 {
-    LL_GPIO_ResetOutputPin(csGpio[line], csPin[line]);
-    switch(max7219dataTransmissionState[line])
+    if((displayLineMode != 1U) ||
+       (line == 0U) ||
+       ((line > 0U) && (max7219dataTransmissionState[line - 1U] > 2U)))
     {
-        case 1U:
+        LL_GPIO_ResetOutputPin(GetCSGPIOForLine(line), GetCSPinForLine(line));
+        switch(max7219dataTransmissionState[line])
         {
-            if(max7219dataIndex[line] < DISPLAYCOUNT)
+            case 1U:
             {
-                if(LL_SPI_IsActiveFlag_TXE(spiBus[line]))
+                if(max7219dataIndex[line] < DISPLAYCOUNT)
                 {
-                    LL_SPI_TransmitData16(spiBus[line], max7219SpiBuffer[line][max7219dataIndex[line]]);
-                    max7219dataIndex[line]++;
+                    if(LL_SPI_IsActiveFlag_TXE(GetSPIForLine(line)))
+                    {
+                        LL_SPI_TransmitData16(GetSPIForLine(line), max7219SpiBuffer[line][max7219dataIndex[line]]);
+                        max7219dataIndex[line]++;
+                    }
                 }
+                else
+                {
+                    max7219dataIndex[line] = 0U;
+                    if((displayLineMode != 1U) || (line == (LINECOUNT - 1U)))
+                    {
+                        max7219dataTransmissionState[line]++;
+                    }
+                    else
+                    {
+                        max7219dataTransmissionState[line] = 3U;
+                    }
+
+                }
+                break;
             }
-            else
+            case 2U:
             {
-                max7219dataIndex[line] = 0U;
-                max7219dataTransmissionState[line]++;
+                if(LL_SPI_IsActiveFlag_BSY(GetSPIForLine(line)) == 0U)
+                {
+                    LL_GPIO_SetOutputPin(GetCSGPIOForLine(line), GetCSPinForLine(line));
+                    if(displayLineMode == 1U)
+                    {
+                        uint8_t index = 0U;
+                        for(index = 0U; index < LINECOUNT; index++)
+                        {
+                            max7219dataTransmissionState[index] = 0U;
+                        }
+                    }
+                    else
+                    {
+                        max7219dataTransmissionState[line] = 0U;
+                    }
+                    LL_GPIO_ResetOutputPin(GetCSGPIOForLine(line), GetCSPinForLine(line));
+                }
+                break;
             }
-            break;
-        }
-        case 2U:
-        {
-            if(LL_SPI_IsActiveFlag_BSY(spiBus[line]) == 0U)
+            default:
             {
-                LL_GPIO_SetOutputPin(csGpio[line], csPin[line]);
-                max7219dataTransmissionState[line] = 0U;
-                LL_GPIO_ResetOutputPin(csGpio[line], csPin[line]);
+                //Wait for new data.
+                break;
             }
-            break;
-        }
-        default:
-        {
-            //Wait for new data.
-            break;
         }
     }
 }
@@ -167,10 +222,10 @@ static void InitMax7219DLDWDisplay(void)
         {
             if(initState[line] < (sizeof(max7219InitActions) / sizeof(uint16_t)))
             {
-            	if (initState[line] == 0U)
-				{
-					LL_GPIO_SetOutputPin(csGpio[line], csPin[line]);
-				}
+                if(initState[line] == 0U)
+                {
+                    LL_GPIO_SetOutputPin(GetCSGPIOForLine(line), GetCSPinForLine(line));
+                }
 
                 uint8_t index = 0U;
                 for(index = 0U; index < DISPLAYCOUNT; index++)
