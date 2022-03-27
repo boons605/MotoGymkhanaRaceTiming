@@ -23,7 +23,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n  \"TimingUnitId\" : \"directserial:/dev/ttyAMA3\",\r\n  \"StartIdUnitId\": \"xbee:/dev/ttyAMA4:0013A20041CC4818\",\r\n  \"EndIdUnitId\":  \"xbee:/dev/ttyAMA4:0013A20041CC1895\",\r\n  \"StartTimingGateId\": 1,\r\n  \"EndTimingGateId\": 2\r\n}"
+					"raw": "{\r\n  \"TimingUnitId\" : \"directserial:/dev/ttyAMA3\",\r\n  \"StartIdUnitId\": \"xbee:/dev/ttyAMA4:0013A20041CC4818\",\r\n  \"EndIdUnitId\":  \"xbee:/dev/ttyAMA4:0013A20041CC1895\",\r\n  \"StartTimingGateId\": 1,\r\n  \"EndTimingGateId\": 2\r\n, \"EndIdRange\": 2\r\n, \"StartIdRange\": 2\r\n, \"EndMatchTimeout\": 20\r\n,}"
 				},
 				"url": {
 					"raw": "http://{{WebServerAddr}}/RaceTracking/Config",

@@ -111,7 +111,7 @@
 
                 }
             };
-            xhttp.open("GET", "http://localhost:56781/racetracking/State", true);
+            xhttp.open("GET", "/racetracking/State", true);
             xhttp.send();
 
             var xhttp1 = new XMLHttpRequest();
@@ -153,7 +153,7 @@
                     document.getElementById("times").innerHTML = timesTxt;
                 }
             };
-            xhttp1.open("GET", "http://localhost:56781/racetracking/Laps", true);
+            xhttp1.open("GET", "/racetracking/Laps", true);
             xhttp1.send();
 
 
@@ -193,7 +193,7 @@
                     document.getElementById("endBeacons").innerHTML = endText;
                 }
             }
-            beaconsRequest.open("GET", "http://localhost:56781/racetracking/Beacons", true);
+            beaconsRequest.open("GET", "/racetracking/Beacons", true);
             beaconsRequest.send();
         }
     </script>
