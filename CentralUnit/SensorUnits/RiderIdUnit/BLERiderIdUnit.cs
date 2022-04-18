@@ -408,22 +408,31 @@ namespace SensorUnits.RiderIdUnit
             {
                 Rider newClosest = this.knownRiders.First(rid => rid.Beacon.Equals(b));
 
-                if (this.CheckBeaconInRange(b) && (!this.CheckBeaconInRange(this.closestRider?.Beacon)))
+                if ((this.closestRider != null) && (!newClosest.Equals(this.closestRider)))
                 {
-                    // Entered range
-                    newClosest.Beacon.UpdateFromReceivedBeacon(b);
-                    Log.Info($"{this.unitId}:Enqueueing Rider ID entered range event for {newClosest}");
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId ,Direction.Enter)));
+                    Log.Info($"{this.unitId}:Other rider is closer, enqueueing Rider ID left range event for {this.closestRider}");
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId, Direction.Exit)));
+                    this.closestRider = null;
                 }
-                else if ((!this.CheckBeaconInRange(b)) && this.CheckBeaconInRange(this.closestRider?.Beacon))
+                else
                 {
-                    // Left range
-                    newClosest.Beacon.UpdateFromReceivedBeacon(b);
-                    Log.Info($"{this.unitId}:Enqueueing Rider ID left range event for {newClosest}");
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Exit)));
+                    if (this.CheckBeaconInRange(b) && (!this.CheckBeaconInRange(this.closestRider?.Beacon)))
+                    {
+                        // Entered range
+                        newClosest.Beacon.UpdateFromReceivedBeacon(b);
+                        Log.Info($"{this.unitId}:Enqueueing Rider ID entered range event for {newClosest}");
+                        this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Enter)));
+                    }
+                    else if ((!this.CheckBeaconInRange(b)) && this.CheckBeaconInRange(this.closestRider?.Beacon))
+                    {
+                        // Left range
+                        newClosest.Beacon.UpdateFromReceivedBeacon(b);
+                        Log.Info($"{this.unitId}:Enqueueing Rider ID left range event for {newClosest}");
+                        this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Exit)));
+                    }
+                    this.closestRider = newClosest;
                 }
-
-                this.closestRider = newClosest;
+                
             }
             else if (this.closestRider != null)
             {
