@@ -143,6 +143,8 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         public string UnitId => this.unitId;
 
+        public Rider Closest => this.closestRider;
+
         /// <summary>
         /// Add a list of known <see cref="Rider"/> object.
         /// </summary>
@@ -272,7 +274,20 @@ namespace SensorUnits.RiderIdUnit
                 this.OnThreadException(ex);
             }
 
-            Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId}");
+            if (this.cancellationToken.IsCancellationRequested)
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} because cancellation was requested");
+            }
+            else if (!this.keepEventThreadAlive)
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} because event thread was not kept alive");
+            }
+            else
+            {
+                Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} for other reasons");
+            }
+
+            
         }
 
         /// <inheritdoc/>
@@ -393,28 +408,36 @@ namespace SensorUnits.RiderIdUnit
             {
                 Rider newClosest = this.knownRiders.First(rid => rid.Beacon.Equals(b));
 
-                if (this.CheckBeaconInRange(b) && (!this.CheckBeaconInRange(this.closestRider?.Beacon)))
+                if ((this.closestRider != null) && (!newClosest.Equals(this.closestRider)))
                 {
-                    // Entered range
-                    Log.Info($"Enqueueing Rider ID entered range event for {newClosest}");
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId ,Direction.Enter)));
-
+                    Log.Info($"{this.unitId}:Other rider is closer, enqueueing Rider ID left range event for {this.closestRider}");
+                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId, Direction.Exit)));
+                    this.closestRider = null;
                 }
-                else if ((!this.CheckBeaconInRange(b)) && this.CheckBeaconInRange(this.closestRider?.Beacon))
+                else
                 {
-                    // Left range
-                    Log.Info($"Enqueueing Rider ID left range event for {newClosest}");
-                    this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Exit)));
-
+                    if (this.CheckBeaconInRange(b) && (!this.CheckBeaconInRange(this.closestRider?.Beacon)))
+                    {
+                        // Entered range
+                        newClosest.Beacon.UpdateFromReceivedBeacon(b);
+                        Log.Info($"{this.unitId}:Enqueueing Rider ID entered range event for {newClosest}");
+                        this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Enter)));
+                    }
+                    else if ((!this.CheckBeaconInRange(b)) && this.CheckBeaconInRange(this.closestRider?.Beacon))
+                    {
+                        // Left range
+                        newClosest.Beacon.UpdateFromReceivedBeacon(b);
+                        Log.Info($"{this.unitId}:Enqueueing Rider ID left range event for {newClosest}");
+                        this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(newClosest, DateTime.Now, this.unitId, Direction.Exit)));
+                    }
+                    this.closestRider = newClosest;
                 }
-
-                newClosest.Beacon.UpdateFromReceivedBeacon(b);
-                this.closestRider = newClosest;
+                
             }
             else if (this.closestRider != null)
             {
                 // Left range
-                Log.Info($"Enqueueing Rider ID left range event for {this.closestRider}");
+                Log.Info($"{this.unitId}:Enqueueing Rider ID left range event for {this.closestRider}");
                 this.eventQueue.Enqueue(new RiderIDQueuedEvent(new RiderIdEventArgs(this.closestRider, DateTime.Now, this.unitId, Direction.Exit)));
 
                 this.closestRider = null;

@@ -40,5 +40,10 @@ namespace SensorUnits.RiderIdUnit
         /// </summary>
         /// <param name="name">the name of the rider as reported by this unit in the exposed events</param>
         void RemoveKnownRider(string name);
+
+        /// <summary>
+        /// Return the closest beacon at this time
+        /// </summary>
+        Rider Closest { get; }
     }
 }

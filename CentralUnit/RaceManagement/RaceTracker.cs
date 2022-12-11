@@ -8,11 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Logging;
 using Models;
 using Models.Config;
 using SensorUnits.RiderIdUnit;
 using SensorUnits.TimingUnit;
+using log4net;
 
 namespace RaceManagement
 {
@@ -131,37 +131,55 @@ namespace RaceManagement
 
             return Task.Run(() =>
             {
-                while (!(token.IsCancellationRequested && toProcess.Count == 0))
+                try
                 {
-                    if (toProcess.TryDequeue(out EventArgs e))
+                    while (!(token.IsCancellationRequested && toProcess.Count == 0))
                     {
-                        switch (e)
+                        if (toProcess.TryDequeue(out EventArgs e))
                         {
-                            case RiderIdEventArgs rider when rider.UnitId == startGate.UnitId:
-                                OnStartId(rider);
-                                break;
-                            case RiderIdEventArgs rider when rider.UnitId == endGate.UnitId:
-                                OnEndId(rider);
-                                break;
-                            case TimingTriggeredEventArgs time:
-                                OnTimer(time);
-                                break;
-                            case PenaltyEventArgs penalty:
-                                OnPenalty(penalty);
-                                break;
-                            case DSQEventArgs dsq:
-                                OnDSQ(dsq);
-                                break;
-                            case ManualDNFEventArgs dnf:
-                                OnManualDNF(dnf);
-                                break;
-                            default:
-                                throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                            switch (e)
+                            {
+                                case RiderIdEventArgs rider when rider.UnitId == startGate.UnitId:
+                                    OnStartId(rider);
+                                    break;
+                                case RiderIdEventArgs rider when rider.UnitId == endGate.UnitId:
+                                    OnEndId(rider);
+                                    break;
+                                case TimingTriggeredEventArgs time:
+                                    OnTimer(time);
+                                    break;
+                                case PenaltyEventArgs penalty:
+                                    OnPenalty(penalty);
+                                    break;
+                                case DSQEventArgs dsq:
+                                    OnDSQ(dsq);
+                                    break;
+                                case ManualDNFEventArgs dnf:
+                                    OnManualDNF(dnf);
+                                    break;
+                                default:
+                                    throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                            }
                         }
                     }
+
+                    if (token.IsCancellationRequested)
+                    {
+                        Log.Info($"RaceTracker thread ended because cancellation was requested");
+                    }
+                    else
+                    {
+                        Log.Info($"RaceTracker thread ended for other reasons");
+                    }
+
+                    return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Exception in RaceTracker task: {ex.Message}", ex);
                 }
 
-                return new RaceSummary(raceState.ToList(), config, startGate.UnitId, endGate.UnitId);
+                return new RaceSummary();
             });
         }
 
@@ -208,7 +226,7 @@ namespace RaceManagement
             {
                 if(waiting)
                 {
-                    Log.Info($"Removing rider {args.Rider} from waiting list.");
+                    Log.Info($"Removing rider {args.Rider.Name} from waiting list.");
                     waitingRiders.Remove(args.Rider.Name);
 
                     if(waitingRiders.Count == 0)
@@ -219,7 +237,7 @@ namespace RaceManagement
 
                 if(onTrack)
                 {
-                    Log.Info($"Removing on track rider {args.Rider} from start device.");
+                    Log.Info($"Removing on track rider {args.Rider.Name} from start device.");
                     startGate.RemoveKnownRider(args.Rider.Name);
                 }            
             }
@@ -239,7 +257,7 @@ namespace RaceManagement
                 //if we receive an end id for a rider that is not on track ignore it
                 if (!onTrackRiders.Any(t => t.id.Rider == newEvent.Rider))
                 {
-                    Log.Warn($"Ignoring end ID for rider {args.Rider}, since rider is not on track");
+                    Log.Warn($"Ignoring end ID for rider {args.Rider.Name}, since rider is not on track");
                     return;
                 }
 
@@ -250,7 +268,7 @@ namespace RaceManagement
                 //If the range on the id unit is larger than the stop box, we may receive an id event before a timing event
                 if (closest == null)
                 {
-                    Log.Warn($"Queueing end ID for rider {args.Rider}, since no timing event is in queue");
+                    Log.Warn($"Queueing end ID for rider {args.Rider.Name}, since no timing event is in queue");
                     endIds.Add(newEvent);
                     return;
                 }
@@ -265,7 +283,7 @@ namespace RaceManagement
 
                 if ((closest.Time - args.Received).Duration().TotalSeconds <= config.EndMatchTimeout)
                 {
-                    Log.Info($"Matching timestamp from gate {closest.GateId} at {closest.Microseconds} to rider {newEvent.Rider}");
+                    Log.Info($"Matching timestamp from gate {closest.GateId} at {closest.Microseconds} to rider {newEvent.Rider.Name}");
                     closest.SetRider(newEvent.Rider);
                     endTimes.Remove(closest);
 
@@ -273,7 +291,7 @@ namespace RaceManagement
                 }
                 else
                 {
-                    Log.Info($"Queueing end ID for rider {args.Rider}, since last timing event is more than {config.EndMatchTimeout} seconds ago");
+                    Log.Info($"Queueing end ID for rider {args.Rider.Name}, since last timing event is more than {config.EndMatchTimeout} seconds ago");
                     endIds.Add(newEvent);
                 }
             }
@@ -296,7 +314,7 @@ namespace RaceManagement
                     IdEvent rider = waitingRiders.Dequeue();
 
                     TimingEvent newEvent = new TimingEvent(args.Received, rider.Rider, args.Microseconds, args.GateId);
-                    Log.Info($"Rider {rider.Rider} is now on track with timestamp {args.Microseconds}");
+                    Log.Info($"Rider {rider.Rider.Name} is now on track with timestamp {args.Microseconds}");
                     onTrackRiders.Enqueue((rider, newEvent));
                     raceState.Enqueue(newEvent);
 
