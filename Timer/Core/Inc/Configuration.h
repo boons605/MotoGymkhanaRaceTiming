@@ -19,7 +19,8 @@ typedef enum
     NoTimerOperation = 0U,
     LaptimerOperation = 1U,
     ConnectedTimestampCollector = 2U,
-    SingleRunTimerOperation = 3U
+    SingleRunTimerOperation = 3U,
+	MultiRunTimerOperation = 4U
 } OperationModes;
 
 typedef enum

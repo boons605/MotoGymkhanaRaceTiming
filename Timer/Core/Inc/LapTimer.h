@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #define MAXLAPCOUNT 32
+#define MAXSIMULTANEOUSRIDERS 10
 
 typedef struct
 {
@@ -19,17 +20,17 @@ typedef struct
 } Lap;
 
 extern Lap laps[MAXLAPCOUNT];
-extern Lap* currentLap;
-extern Lap* previousLap;
 extern uint8_t lapFinished;
 extern uint8_t newRunStarted;
 
 void RunStandAloneTimer(void);
-uint32_t GetPreviousLapTimeMs(void);
+Lap* GetPreviousLap(void);
 uint8_t IsFirstLap(void);
 uint32_t GetCurrentLapStartTime(void);
-uint8_t GetCurrentLapIndex(void);
-uint32_t GetLapTimestampMs(Lap* lap);
+Lap* GetCurrentLap(void);
+uint8_t GetLapIndex(Lap* lap);
+uint32_t GetLapDurationMs(Lap* lap);
+void InvalidateLapIndex(uint8_t index);
 
 
 #endif /* INC_LAPTIMER_H_ */

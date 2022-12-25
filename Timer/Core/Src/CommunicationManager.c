@@ -52,7 +52,7 @@ static void MoveAllLapsToResponsData(void)
     {
         if(currentDataIndex < (COMMANDDATAMAXSIZE - 3U))
         {
-            uint32_t lapTimeMs = GetLapTimestampMs(&laps[currentLapIndex]);
+            uint32_t lapTimeMs = GetLapDurationMs(&laps[currentLapIndex]);
             memcpy(&pendingResponse.data[currentDataIndex], &lapTimeMs, 3U);
             currentDataIndex += 3U;
             pendingResponse.dataLength = currentDataIndex;

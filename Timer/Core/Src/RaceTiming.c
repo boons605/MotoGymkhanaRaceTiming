@@ -17,11 +17,10 @@
 #define DISPLAYBUFFERINDEX 750U
 #define COMMPROTOPERIOD 10U
 
-static uint8_t displayBufferResult = 0U;
 static uint8_t lastCycleButtonState = 0U;
 static uint8_t currentBufferDisplayIndex = MAXLAPCOUNT;
 static uint32_t lastBufferDisplayChange = 0U;
-static uint32_t lastTimeButtonHigh = 0U;
+static Lap* currentlyDisplayedLapFromBuffer = (Lap*)0U;
 static DigitalInput* buttonInput = &UserInputs[JmpCommMode];
 static uint32_t lastCommunicationRun = 0U;
 
@@ -42,19 +41,28 @@ static void RunCommunication(void)
 
 }
 
-static uint8_t GetPreviousBufferedResult(void)
+static Lap* GetPreviousBufferedResult(void)
 {
-    uint8_t retVal;
-    if(currentBufferDisplayIndex == 0U)
+	Lap* retVal = currentlyDisplayedLapFromBuffer;
+    if(retVal == &laps[0])
     {
-        retVal = MAXLAPCOUNT - 1U;
+        retVal = &laps[MAXLAPCOUNT - 1U];
     }
     else
     {
-        retVal = currentBufferDisplayIndex - 1U;
+    	//Pointer math
+        retVal--;
     }
 
     return retVal;
+}
+
+static void ResetBufferedDisplayed(void)
+{
+	currentBufferDisplayIndex = MAXLAPCOUNT;
+	lastBufferDisplayChange = 0;
+	currentlyDisplayedLapFromBuffer = (Lap*)0U;
+
 }
 
 static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
@@ -65,68 +73,78 @@ static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
         {
             if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
             {
-                UpdateDisplay(GetLapTimestampMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ShowRunningTime);
+                UpdateDisplay(GetLapDurationMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ShowRunningTime);
             }
             else
             {
-                UpdateDisplay(currentBufferDisplayIndex + 1, 0U, DTEA_ClearDisplay);
+                UpdateDisplay(GetLapIndex(currentDisplayedLap) + 1, 0U, DTEA_ClearDisplay);
             }
 
         }
         else
         {
-            displayBufferResult = 0U;
+        	currentlyDisplayedLapFromBuffer = (Lap*)0U;
+        }
+
+        if (currentlyDisplayedLapFromBuffer != currentDisplayedLap)
+        {
+        	currentlyDisplayedLapFromBuffer = currentDisplayedLap;
+        	lastBufferDisplayChange = GetSystemTimeStampMs();
         }
     }
 }
 
-static void HandleBufferedDisplayButtonRisingEdge(void)
+static Lap* HandleBufferedDisplayButtonRisingEdge(void)
 {
-    if(currentBufferDisplayIndex == MAXLAPCOUNT)
+	Lap* retVal = currentlyDisplayedLapFromBuffer;
+    if(retVal == (Lap*)0U)
     {
-        currentBufferDisplayIndex = GetCurrentLapIndex();
+    	retVal = GetCurrentLap();
     }
 
-    currentBufferDisplayIndex = GetPreviousBufferedResult();
-    uint8_t step = 0U;
-    while((laps[currentBufferDisplayIndex].endTimeStamp == 0) && (step < MAXLAPCOUNT))
+    if(retVal == (Lap*)0U)
     {
-        currentBufferDisplayIndex = GetPreviousBufferedResult();
-        step++;
+		retVal = GetPreviousBufferedResult();
+		uint8_t step = 0U;
+		while((retVal->endTimeStamp == 0) && (step < MAXLAPCOUNT))
+		{
+			retVal = GetPreviousBufferedResult();
+			step++;
+		}
     }
-    lastBufferDisplayChange = GetSystemTimeStampMs();
+
+    return retVal;
 }
 
 static void DisplayBufferResult(void)
 {
     if((lastCycleButtonState == 0U) && (InputGetState(buttonInput) == 1U))
     {
-        HandleBufferedDisplayButtonRisingEdge();
+    	UpdateDisplayWithBufferedLap(HandleBufferedDisplayButtonRisingEdge());
     }
-
-    UpdateDisplayWithBufferedLap(&laps[currentBufferDisplayIndex]);
 
 }
 
 static void ManageDisplayButton(void)
 {
-    if((GetCurrentLapIndex() != MAXLAPCOUNT) &&
+    if((GetCurrentLap() != (Lap*)0U) &&
        (IsFirstLap() == 0U) &&
-       ((displayBufferResult == 1U) || (InputGetState(buttonInput) == 1U)))
+       ((currentlyDisplayedLapFromBuffer != (Lap*)0U) || (InputGetState(buttonInput) == 1U)))
     {
         DisplayBufferResult();
 
         if(InputGetState(buttonInput) == 1U)
         {
-            displayBufferResult = 1U;
-            lastTimeButtonHigh = GetSystemTimeStampMs();
+        	if (currentlyDisplayedLapFromBuffer != (Lap*)0U)
+        	{
+        		lastBufferDisplayChange = GetSystemTimeStampMs();
+        	}
         }
         else
         {
-            if((lastTimeButtonHigh + LAPTIMERDISPLAYDURATION) < GetSystemTimeStampMs())
+            if((lastBufferDisplayChange + LAPTIMERDISPLAYDURATION) < GetSystemTimeStampMs())
             {
-                displayBufferResult = 0U;
-                currentBufferDisplayIndex = MAXLAPCOUNT;
+            	ResetBufferedDisplayed();
             }
         }
 
@@ -141,14 +159,37 @@ static void RunLocalTimer(void)
     {
         lapFinished = 0U;
         uint32_t duration = 0U;
-        if(operationMode == LaptimerOperation)
+        Lap* finishedLap = GetPreviousLap();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
+//Fallthrough is intentional here.
+        switch (operationMode)
         {
-            duration = LAPTIMERDISPLAYDURATION;
+        	case LaptimerOperation:
+        	{
+        		duration = LAPTIMERDISPLAYDURATION;
+        	}
+        	case SingleRunTimerOperation:
+			{
+				CommMgrSendTimeValue(LastLapTime, GetLapDurationMs(finishedLap));
+				UpdateDisplay(GetLapDurationMs(finishedLap), duration, DTEA_ShowRunningTime);
+				ResetBufferedDisplayed();
+				break;
+			}
+        	case MultiRunTimerOperation:
+        	{
+        		CommMgrSendTimeValue(LastLapTime, GetLapDurationMs(finishedLap));
+        		UpdateDisplayWithBufferedLap(finishedLap);
+        		break;
+        	}
+        	default:
+        	{
+        		break;
+        	}
+
         }
-        CommMgrSendTimeValue(LastLapTime, GetPreviousLapTimeMs());
-        UpdateDisplay(GetPreviousLapTimeMs(), duration, DTEA_ShowRunningTime);
-        displayBufferResult = 0U;
     }
+#pragma GCC diagnostic push
 
     if(newRunStarted == 1U)
     {
@@ -176,6 +217,7 @@ void RunRaceTiming(void)
     {
         case SingleRunTimerOperation:
         case LaptimerOperation:
+        case MultiRunTimerOperation:
         {
             RunLocalTimer();
 

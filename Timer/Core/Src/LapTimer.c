@@ -17,37 +17,44 @@
 #include "TimeMgmt.h"
 
 Lap laps[MAXLAPCOUNT] = { 0 };
-Lap* currentLap = 0U;
-Lap* previousLap = 0U;
+static Lap* currentLap = 0U;
+static Lap* previousLap = 0U;
+static Lap* lastStartedLap = 0U;
 uint8_t lapFinished = 0U;
 uint8_t newRunStarted = 0U;
+
 
 static void SingleSensorLaptimer(void);
 static void SingleSensorSingeRuntimer(void);
 static void DualSensorSingleRunTimer(void);
+static void DualSensorMultiRunTimer(void);
 static uint8_t IsLastLap(Lap* lap);
+static uint8_t IsLapValid(Lap* lap);
+static void InvalidateLap(Lap* lap);
 
-uint8_t GetCurrentLapIndex(void)
+uint8_t GetLapIndex(Lap* lap)
 {
-    uint8_t retVal = MAXLAPCOUNT;
+	uint8_t retVal = MAXLAPCOUNT;
 
-    if(currentLap != (Lap*)0U)
-    {
-        uint8_t index;
-        for(index = 0U; index < MAXLAPCOUNT; index++)
-        {
-            if(currentLap == &laps[index])
-            {
-                retVal = index;
-            }
-        }
-    }
+	if(lap != (Lap*)0U)
+	{
+		uint8_t index;
+		for(index = 0U; index < MAXLAPCOUNT; index++)
+		{
+			if(lap == &laps[index])
+			{
+				retVal = index;
+			}
+		}
+	}
 
-    return retVal;
-
+	return retVal;
 }
 
-
+Lap* GetCurrentLap(void)
+{
+    return currentLap;
+}
 
 uint8_t IsFirstLap(void)
 {
@@ -71,7 +78,7 @@ uint32_t GetCurrentLapStartTime(void)
     return 0U;
 }
 
-uint32_t GetLapTimestampMs(Lap* lap)
+uint32_t GetLapDurationMs(Lap* lap)
 {
     uint32_t retVal = 0U;
     if(lap != (Lap*)0U)
@@ -81,9 +88,42 @@ uint32_t GetLapTimestampMs(Lap* lap)
     return retVal;
 }
 
-uint32_t GetPreviousLapTimeMs(void)
+Lap* GetPreviousLap(void)
 {
-    return GetLapTimestampMs(previousLap);
+    return previousLap;
+}
+
+static uint8_t IsLapValid(Lap* lap)
+{
+	uint8_t retVal = 0U;
+
+	if (lap != (Lap*)0U)
+	{
+		if ((lap->startTimeStamp != 0xFFFFFFFFU) &&
+			(lap->endTimeStamp != 0xFFFFFFFFU))
+		{
+			retVal = 1U;
+		}
+	}
+
+	return retVal;
+}
+
+static void InvalidateLap(Lap* lap)
+{
+	if (lap != (Lap*)0U)
+	{
+		lap->startTimeStamp = 0xFFFFFFFFU;
+		lap->endTimeStamp = 0xFFFFFFFFU;
+	}
+}
+
+void InvalidateLapIndex(uint8_t index)
+{
+	if (index < MAXLAPCOUNT)
+	{
+		InvalidateLap(&laps[index]);
+	}
 }
 
 void RunStandAloneTimer(void)
@@ -110,6 +150,14 @@ void RunStandAloneTimer(void)
             }
             break;
         }
+        case MultiRunTimerOperation:
+        {
+        	if(sensorMode == DualSensor)
+			{
+        		DualSensorMultiRunTimer();
+			}
+        	break;
+        }
         default:
         {
             break;
@@ -135,6 +183,7 @@ static void FinishCurrentLapAndPrepareNext(SensorTimestamp* timeStamp)
     previousLap = currentLap;
     if(IsLastLap(currentLap) == 0U)
     {
+    	//Pointer math!
         currentLap++;
     }
     else
@@ -170,34 +219,29 @@ static void SingleSensorSingeRuntimer(void)
 {
     SensorTimestamp timeStamp;
 
+    if(currentLap == (Lap*)0U)
+	{
+		currentLap = &laps[0];
+		currentLap->startTimeStamp = 0U;
+	}
+
     if(sensorStartStopInterrupt == 1U)
     {
         sensorStartStopInterrupt = 0U;
         GetStartStopSensorTimeStamp(&timeStamp);
 
-        if(currentLap == (Lap*)0U)
-        {
-            currentLap = &laps[0];
-            newRunStarted = 1U;
-            currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
-            currentLap->endTimeStamp = 0U;
-        }
-        else
-        {
-            if((currentLap->endTimeStamp == 0U) && (currentLap->startTimeStamp != 0U))
-            {
-                FinishCurrentLapAndPrepareNext(&timeStamp);
-                currentLap->startTimeStamp = 0U;
-            }
-            else if(currentLap->startTimeStamp == 0U)
-            {
-                currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
-                currentLap->endTimeStamp = 0U;
-                newRunStarted = 1U;
-            }
-        }
+		if((currentLap->endTimeStamp == 0U) && (currentLap->startTimeStamp != 0U))
+		{
+			FinishCurrentLapAndPrepareNext(&timeStamp);
+			currentLap->startTimeStamp = 0U;
+		}
+		else if(currentLap->startTimeStamp == 0U)
+		{
+			currentLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
+			currentLap->endTimeStamp = 0U;
+			newRunStarted = 1U;
+		}
     }
-
 }
 
 static void DualSensorSingleRunTimer(void)
@@ -236,5 +280,11 @@ static void DualSensorSingleRunTimer(void)
         }
 
     }
+}
+
+static void DualSensorMultiRunTimer(void)
+{
+
+
 }
 
