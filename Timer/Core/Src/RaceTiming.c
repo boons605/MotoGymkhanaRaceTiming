@@ -73,7 +73,7 @@ static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
         {
             if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
             {
-                UpdateDisplay(GetLapDurationMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ShowRunningTime);
+                UpdateDisplay(GetLapDurationMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
             }
             else
             {
@@ -171,9 +171,9 @@ static void RunLocalTimer(void)
         	}
         	case SingleRunTimerOperation:
 			{
+				ResetBufferedDisplayed();
 				CommMgrSendTimeValue(LastLapTime, GetLapDurationMs(finishedLap));
 				UpdateDisplay(GetLapDurationMs(finishedLap), duration, DTEA_ShowRunningTime);
-				ResetBufferedDisplayed();
 				break;
 			}
         	case MultiRunTimerOperation:
