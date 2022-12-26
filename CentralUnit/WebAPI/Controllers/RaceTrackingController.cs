@@ -54,40 +54,6 @@ namespace WebAPI.Controllers
                 return response;
             }
         }
-        [HttpGet]
-        [Route("[controller]/Beacons")]
-        public JsonResult GetBeacons()
-        {
-            if (manager.HasState)
-            {
-                JObject result = new JObject();
-                (Rider start, Rider end) = manager.GetBeacons;
-
-                if (start != null)
-                {
-                    result["start"] = JObject.FromObject(start);
-                }
-
-                if (end != null)
-                {
-                    result["end"] = JObject.FromObject(end);
-                }
-
-                return new JsonResult(result);
-            }
-            else
-            {
-                JObject body = new JObject
-                {
-                    { "Error", "Race tracking is not running. Provide a config first" }
-                };
-
-                JsonResult response = new JsonResult(body);
-                response.StatusCode = 500;
-
-                return response;
-            }
-        }
 
         [HttpGet]
         [Route("[controller]/Laps")]
