@@ -132,10 +132,10 @@ namespace RaceManagement
 
         private void HookEvents(IRaceTracker tracker)
         {
-            tracker.OnRiderFinished += HandleFinish;
+            tracker.OnRiderMatched += HandleFinish;
 
-            tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
-            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish since {(e.Lap.End as UnitDNFEvent).OtherRider.Rider.Name} finshed before them");
+            tracker.OnRiderMatched += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
+            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish");
             tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
 

@@ -529,7 +529,7 @@ namespace RaceManagementTests
         {
             List<string> finished = new List<string>();
 
-            subject.OnRiderFinished += (obj, args) => finished.Add(args.Lap.Rider.Name);
+            subject.OnRiderMatched += (obj, args) => finished.Add(args.Lap.Rider.Name);
 
             SimulateRaceWithDNF();
 

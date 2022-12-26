@@ -16,7 +16,7 @@ namespace RaceManagement
         List<Lap> Laps { get; }
 
         event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
-        event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
+        event EventHandler<FinishedRiderEventArgs> OnRiderMatched;
         event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         event EventHandler OnStartEmpty;
 

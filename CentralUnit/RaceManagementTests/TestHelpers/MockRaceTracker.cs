@@ -15,7 +15,7 @@ namespace RaceManagementTests.TestHelpers
         public List<Lap> Laps => new List<Lap>();
 
         public event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
-        public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
+        public event EventHandler<FinishedRiderEventArgs> OnRiderMatched;
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         public event EventHandler OnStartEmpty;
 

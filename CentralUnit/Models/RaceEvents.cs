@@ -35,6 +35,9 @@ namespace Models
         }
     }
 
+    /// <summary>
+    /// Base class for events that are triggered by a user and not by the system itself
+    /// </summary>
     public class ManualEvent : RaceEvent
     {
         /// <summary>
@@ -49,6 +52,29 @@ namespace Models
     }
 
     /// <summary>
+    /// Event to mark when a user signals that a rider is waiting to start
+    /// </summary>
+    public class RiderReadyEvent : ManualEvent
+    {
+        public RiderReadyEvent(DateTime time, Rider rider, Guid eventId, string staffName) : base(time, rider, eventId, staffName)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Event to mark when a user signals that a rider has finished
+    /// </summary>
+    public class RiderFinishedEvent : ManualEvent
+    {
+        public readonly TimingEvent TimeEnd;
+
+        public RiderFinishedEvent(DateTime time, Rider rider, Guid eventId, string staffName, TimingEvent end) : base(time, rider, eventId, staffName)
+        {
+            TimeEnd = end;
+        }
+    }
+
+    /// <summary>
     /// Event to mark when a rider has finished. A rider is finished when we have recorded 4 essential events: id at start box, timing at start box, id at end box and timing at end box
     /// </summary>
     public class FinishedEvent : RaceEvent
@@ -59,9 +85,9 @@ namespace Models
         public long LapTime => TimeEnd.Microseconds - TimeStart.Microseconds;
 
         /// <summary>
-        /// The event where the id unit at the start box picks up the rider
+        /// The event where the user signalled the rider was waiting in the start box
         /// </summary>
-        public readonly IdEvent Entered;
+        public readonly RiderReadyEvent Entered;
 
         /// <summary>
         /// The event where the start timing gate is triggered by the rider
@@ -71,36 +97,19 @@ namespace Models
         /// <summary>
         /// The event where the end timing gate is triggered by the rider
         /// </summary>
-        public readonly TimingEvent TimeEnd;
+        public TimingEvent TimeEnd => Left.TimeEnd;
 
         /// <summary>
-        /// The event where the id unit at the stop box picks up the rider
+        /// The event where the user signalled the rider had finished
         /// </summary>
-        public readonly IdEvent Left;
+        public readonly RiderFinishedEvent Left;
 
-        public FinishedEvent(IdEvent entered, TimingEvent timeStart, TimingEvent timeEnd, IdEvent left, Guid eventId = new Guid())
-            : base(timeEnd.Time, timeEnd.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
+        public FinishedEvent(RiderReadyEvent entered, TimingEvent timeStart, RiderFinishedEvent left, Guid eventId = new Guid())
+            : base(left.TimeEnd.Time, left.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
         {
             Entered = entered;
             TimeStart = timeStart;
-            TimeEnd = timeEnd;
             Left = left;
-        }
-    }
-
-    /// <summary>
-    /// Event when the rider id is picked up at the start gate
-    /// </summary>
-    public class IdEvent : RaceEvent
-    {
-        public readonly string UnitId;
-        public readonly Direction IdType;
-
-        public IdEvent(DateTime time, Rider rider, string unitId, Direction idType, Guid eventId = new Guid())
-            : base(time, rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId) 
-        {
-            UnitId = unitId;
-            IdType = idType;
         }
     }
 
@@ -137,38 +146,14 @@ namespace Models
         }
     }
 
-    /// <summary>
-    /// Event when a rider does not finish their lap. This is detected when a rider that started after them finished earlier
-    /// </summary>
-    public class UnitDNFEvent : RaceEvent
-    {
-        /// <summary>
-        /// A DNF happens when a driver who started later finished before this driver did
-        /// </summary>
-        public readonly FinishedEvent OtherRider;
-
-        /// <summary>
-        /// The event where this driver was picked up at the start gate
-        /// </summary>
-        public readonly IdEvent ThisRider;
-
-        public UnitDNFEvent(FinishedEvent otherRider, IdEvent thisRider, Guid eventId = new Guid())
-            : base(otherRider.Time, thisRider.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId)
-        {
-            OtherRider = otherRider;
-            ThisRider = thisRider;
-        }
-
-    }
-
     public class ManualDNFEvent : ManualEvent
     {
         /// <summary>
         /// The event where this driver was picked up at the start gate
         /// </summary>
-        public readonly IdEvent ThisRider;
+        public readonly RiderReadyEvent ThisRider;
 
-        public ManualDNFEvent(IdEvent started, string staffName, Guid eventId = new Guid()) 
+        public ManualDNFEvent(RiderReadyEvent started, string staffName, Guid eventId = new Guid()) 
             : base(started.Time, started.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
         {
         }
