@@ -22,7 +22,7 @@ namespace Models
         /// <summary>
         /// Parse a rider line.
         /// </summary>
-        /// <param name="line">A rider line, semicolon separated: MACAddress;Correction;RiderName</param>
+        /// <param name="line">A rider line, semicolon separated: Guid;RiderName</param>
         /// <returns>A Rider object.</returns>
         public static Rider ParseRiderLine(string line)
         {
@@ -32,26 +32,23 @@ namespace Models
             {
                 string[] elements = line.Split(';');
 
-                byte[] ident = Beacon.TextToMacBytes(elements[0]);
-                ushort correction = 0;
-                if (elements.Length > 1)
-                {
-                    correction = Convert.ToUInt16(elements[1]);
-                }
+                Guid id = Guid.Parse(elements[0]);                
 
-                Beacon beacon = new Beacon(ident, correction);
-
-                if (elements.Length > 2)
+                if (elements.Length == 2)
                 {
-                    rider = new Rider(elements[2], beacon);
+                    rider = new Rider(elements[2], id);
                 }
                 else
                 {
-                    Log.Warn($"Could not parse rider, not enough elements in line: {line}");
+                    throw new FormatException($"Could not parse rider, expected 2 fields in line but found {elements.Length}");
                 }
-            }
 
-            return rider;
+                return rider;
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(line));
+            }
         }
     }
 }

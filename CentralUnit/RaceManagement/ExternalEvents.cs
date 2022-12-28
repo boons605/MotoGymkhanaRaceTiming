@@ -59,7 +59,7 @@ namespace RaceManagement
         [JsonRequired]
         public readonly int Seconds;
 
-        public PenaltyEventArgs(DateTime received, string riderName, string staffName, string reason, int seconds) : base(received, riderName, staffName)
+        public PenaltyEventArgs(DateTime received, Guid riderId, string staffName, string reason, int seconds) : base(received, riderId, staffName)
         {
             Reason = reason;
             Seconds = seconds;
@@ -68,7 +68,7 @@ namespace RaceManagement
 
     public class RiderReadyEventArgs : ManualEventArgs
     {
-        public RiderReadyEventArgs(DateTime received, string riderName, string staffName) : base(received, riderName, staffName)
+        public RiderReadyEventArgs(DateTime received, Guid riderId, string staffName) : base(received, riderId, staffName)
         {
         }
     }
@@ -80,7 +80,7 @@ namespace RaceManagement
         /// </summary>
         public readonly Guid TimeId;
 
-        public RiderFinishedEventArgs(DateTime received, string riderName, string staffName, Guid timeId) : base(received, riderName, staffName)
+        public RiderFinishedEventArgs(DateTime received, Guid riderId, string staffName, Guid timeId) : base(received, riderId, staffName)
         {
             TimeId = timeId;
         }

@@ -38,7 +38,7 @@ namespace WebPusher.WebInterfaces
             {
                 await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dsq=1");
             }
-            else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
+            else if (lap.End is ManualDNFEvent)
             {
                 await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dnf=1");
             }
@@ -50,7 +50,7 @@ namespace WebPusher.WebInterfaces
             }
         }
 
-        public async Task EndLap(IdEvent end)
+        public async Task EndLap(RiderFinishedEvent end)
         {
             await http.GetAsync($"{baseUrl}/end_ride?auth={authToken}&tag={end.Rider.Name}");
         }
@@ -65,7 +65,7 @@ namespace WebPusher.WebInterfaces
                 await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}$dsq=1");
                 await http.GetAsync($"{baseUrl}/end_ride_with_result?auth={authToken}&tag={lap.End.Rider.Name}&uniqueId={GetId(startId)}");
             }
-            else if (lap.End is ManualDNFEvent || lap.End is UnitDNFEvent)
+            else if (lap.End is ManualDNFEvent)
             {
                 HttpResponseMessage result = await http.GetAsync($"{baseUrl}/penalty?auth={authToken}&uniqueId={GetId(startId)}&dnf=1");
                 Console.WriteLine($"Gymkhana response (DNF): {result.StatusCode}, {await result.Content.ReadAsStringAsync()}");
@@ -88,7 +88,7 @@ namespace WebPusher.WebInterfaces
             }
         }
 
-        public async Task StartLap(IdEvent start)
+        public async Task StartLap(RiderReadyEvent start)
         {
             if(!onTrack.Contains(start.EventId))
             {
@@ -110,8 +110,6 @@ namespace WebPusher.WebInterfaces
                     return finish.Entered.EventId;
                 case ManualDNFEvent manualDnf:
                     return manualDnf.ThisRider.EventId;
-                case UnitDNFEvent unitDnf:
-                    return unitDnf.ThisRider.EventId;
                 default:
                     throw new ArgumentException($"Unkown lap event type: {lap.End.GetType()}");
             }

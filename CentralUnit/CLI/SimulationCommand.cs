@@ -1,14 +1,8 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Models;
 using RaceManagement;
-using SensorUnits.RiderIdUnit;
-using SensorUnits.TimingUnit;
 
 namespace CLI
 {

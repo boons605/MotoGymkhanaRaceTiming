@@ -35,12 +35,11 @@ namespace WebAPI.Controllers
             if (manager.HasState)
             {
                 JObject result = new JObject();
-                (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) = manager.GetState;
+                (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
-                result["waiting"] = JArray.FromObject(waiting);
+                result["waiting"] = JObject.FromObject(waiting);
                 result["onTrack"] = JArray.FromObject(onTrack);
-                result["unmatchedEndIds"] = JArray.FromObject(unmatchedIds);
                 result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
 
                 return new JsonResult(result);
@@ -177,9 +176,9 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpDelete]
         [Route("[controller]/Rider")]
-        public StatusCodeResult DeleteRider([FromQuery] string name)
+        public StatusCodeResult DeleteRider([FromQuery] Guid id)
         {
-            manager.RemoveRider(name);
+            manager.RemoveRider(id);
             return new StatusCodeResult(200);
         }
 

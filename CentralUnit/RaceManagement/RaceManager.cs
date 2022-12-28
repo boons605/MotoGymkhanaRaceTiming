@@ -2,7 +2,6 @@
 using log4net;
 using log4net.Config;
 using Models;
-using SensorUnits.RiderIdUnit;
 using SensorUnits.TimingUnit;
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using DisplayUnit;
 using Models.Config;
-using StartLightUnit;
+using SensorUnits.StartLightUnit;
 
 namespace RaceManagement
 {
@@ -25,7 +24,6 @@ namespace RaceManagement
 
         private ITimingUnit timing;
         private List<IDisplayUnit> displays = new List<IDisplayUnit>();
-        private IRiderIdUnit startGate, endGate;
         private IRaceTracker tracker;
         private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
@@ -56,33 +54,22 @@ namespace RaceManagement
             XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
             
             //we need the simulation specific methods in the constructor
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(simulationData.StartId, simulationData);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(simulationData.EndId, simulationData);
             SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
             displays.Add(timingUnit);
-            startGate = startId;
-            endGate = endId;
             timing = timingUnit;
 
-            startId.Initialize();
-            endId.Initialize();
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, startId, endId, simulationData.Config, simulationData.Riders);
+            tracker = new RaceTracker(timing, simulationData.Config, simulationData.Riders);
             HookEvents(tracker);
 
-            var trackTask = tracker.Run(source.Token);
+            Task<RaceSummary> trackTask = tracker.Run(source.Token);
 
-            var startTask = startId.Run(source.Token);
-            var endTask = endId.Run(source.Token);
             var timeTask = timingUnit.Run(source.Token);
-
-            //will complete when all units run out of events to simulate
-            var unitsTask = Task.WhenAll(startTask, endTask, timeTask);
 
             CombinedTasks = Task.Run(() =>
             {
-                unitsTask.Wait();
+                timeTask.Wait();
                 source.Cancel();
                 trackTask.Wait();
             });
@@ -100,20 +87,12 @@ namespace RaceManagement
             SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(config.TimingUnitId), "timerUnit", source.Token, config.StartTimingGateId, config.EndTimingGateId);
             timing = timer;
             displays.Add(timer);
-            BLERiderIdUnit realStartId = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.StartIdUnitId), "startUnit", config.StartIdRange, source.Token);
-            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.EndIdUnitId), "finishUnit", config.EndIdRange, source.Token);
 
-            startGate = realStartId;
-            startLight = realStartId;
-
-            startGate?.ClearKnownRiders();
-            endGate?.ClearKnownRiders();
+            startLight = new BLEStartLightUnit(CommunicationManager.GetCommunicationDevice(config.StartLightUnitId), "lightUnit", source.Token);
 
             startLight.SetStartLightColor(StartLightColor.YELLOW);
 
-            startGate.AddKnownRiders(riders);
-
-            tracker = new RaceTracker(timing, startGate, endGate, config.ExtractTrackerConfig(), riders);
+            tracker = new RaceTracker(timing, config.ExtractTrackerConfig(), riders);
             HookEvents(tracker);
 
             CombinedTasks = tracker.Run(source.Token);
@@ -153,11 +132,6 @@ namespace RaceManagement
 
         public void Stop()
         {
-            startGate?.ClearKnownRiders();
-            endGate?.ClearKnownRiders();
-            //give the units time to process the commaands
-            Thread.Sleep(1000);
-
             source.Cancel();
             CombinedTasks?.Wait();
             source = new CancellationTokenSource();
@@ -167,12 +141,7 @@ namespace RaceManagement
         /// <summary>
         /// Gets a summary of the current state of the race
         /// </summary>
-        public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
-
-        /// <summary>
-        /// Get the beacons currently detected by the start and end id units
-        /// </summary>
-        public (Rider startRider, Rider endRider) GetBeacons => (startGate?.Closest, endGate?.Closest);
+        public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
 
         /// <summary>
         /// Returns all lap times driven so far
@@ -214,9 +183,9 @@ namespace RaceManagement
             tracker?.AddEvent(manualEvent);
         }
 
-        public void RemoveRider(string name)
+        public void RemoveRider(Guid id)
         {
-            tracker?.RemoveRider(name);
+            tracker?.RemoveRider(id);
         }
 
         public void AddRider(Rider rider)

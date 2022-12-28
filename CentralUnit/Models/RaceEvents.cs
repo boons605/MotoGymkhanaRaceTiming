@@ -75,7 +75,7 @@ namespace Models
     }
 
     /// <summary>
-    /// Event to mark when a rider has finished. A rider is finished when we have recorded 4 essential events: id at start box, timing at start box, id at end box and timing at end box
+    /// Event to mark when a rider has finished. A rider is finished when we have recorded 4 essential events: rider at start box, timing at start box, rider at end box and timing at end box
     /// </summary>
     public class FinishedEvent : RaceEvent
     {
