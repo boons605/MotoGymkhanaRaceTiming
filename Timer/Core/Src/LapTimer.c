@@ -73,18 +73,28 @@ uint8_t IsFirstLap(void)
 static uint8_t GetRunningLapCount(void)
 {
 	uint8_t retVal = 0U;
-	if (lastStartedLap < currentLap)
+	if (lastStartedLap != (Lap*)0U)
 	{
-		retVal = (uint8_t)(&laps[MAXLAPCOUNT-1] - currentLap);
-		retVal += (uint8_t)(lastStartedLap - &laps[MAXLAPCOUNT-1]);
-		retVal++;
+		if (lastStartedLap < currentLap)
+		{
+			retVal = (uint8_t)(&laps[MAXLAPCOUNT-1] - currentLap);
+			//By looking at the pointer to the last position in the array, we don't count that last position. Correct this.
+			retVal++;
+			retVal += (uint8_t)(lastStartedLap - &laps[0]);
+			//This branch will only be reached when more than one rider is in the field.
+			//By looking at the pointer to the last started lap and subtracting the start of the array from it, we don't count the last started lap.
+			retVal++;
+		}
+		else
+		{
+			retVal = (uint8_t)(lastStartedLap - currentLap);
+			//In case the current lap and last started lap are the same, but current lap is still running, count it.
+			if (currentLap->endTimeStamp == 0U)
+			{
+				retVal++;
+			}
+		}
 	}
-	else
-	{
-		retVal = (uint8_t)(lastStartedLap - currentLap);
-		retVal++;
-	}
-
 	return retVal;
 }
 
@@ -336,11 +346,27 @@ static void DualSensorMultiRunTimer(void)
 
 		if (GetRunningLapCount() < MAXSIMULTANEOUSRIDERS)
 		{
-			Lap* nextLap = GetNextLap(lastStartedLap);
+			Lap* nextLap;
+			if (lastStartedLap == (Lap*)0U)
+			{
+				nextLap = &laps[0];
+			}
+			else
+			{
+				nextLap = GetNextLap(lastStartedLap);
+			}
+
 			nextLap->startTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 			nextLap->endTimeStamp = 0U;
 
+			if (GetRunningLapCount() == 0U)
+			{
+				currentLap = nextLap;
+			}
+
 			lastStartedLap = nextLap;
+
+
 
 			//newRunStarted = 1U;
 		}
@@ -362,13 +388,17 @@ static void DualSensorMultiRunTimer(void)
 			currentLap->endTimeStamp = GetMillisecondsFromTimeStampPPS(&timeStamp);
 			previousLap = currentLap;
 			lapFinished = 1U;
-			//Move 'current' or 'next to finish' lap up one position in the buffer
-			currentLap = GetNextLap(currentLap);
 
-			//Move up further when next to finish lap is invalid.
-			while ((IsLapValid(currentLap)== 0U) && (currentLap != lastStartedLap))
+			if (currentLap != lastStartedLap)
 			{
+				//Move 'current' or 'next to finish' lap up one position in the buffer
 				currentLap = GetNextLap(currentLap);
+
+				//Move up further when next to finish lap is invalid.
+				while ((IsLapValid(currentLap)== 0U) && (currentLap != lastStartedLap))
+				{
+					currentLap = GetNextLap(currentLap);
+				}
 			}
 		}
 
