@@ -50,7 +50,7 @@ namespace WebPusher
 
                     JObject parsedContent = JObject.Parse(stateString);
 
-                    List<(IdEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(IdEvent id, TimingEvent timer)>>();
+                    List<(RiderReadyEvent id, TimingEvent timer)> onTrack = parsedContent["onTrack"].ToObject<List<(RiderReadyEvent id, TimingEvent timer)>>();
 
                     foreach ((var id, _) in onTrack)
                     {

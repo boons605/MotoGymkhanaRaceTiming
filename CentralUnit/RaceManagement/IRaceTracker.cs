@@ -15,8 +15,8 @@ namespace RaceManagement
         (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState { get; }
         List<Lap> Laps { get; }
 
-        event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
-        event EventHandler<FinishedRiderEventArgs> OnRiderMatched;
+        event EventHandler<LapCompletedEventArgs> OnRiderDNF;
+        event EventHandler<LapCompletedEventArgs> OnRiderMatched;
         event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         event EventHandler OnStartEmpty;
 

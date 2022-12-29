@@ -15,16 +15,11 @@ namespace ModelsTests
         [TestMethod]
         public void RaceSummary_ReadAndWrite_ShouldBeSymmetric()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
-            martijnBeacon.Rssi = 3;
-            martijnBeacon.MeasuredPower = 4;
+            Guid martijnId = Guid.NewGuid();
+            Guid bertId = Guid.NewGuid();
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 5 }, 6);
-            bertBeacon.Rssi = 7;
-            bertBeacon.MeasuredPower = 8;
-
-            IdEvent entered = new IdEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnBeacon), "StartId", Direction.Enter);
-            TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", bertBeacon),100, 1);
+            RiderReadyEvent entered = new RiderReadyEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnId), Guid.NewGuid(), "staff");
+            TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", bertId),100, 1);
 
             TrackerConfig config = new TrackerConfig
             {
@@ -33,7 +28,7 @@ namespace ModelsTests
                 EndTimingGateId = 11
             };
 
-            RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing }, config, "StartId", "EndId");
+            RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing }, config);
 
             MemoryStream stream = new MemoryStream();
 
@@ -52,9 +47,6 @@ namespace ModelsTests
             foreach ((RaceEvent e1, RaceEvent e2) in subject.Events.Zip(parsed.Events))
                 Assert.IsTrue(CompareRiders(e1.Rider, e2.Rider));
 
-            Assert.AreEqual("StartId", parsed.StartId);
-            Assert.AreEqual("EndId", parsed.EndId);
-
             Assert.AreEqual(config.StartTimingGateId, parsed.Config.StartTimingGateId);
             Assert.AreEqual(config.EndTimingGateId, parsed.Config.EndTimingGateId);
             Assert.AreEqual(config.EndMatchTimeout, parsed.Config.EndMatchTimeout);
@@ -63,11 +55,7 @@ namespace ModelsTests
         private bool CompareRiders(Rider r1, Rider r2)
         {
             return r1.Name == r2.Name
-                && r1.Beacon.Identifier.Zip(r2.Beacon.Identifier).All(pair => pair.First == pair.Second)
-                && r1.Beacon.CorrectionFactor == r2.Beacon.CorrectionFactor
-                && r1.Beacon.Distance == r2.Beacon.Distance
-                && r1.Beacon.MeasuredPower == r2.Beacon.MeasuredPower
-                && r1.Beacon.Rssi == r2.Beacon.Rssi;
+                && r1.Id == r2.Id;
         }
     }
 }

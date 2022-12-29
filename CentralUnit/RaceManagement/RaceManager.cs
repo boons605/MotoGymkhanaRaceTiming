@@ -122,7 +122,7 @@ namespace RaceManagement
             tracker.OnStartEmpty += (o, e) => startLight?.SetStartLightColor(StartLightColor.YELLOW);
         }
 
-        private void HandleFinish(object o, FinishedRiderEventArgs e)
+        private void HandleFinish(object o, LapCompletedEventArgs e)
         {
             foreach (var display in displays)
             {

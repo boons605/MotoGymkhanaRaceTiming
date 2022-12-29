@@ -68,9 +68,9 @@ namespace RaceManagement
         /// <summary>
         /// Fired when a rider's lap time is known
         /// </summary>
-        public event EventHandler<FinishedRiderEventArgs> OnRiderMatched;
+        public event EventHandler<LapCompletedEventArgs> OnRiderMatched;
 
-        public event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
+        public event EventHandler<LapCompletedEventArgs> OnRiderDNF;
 
         /// <summary>
         /// Fired when the system has no riders waiting to start
@@ -182,16 +182,19 @@ namespace RaceManagement
             if(ready == null)
             {
                 Log.Warn($"Ignoring ready event for rider {args.RiderId}, id unkown");
+                return;
             }
 
             if(onTrackRiders.ContainsKey(ready.Id))
             {
                 Log.Warn($"Ignoring ready event for rider {args.RiderId}, rider already on track");
+                return;
             }
 
             if(waitingRider != null)
             {
                 Log.Warn($"Ignoring ready event for rider {args.RiderId}, another rider is in the start box: {waitingRider.Rider.Id}");
+                return;
             }
 
             RiderReadyEvent newEvent = new RiderReadyEvent(args.Received, ready, Guid.NewGuid(), args.StaffName);
@@ -213,6 +216,7 @@ namespace RaceManagement
             if(!onTrack)
             {
                 Log.Warn($"Ignoring rider finished event for rider {args.RiderId}, rider not on track");
+                return;
             }
 
             bool timeExists = endTimes.TryGetValue(args.TimeId, out TimingEvent matchedTime);
@@ -220,6 +224,7 @@ namespace RaceManagement
             if(!timeExists)
             {
                 Log.Warn($"Ignoring rider finished event for rider {args.RiderId}, time event with id {args.TimeId} does not exist");
+                return;
             }
 
             RiderFinishedEvent userEvent = new RiderFinishedEvent(args.Received, pendingLap.id.Rider, Guid.NewGuid(), args.StaffName, matchedTime);
@@ -234,7 +239,7 @@ namespace RaceManagement
             laps.Add(lap);
             ApplyPendingEvents(lap);
 
-            OnRiderMatched?.Invoke(this, new FinishedRiderEventArgs(lap));
+            OnRiderMatched?.Invoke(this, new LapCompletedEventArgs(lap));
         }
 
         /// <summary>
@@ -294,7 +299,7 @@ namespace RaceManagement
                 Lap lap = new Lap(dnf);
                 this.laps.Add(lap);
                 ApplyPendingEvents(lap);
-                OnRiderDNF?.Invoke(this, new FinishedRiderEventArgs(lap));
+                OnRiderDNF?.Invoke(this, new LapCompletedEventArgs(lap));
             }
             else
             {
@@ -431,11 +436,11 @@ namespace RaceManagement
         }
     }
 
-    public class FinishedRiderEventArgs : EventArgs
+    public class LapCompletedEventArgs : EventArgs
     {
         public Lap Lap { get; private set; }
 
-        public FinishedRiderEventArgs(Lap lap)
+        public LapCompletedEventArgs(Lap lap)
         {
             Lap = lap;
         }
