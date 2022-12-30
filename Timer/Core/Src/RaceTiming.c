@@ -14,7 +14,7 @@
 #include "CommunicationManager.h"
 #include "ConnectedTimestampCollector.h"
 
-#define DISPLAYBUFFERINDEX 750U
+#define DISPLAYBUFFERINDEX 1500U
 #define COMMPROTOPERIOD 10U
 
 static uint8_t lastCycleButtonState = 0U;
@@ -65,19 +65,19 @@ static void ResetBufferedDisplayed(void)
 
 }
 
-static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
+static void UpdateDisplayWithBufferedLap(Lap* lapToDisplay)
 {
-    if(currentDisplayedLap != (Lap*)0)
+    if(lapToDisplay != (Lap*)0)
     {
-        if(currentDisplayedLap->endTimeStamp != 0U)
+        if(lapToDisplay->endTimeStamp != 0U)
         {
             if(GetSystemTimeStampMs() > (lastBufferDisplayChange + DISPLAYBUFFERINDEX))
             {
-                UpdateDisplay(GetLapDurationMs(currentDisplayedLap), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
+                UpdateDisplay(GetLapDurationMs(lapToDisplay), LAPTIMERDISPLAYDURATION, DTEA_ClearDisplay);
             }
             else
             {
-                UpdateDisplay(GetLapIndex(currentDisplayedLap) + 1, 0U, DTEA_ClearDisplay);
+                UpdateDisplay(GetLapIndex(lapToDisplay) + 1U, 0U, DTEA_ClearDisplay);
             }
 
         }
@@ -86,9 +86,9 @@ static void UpdateDisplayWithBufferedLap(Lap* currentDisplayedLap)
         	currentlyDisplayedLapFromBuffer = (Lap*)0U;
         }
 
-        if (currentlyDisplayedLapFromBuffer != currentDisplayedLap)
+        if (currentlyDisplayedLapFromBuffer != lapToDisplay)
         {
-        	currentlyDisplayedLapFromBuffer = currentDisplayedLap;
+        	currentlyDisplayedLapFromBuffer = lapToDisplay;
         	lastBufferDisplayChange = GetSystemTimeStampMs();
         }
     }
@@ -116,24 +116,21 @@ static Lap* HandleBufferedDisplayButtonRisingEdge(void)
     return retVal;
 }
 
-static void DisplayBufferResult(void)
-{
-    if((lastCycleButtonState == 0U) && (InputGetState(buttonInput) == 1U))
-    {
-    	UpdateDisplayWithBufferedLap(HandleBufferedDisplayButtonRisingEdge());
-    }
-
-}
-
 static void ManageDisplayButton(void)
 {
     if((GetCurrentLap() != (Lap*)0U) &&
        (IsFirstLap() == 0U) &&
        ((currentlyDisplayedLapFromBuffer != (Lap*)0U) || (InputGetState(buttonInput) == 1U)))
     {
-        DisplayBufferResult();
+    	uint8_t buttonState = InputGetState(buttonInput);
 
-        if(InputGetState(buttonInput) == 1U)
+    	if((lastCycleButtonState == 0U) && (buttonState == 1U))
+		{
+			UpdateDisplayWithBufferedLap(HandleBufferedDisplayButtonRisingEdge());
+		}
+
+
+        if(buttonState == 1U)
         {
         	if (currentlyDisplayedLapFromBuffer != (Lap*)0U)
         	{
@@ -148,8 +145,10 @@ static void ManageDisplayButton(void)
             }
         }
 
-        lastCycleButtonState = InputGetState(buttonInput);
+        lastCycleButtonState = buttonState;
     }
+
+    UpdateDisplayWithBufferedLap(currentlyDisplayedLapFromBuffer);
 }
 
 static void RunLocalTimer(void)
@@ -192,10 +191,36 @@ static void RunLocalTimer(void)
 #pragma GCC diagnostic push
 
     if(newRunStarted == 1U)
-    {
-        newRunStarted = 0U;
-        ResetRunningDisplayTime(0U);
-    }
+	{
+
+    	switch (operationMode)
+		{
+			case LaptimerOperation:
+			case SingleRunTimerOperation:
+			{
+				newRunStarted = 0U;
+				ResetRunningDisplayTime(0U);
+				break;
+			}
+			case MultiRunTimerOperation:
+			{
+				if (currentlyDisplayedLapFromBuffer == (Lap*)0U)
+				{
+					newRunStarted = 0U;
+					UpdateDisplay((GetLapIndex(GetLastStartedLap()) + 1U), DISPLAYBUFFERINDEX, DTEA_ClearDisplay);
+					ResetRunningDisplayTime(0U);
+				}
+				break;
+			}
+			default:
+			{
+				break;
+			}
+
+		}
+
+	}
+
 
     ManageDisplayButton();
 }

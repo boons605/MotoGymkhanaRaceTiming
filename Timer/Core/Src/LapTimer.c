@@ -139,6 +139,11 @@ Lap* GetPreviousLap(void)
     return previousLap;
 }
 
+Lap* GetLastStartedLap(void)
+{
+	return lastStartedLap;
+}
+
 static uint8_t IsLapValid(Lap* lap)
 {
 	uint8_t retVal = 0U;
@@ -366,9 +371,7 @@ static void DualSensorMultiRunTimer(void)
 
 			lastStartedLap = nextLap;
 
-
-
-			//newRunStarted = 1U;
+			newRunStarted = 1U;
 		}
 	}
 
