@@ -86,4 +86,10 @@ namespace RaceManagement
         }
     }
 
+    public class ClearReadyEventArgs : ManualEventArgs
+    {
+        public ClearReadyEventArgs(DateTime received, Guid riderId, string staffName) : base(received, riderId, staffName)
+        {
+        }
+    }
 }

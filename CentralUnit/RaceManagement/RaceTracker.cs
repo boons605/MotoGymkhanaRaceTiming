@@ -138,6 +138,9 @@ namespace RaceManagement
                                 case ManualDNFEventArgs dnf:
                                     OnManualDNF(dnf);
                                     break;
+                                case ClearReadyEventArgs clear:
+                                    OnClearReady(clear);
+                                    break;
                                 default:
                                     throw new ArgumentException($"Unknown event type: {e.GetType()}");
                             }
@@ -203,6 +206,19 @@ namespace RaceManagement
             raceState.Enqueue(newEvent);
 
             OnRiderWaiting?.Invoke(this, new WaitingRiderEventArgs(newEvent));
+        }
+
+        /// <summary>
+        /// Clears the waiting rider
+        /// </summary>
+        /// <param name="args"></param>
+        private void OnClearReady(ClearReadyEventArgs args)
+        {
+            Rider forEvent = waitingRider.Rider;
+            waitingRider = null;
+            OnStartEmpty?.Invoke(this, EventArgs.Empty);
+
+            raceState.Enqueue(new ClearReadyEvent(args.Received, forEvent, Guid.NewGuid(), args.StaffName));
         }
 
         /// <summary>

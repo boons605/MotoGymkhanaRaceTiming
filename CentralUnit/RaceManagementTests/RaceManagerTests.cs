@@ -233,8 +233,8 @@ namespace RaceManagementTests
         /// <param name="time">The timing unit that should emit the timing events</param>
         private void MakeEndEvents(Rider rider, DateTime end, long microseconds, RaceTracker tracker, MockTimingUnit time)
         {
-            tracker.AddEvent(new RiderFinishedEventArgs(end, rider.Id, "staff", Guid.NewGuid()));
             time.EmitTriggerEvent(microseconds, "Timer", 1, end);
+            tracker.AddEvent(new RiderFinishedEventArgs(end, rider.Id, "staff", Guid.NewGuid()));
         }
     }
 }

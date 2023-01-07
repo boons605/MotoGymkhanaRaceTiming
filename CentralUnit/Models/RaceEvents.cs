@@ -187,6 +187,14 @@ namespace Models
         }
     }
 
+    public class ClearReadyEvent : ManualEvent
+    {
+        public ClearReadyEvent(DateTime time, Rider rider, Guid eventId, string staffName) : base(time, rider, eventId, staffName)
+        {
+        }
+    }
+
+
     public enum Direction
     {
         Enter, Exit
