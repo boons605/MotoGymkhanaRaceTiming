@@ -22,6 +22,12 @@ namespace RaceManagement
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        /// <summary>
+        /// Processing events is inherently thread safe since we are in control of the processing thread.
+        /// But access properties that depend on the state of the race is not, so those need a lock
+        /// </summary>
+        private object StateLock;
+
         private TrackerConfig config;
         /// <summary>
         /// The timing unit that contains the timing gates at the start and stop box
@@ -83,7 +89,9 @@ namespace RaceManagement
             this.knownRiders = knownRiders;
             this.config = config;
 
-            foreach(Rider rider in knownRiders)
+            this.StateLock = new object();
+
+            foreach (Rider rider in knownRiders)
             {
                 pendingPenalties.Add(rider.Id, new List<PenaltyEvent>());
             }
@@ -93,8 +101,16 @@ namespace RaceManagement
         /// Gives you an overview of the current state of the race
         /// Do not modify the returned objects
         /// </summary>
-        public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState =>
-            (waitingRider, onTrackRiders.Values.ToList(), endTimes.Values.ToList());
+        public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState
+        {
+            get
+            {
+                lock (StateLock)
+                {
+                    return (waitingRider, onTrackRiders.Values.ToList(), endTimes.Values.ToList());
+                }
+            }
+        }
 
         /// <summary>
         /// Returns a list of all laps driven so far
@@ -116,33 +132,36 @@ namespace RaceManagement
                 {
                     while (!(token.IsCancellationRequested && toProcess.Count == 0))
                     {
-                        if (toProcess.TryDequeue(out EventArgs e))
+                        lock (StateLock)
                         {
-                            switch (e)
+                            if (toProcess.TryDequeue(out EventArgs e))
                             {
-                                case RiderReadyEventArgs rider:
-                                    OnRiderReady(rider);
-                                    break;
-                                case RiderFinishedEventArgs rider:
-                                    OnRiderFinished(rider);
-                                    break;
-                                case TimingTriggeredEventArgs time:
-                                    OnTimer(time);
-                                    break;
-                                case PenaltyEventArgs penalty:
-                                    OnPenalty(penalty);
-                                    break;
-                                case DSQEventArgs dsq:
-                                    OnDSQ(dsq);
-                                    break;
-                                case ManualDNFEventArgs dnf:
-                                    OnManualDNF(dnf);
-                                    break;
-                                case ClearReadyEventArgs clear:
-                                    OnClearReady(clear);
-                                    break;
-                                default:
-                                    throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                                switch (e)
+                                {
+                                    case RiderReadyEventArgs rider:
+                                        OnRiderReady(rider);
+                                        break;
+                                    case RiderFinishedEventArgs rider:
+                                        OnRiderFinished(rider);
+                                        break;
+                                    case TimingTriggeredEventArgs time:
+                                        OnTimer(time);
+                                        break;
+                                    case PenaltyEventArgs penalty:
+                                        OnPenalty(penalty);
+                                        break;
+                                    case DSQEventArgs dsq:
+                                        OnDSQ(dsq);
+                                        break;
+                                    case ManualDNFEventArgs dnf:
+                                        OnManualDNF(dnf);
+                                        break;
+                                    case ClearReadyEventArgs clear:
+                                        OnClearReady(clear);
+                                        break;
+                                    default:
+                                        throw new ArgumentException($"Unknown event type: {e.GetType()}");
+                                }
                             }
                         }
                     }
@@ -250,6 +269,7 @@ namespace RaceManagement
             raceState.Enqueue(systemEvent);
 
             onTrackRiders.Remove(args.RiderId);
+            endTimes.Remove(matchedTime.EventId);
 
             Lap lap = new Lap(systemEvent);
             laps.Add(lap);
@@ -315,6 +335,7 @@ namespace RaceManagement
                 Lap lap = new Lap(dnf);
                 this.laps.Add(lap);
                 ApplyPendingEvents(lap);
+                onTrackRiders.Remove(onTrack.id.Rider.Id);
                 OnRiderDNF?.Invoke(this, new LapCompletedEventArgs(lap));
             }
             else
@@ -435,19 +456,35 @@ namespace RaceManagement
 
         public void AddRider(Rider rider)
         {
-            knownRiders.Add(rider);
-            pendingPenalties.Add(rider.Id, new List<PenaltyEvent>());
+            lock (StateLock)
+            {
+                knownRiders.Add(rider);
+                pendingPenalties.Add(rider.Id, new List<PenaltyEvent>());
+            }
         }
 
+        /// <summary>
+        /// Remove a rider. If an event is currently being processed execution will wait
+        /// </summary>
+        /// <param name="id"></param>
         public void RemoveRider(Guid id)
         {
-            knownRiders.RemoveAll(r => r.Id == id);
-            pendingDisqualifications.Remove(id);
-            pendingPenalties.Remove(id);
+            lock (StateLock)
+            {
+                knownRiders.RemoveAll(r => r.Id == id);
+                pendingDisqualifications.Remove(id);
+                pendingPenalties.Remove(id);
+            }
         }
 
+        /// <summary>
+        /// Add an event to the queue of events. Will be processed when the event thread gets to it
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="manualEvent"></param>
         public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
         {
+            // no need to lock, the event processing thread will not execute events in parallel
             OnEvent(manualEvent);
         }
     }

@@ -54,6 +54,7 @@ namespace RaceManagementTests
         public void OnRiderReady_ShouldSaveEvent()
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
             subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
@@ -92,6 +93,7 @@ namespace RaceManagementTests
         public void OnTimer_ForStart_WitWaitingRider_ShouldMatchWithRider()
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
             //rider enters start box
             subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
@@ -107,9 +109,9 @@ namespace RaceManagementTests
             //we expect an EnteredEvent and a TimingEvent, in that order
             Assert.AreEqual(2, summary.Events.Count);
 
-            RiderReadyEvent id = summary.Events[0] as RiderReadyEvent;
+            RiderReadyEvent ready = summary.Events[0] as RiderReadyEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
-            Assert.AreEqual(onTrack[0], id);
+            Assert.AreEqual(onTrack[0].rider, ready);
             Assert.AreEqual(onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider.Name);
@@ -165,8 +167,10 @@ namespace RaceManagementTests
         public void OnEndId_WithDifferentRiderOnTrack_ShouldIgnoreEvent()
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
             Rider richard = new Rider("Richard", Guid.NewGuid());
+            subject.AddRider(richard);
 
             //rider enters start box
             subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
@@ -186,7 +190,7 @@ namespace RaceManagementTests
             //we need to know the id of the end timing event
             Guid timingId = subject.GetState.unmatchedTimes[0].EventId;
 
-            //rider not on track triggers end id
+            //rider not on track triggers end id, should not be recorded
             subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), richard.Id, "staff", timingId));
 
             source.Cancel();
@@ -194,12 +198,12 @@ namespace RaceManagementTests
             RaceSummary summary = race.Result;
             (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
-            //we expect only the events for Martijn tto be recorded
-            Assert.AreEqual(2, summary.Events.Count);
+            //we expect only the events for Martijn to be recorded
+            Assert.AreEqual(3, summary.Events.Count);
 
-            RiderReadyEvent id = summary.Events[0] as RiderReadyEvent;
+            RiderReadyEvent ready = summary.Events[0] as RiderReadyEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
-            Assert.AreEqual(onTrack[0].rider.Rider.Id, id);
+            Assert.AreEqual(onTrack[0].rider.Rider.Id, ready.Rider.Id);
             Assert.AreEqual(onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider.Name);
@@ -207,20 +211,14 @@ namespace RaceManagementTests
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), start.Time);
 
             //no riders should be waiting at the start.
-            //no end times or ids shoudl be waiting to be matched
+            //there is still the end timing event to be matched
             Assert.IsNull(waiting);
-            Assert.AreEqual(0, unmatchedTimes.Count);
+            Assert.AreEqual(1, unmatchedTimes.Count);
         }
 
         [TestMethod]
-        [DataRow(true, true, false)]
-        [DataRow(false, false, false)]
-        [DataRow(true, false, false)]
-        [DataRow(false, true, false)]
-        [DataRow(true, true, true)]
-        [DataRow(false, false, true)]
-        [DataRow(true, false, true)]
-        [DataRow(false, true, true)]
+        [DataRow(true)]
+        [DataRow(false)]
         public void OnEndId_WithMatchingTiming_ShouldCompleteLap(bool includeUnmatchedTime)
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
@@ -251,10 +249,9 @@ namespace RaceManagementTests
             }
 
             //we need to know the id of the end timing event
-            Guid timingId = subject.GetState.unmatchedTimes[1].EventId;
+            Guid timingId = subject.GetState.unmatchedTimes.Last().EventId;
 
-            //rider not on track triggers end id
-            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), richard.Id, "staff", timingId));
+            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff", timingId));
 
             source.Cancel();
             (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) state = subject.GetState;
@@ -267,11 +264,27 @@ namespace RaceManagementTests
 
             //There should be nothing going on in the race at this point, but there should still be an unmatched time
             Assert.IsNull(state.waiting);
-            Assert.AreEqual(1, state.unmatchedTimes.Count);
+
+            if (includeUnmatchedTime)
+            {
+                Assert.AreEqual(1, state.unmatchedTimes.Count);
+            }
+            else
+            {
+                Assert.AreEqual(0, state.unmatchedTimes.Count);
+            }
+
             Assert.AreEqual(0, state.onTrack.Count);
 
             // make sure the unmacthed time is left
-            Assert.AreNotEqual(timingId, state.unmatchedTimes[0].EventId);
+            if (includeUnmatchedTime)
+            {
+                Assert.AreNotEqual(timingId, state.unmatchedTimes[0].EventId);
+            }
+            else
+            {
+                Assert.AreEqual(0, state.unmatchedTimes.Count);
+            }
         }
 
         [TestMethod]
@@ -467,7 +480,7 @@ namespace RaceManagementTests
             //The penalty event is still recorded, but its not applied to any lap
             Assert.AreEqual(1, summary.Events.Count);
             PenaltyEvent penalty = summary.Events[0] as PenaltyEvent;
-            Assert.IsNull(penalty.Rider);
+            Assert.AreEqual("unknown", penalty.Rider.Name);
             Assert.AreEqual("test", penalty.Reason);
             Assert.AreEqual("staff", penalty.StaffName);
             Assert.AreEqual(1, penalty.Seconds);
@@ -628,7 +641,7 @@ namespace RaceManagementTests
             //The dsq event is still recorded, but its not applied to any lap
             Assert.AreEqual(1, summary.Events.Count);
             DSQEvent dsq = summary.Events[0] as DSQEvent;
-            Assert.IsNull(dsq.Rider);
+            Assert.AreEqual("unknown", dsq.Rider.Name);
             Assert.AreEqual("test", dsq.Reason);
             Assert.AreEqual("staff", dsq.StaffName);
         }
@@ -843,7 +856,6 @@ namespace RaceManagementTests
             //we need to know the id of the end timing event
             Guid timingId = tracker.GetState.unmatchedTimes.Last().EventId;
 
-            //rider not on track triggers end id
             tracker.AddEvent(new RiderFinishedEventArgs(end.AddSeconds(1), rider.Id, "staff", timingId));
         }
     }

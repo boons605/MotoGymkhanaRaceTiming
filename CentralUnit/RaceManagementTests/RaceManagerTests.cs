@@ -39,9 +39,6 @@ namespace RaceManagementTests
 
             SimulateRace();
 
-            //wait for the tracker to process all events
-            Thread.Sleep(2000);
-
             subject.Stop();
         }
 
@@ -54,12 +51,12 @@ namespace RaceManagementTests
             //DNFs ar also counted as a kind of lap
             Assert.AreEqual(8, laps.Count);
 
-            Assert.AreEqual("Rider-1", laps[0].Rider.Name);
-            Assert.AreEqual(10000000, laps[0].GetLapTime());
-
             //A DNF
-            Assert.AreEqual("Rider-0", laps[1].Rider.Name);
-            Assert.AreEqual(-1, laps[1].GetLapTime());
+            Assert.AreEqual("Rider-0", laps[0].Rider.Name);
+            Assert.AreEqual(-1, laps[0].GetLapTime());
+
+            Assert.AreEqual("Rider-1", laps[1].Rider.Name);
+            Assert.AreEqual(10000000, laps[1].GetLapTime());
 
             Assert.AreEqual("Rider-2", laps[2].Rider.Name);
             Assert.AreEqual(20000000, laps[2].GetLapTime());
@@ -71,11 +68,12 @@ namespace RaceManagementTests
             Assert.AreEqual("Rider-0", laps[4].Rider.Name);
             Assert.AreEqual(50000000, laps[4].GetLapTime());
 
-            Assert.AreEqual("Rider-2", laps[5].Rider.Name);
-            Assert.AreEqual(40000000, laps[5].GetLapTime());
+            Assert.AreEqual("Rider-1", laps[5].Rider.Name);
+            Assert.AreEqual(-1, laps[5].GetLapTime());
 
-            Assert.AreEqual("Rider-1", laps[6].Rider.Name);
-            Assert.AreEqual(-1, laps[6].GetLapTime());
+            Assert.AreEqual("Rider-2", laps[6].Rider.Name);
+            Assert.AreEqual(40000000, laps[6].GetLapTime());
+
 
             Assert.AreEqual("Rider-3", laps[7].Rider.Name);
             Assert.AreEqual(15000000, laps[7].GetLapTime());
@@ -233,8 +231,21 @@ namespace RaceManagementTests
         /// <param name="time">The timing unit that should emit the timing events</param>
         private void MakeEndEvents(Rider rider, DateTime end, long microseconds, RaceTracker tracker, MockTimingUnit time)
         {
+            int previousUnmacthedTimes = tracker.GetState.unmatchedTimes.Count;
+
+            // rider triggers end timing gate
             time.EmitTriggerEvent(microseconds, "Timer", 1, end);
-            tracker.AddEvent(new RiderFinishedEventArgs(end, rider.Id, "staff", Guid.NewGuid()));
+
+            // wait for tracker to process events
+            while (tracker.GetState.unmatchedTimes.Count == previousUnmacthedTimes)
+            {
+                Thread.Yield();
+            }
+
+            //we need to know the id of the end timing event
+            Guid timingId = tracker.GetState.unmatchedTimes.Last().EventId;
+
+            tracker.AddEvent(new RiderFinishedEventArgs(end.AddSeconds(1), rider.Id, "staff", timingId));
         }
     }
 }
