@@ -22,6 +22,10 @@ body {
     font-size: 12px;
 }
 
+.hideThis {
+    visibility: hidden;
+}
+
 .feedback {
     background-color: black;
     border: 10px solid orange;
@@ -414,4 +418,19 @@ textarea {
     h3 {
         page-break-after: avoid;
     }
+}
+
+
+.turnLightGreen {
+    background-color: limegreen;
+}
+
+.cancelGreenLight {
+    background-color: orangered;
+}
+
+
+.startBoxName {
+    font-weight: bold;
+    font-size: 30px;
 }
