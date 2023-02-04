@@ -61,7 +61,7 @@ body {
 }
 
 .riderName {
-    width: auto;
+    width: 300px;;
     padding-right: 20px;
 }
 
@@ -101,6 +101,10 @@ body {
 
 .stop {
     background-color: gray;
+}
+
+.stopFlash {
+    background-color: red;
 }
 
 .penaltyCounter {
