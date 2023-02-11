@@ -192,5 +192,7 @@ namespace RaceManagement
         {
             tracker?.AddRider(rider);
         }
+
+        public Rider GetRiderById(Guid id) => tracker?.GetRiderById(id);
     }
 }

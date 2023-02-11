@@ -8,7 +8,7 @@ namespace Models
     using System.Text;
 
     /// <summary>
-    /// Contains rider information, like the rider name and the beacon belonging to the rider.
+    /// Contains rider information, like the rider name and unique identifier
     /// </summary>
     public class Rider
     {

@@ -64,7 +64,7 @@ namespace RaceManagement
         private Dictionary<Guid, DSQEvent> pendingDisqualifications = new Dictionary<Guid, DSQEvent>();
         private Dictionary<Guid, List<PenaltyEvent>> pendingPenalties = new Dictionary<Guid, List<PenaltyEvent>>();
 
-        private List<Rider> knownRiders = new List<Rider>();
+        private Dictionary<Guid, Rider> knownRiders = new Dictionary<Guid, Rider>();
 
         /// <summary>
         /// Fired when the system is ready for the next rider to trigger the start timing gate
@@ -86,7 +86,7 @@ namespace RaceManagement
         public RaceTracker(ITimingUnit timing, TrackerConfig config, List<Rider> knownRiders)
         {
             this.timing = timing;
-            this.knownRiders = knownRiders;
+            this.knownRiders = knownRiders.ToDictionary(r => r.Id);
             this.config = config;
 
             this.StateLock = new object();
@@ -115,7 +115,25 @@ namespace RaceManagement
         /// <summary>
         /// Returns a list of all laps driven so far
         /// </summary>
-        public List<Lap> Laps => laps.ToList();
+        public List<Lap> Laps
+        {
+            get 
+            {
+                lock (StateLock)
+                {
+                    return laps.ToList();
+                }
+            }
+        }
+
+        public Rider GetRiderById(Guid id)
+        {
+            lock (StateLock)
+            {
+                knownRiders.TryGetValue(id, out Rider result);
+                return result;
+            }
+        }
 
         /// <summary>
         /// Run a task that communicates with the timing and rider units to track the state of a race
@@ -199,9 +217,9 @@ namespace RaceManagement
         /// </summary>
         private void OnRiderReady(RiderReadyEventArgs args)
         {
-            Rider ready = knownRiders.Find(r => r.Id == args.RiderId);
+            bool known = knownRiders.TryGetValue(args.RiderId, out Rider ready);
 
-            if(ready == null)
+            if(!known)
             {
                 Log.Warn($"Ignoring ready event for rider {args.RiderId}, id unkown");
                 return;
@@ -357,9 +375,9 @@ namespace RaceManagement
         /// <param name="raceEvent"></param>
         private void OnDSQ(DSQEventArgs raceEvent)
         {
-            Rider rider = knownRiders.Where(r => r.Id == raceEvent.RiderId).FirstOrDefault();
+            bool known = knownRiders.TryGetValue(raceEvent.RiderId, out Rider rider);
 
-            if (rider == null)
+            if (!known)
             {
                 DSQEvent dsq = new DSQEvent(raceEvent.Received, new Rider("unknown", raceEvent.RiderId), raceEvent.StaffName, raceEvent.Reason);
 
@@ -402,7 +420,7 @@ namespace RaceManagement
         /// <param name="raceEvent"></param>
         private void OnPenalty(PenaltyEventArgs raceEvent)
         {
-            Rider rider = knownRiders.Where(r => r.Id == raceEvent.RiderId).FirstOrDefault();
+            bool known = knownRiders.TryGetValue(raceEvent.RiderId, out Rider rider);
 
             if (rider == null)
             {
@@ -458,8 +476,11 @@ namespace RaceManagement
         {
             lock (StateLock)
             {
-                knownRiders.Add(rider);
-                pendingPenalties.Add(rider.Id, new List<PenaltyEvent>());
+                if (!knownRiders.ContainsKey(rider.Id))
+                {
+                    knownRiders.Add(rider.Id, rider);
+                    pendingPenalties.Add(rider.Id, new List<PenaltyEvent>());
+                }
             }
         }
 
@@ -471,7 +492,7 @@ namespace RaceManagement
         {
             lock (StateLock)
             {
-                knownRiders.RemoveAll(r => r.Id == id);
+                knownRiders.Remove(id);
                 pendingDisqualifications.Remove(id);
                 pendingPenalties.Remove(id);
             }
