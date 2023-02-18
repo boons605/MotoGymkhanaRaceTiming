@@ -211,7 +211,7 @@ namespace RaceManagement
 
             return fastestLaps;
         }
-        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+        public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
         }

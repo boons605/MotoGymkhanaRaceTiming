@@ -503,7 +503,7 @@ namespace RaceManagement
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="manualEvent"></param>
-        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+        public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             // no need to lock, the event processing thread will not execute events in parallel
             OnEvent(manualEvent);
