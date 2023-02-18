@@ -113,8 +113,8 @@ namespace WebAPI.Controllers
         /// <param name="summary"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("[controller]/Simulate")]
-        public StatusCodeResult Simulate([FromBody] JObject summary)
+        [Route("[controller]/Replay")]
+        public StatusCodeResult Replay([FromBody] JObject summary)
         {
             byte[] text = Encoding.UTF8.GetBytes(summary.ToString());
             RaceSummary parsed;
@@ -123,6 +123,14 @@ namespace WebAPI.Controllers
                 parsed = RaceSummary.ReadSummary(stream);
             }
             manager.Start(parsed);
+            return new StatusCodeResult(200);
+        }
+
+        [HttpPost]
+        [Route("[controller]/Simulate")]
+        public StatusCodeResult Simulate([FromBody] JObject data, [FromQuery] int delayMilliseconds, [FromQuery] int? overrideEventDelayMilliseconds)
+        {
+            manager.Start(data.ToObject<SimulationData>(), delayMilliseconds, overrideEventDelayMilliseconds);
             return new StatusCodeResult(200);
         }
 

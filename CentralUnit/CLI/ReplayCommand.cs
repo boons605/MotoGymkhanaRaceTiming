@@ -9,7 +9,7 @@ namespace CLI
     /// <summary>
     /// This command allows you to simulate a race from a serialized RaceSummary
     /// </summary>
-    public class SimulationCommand : CommandBase
+    public class ReplayCommand : CommandBase
     {
         [Required]
         [Argument(0, Description = "File path to a json that contains a serialzed RaceSummary")]

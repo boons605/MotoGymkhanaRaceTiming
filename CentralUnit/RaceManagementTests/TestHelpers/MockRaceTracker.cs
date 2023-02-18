@@ -38,5 +38,10 @@ namespace RaceManagementTests.TestHelpers
         {
             throw new NotImplementedException();
         }
+
+        public Rider GetRiderById(Guid id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

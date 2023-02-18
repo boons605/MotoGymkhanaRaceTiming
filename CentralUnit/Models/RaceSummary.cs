@@ -29,6 +29,7 @@ namespace Models
         /// </summary>
         public List<Rider> Riders => Events
                 .Select(e => e.Rider)
+                .Where(e => e != null)
                 .Distinct(new RiderNameEquality())
                 .ToList();
 

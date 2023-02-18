@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using DisplayUnit;
@@ -26,7 +27,6 @@ namespace RaceManagementTests
 
             TrackerConfig config = new TrackerConfig
             {
-                EndMatchTimeout = 20,
                 StartTimingGateId = 0,
                 EndTimingGateId = 1
             };
