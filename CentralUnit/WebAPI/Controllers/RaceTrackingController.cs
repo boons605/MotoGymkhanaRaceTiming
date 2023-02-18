@@ -39,7 +39,15 @@ namespace WebAPI.Controllers
                 (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
-                result["waiting"] = JObject.FromObject(waiting);
+                if(waiting is null)
+                {
+                    result["waiting"] = null;
+                }
+                else
+                {
+                    result["waiting"] = JObject.FromObject(waiting);
+                }
+
                 result["onTrack"] = JArray.FromObject(onTrack);
                 result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
 

@@ -38,9 +38,9 @@ namespace SensorUnits.TimingUnit
 
             int milliSecondsToWait = delayMilliseconds;
 
-            for(int i = 0; i<Data.SimulatedTimingEvents.Count; i++)
+            for(int i = 0; i<Data.Events.Count; i++)
             {
-                SimulatedTimingEvent currentEvent = Data.SimulatedTimingEvents[i];
+                SimulatedTimingEvent currentEvent = Data.Events[i];
 
                 await Task.Delay(overrideEventDelayMilliseconds ?? currentEvent.MillisecondsFromSimStart);
 

@@ -13,7 +13,7 @@ namespace Models
         public int StartGateId { get; set; }
         public int EndGateId { get; set; }
 
-        public List<SimulatedTimingEvent> SimulatedTimingEvents { get; set; }
+        public List<SimulatedTimingEvent> Events { get; set; }
 
         public List<Rider> Riders { get; set; }
 
@@ -21,7 +21,7 @@ namespace Models
         {
             StartGateId = startGateId;
             EndGateId = endGateId;
-            SimulatedTimingEvents = simulatedTimingEvents;
+            Events = simulatedTimingEvents;
             Riders = riders;
         }
     }
