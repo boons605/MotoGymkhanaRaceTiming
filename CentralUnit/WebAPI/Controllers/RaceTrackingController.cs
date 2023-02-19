@@ -8,6 +8,7 @@ using RaceManagement;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace WebAPI.Controllers
@@ -30,32 +31,28 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/State")]
-        public JsonResult GetState()
+        public ActionResult GetState()
         {
-            if (manager.HasState)
+            return WrapWithManagerCheck(() =>
             {
                 JObject result = new JObject();
                 (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = manager.GetState;
 
 
-                result["waiting"] = JObject.FromObject(waiting);
+                if(waiting is null)
+                {
+                    result["waiting"] = null;
+                }
+                else
+                {
+                    result["waiting"] = JObject.FromObject(waiting);
+                }
+
                 result["onTrack"] = JArray.FromObject(onTrack);
                 result["unmatchedEndTimes"] = JArray.FromObject(unmatchedTimes);
 
                 return new JsonResult(result);
-            }
-            else
-            {
-                JObject body = new JObject
-                {
-                    { "Error", "Race tracking is not running. Provide a config first" }
-                };
-
-                JsonResult response = new JsonResult(body);
-                response.StatusCode = 500;
-
-                return response;
-            }
+            });
         }
 
         /// <summary>
@@ -65,9 +62,14 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/PendingTimes")]
-        public JsonResult PendingTimes()
+        public ActionResult PendingTimes()
         {
-            throw new NotImplementedException();
+            return WrapWithManagerCheck(() =>
+            {
+                List<TimingEvent> times = manager.GetState.unmatchedTimes;
+
+                return new JsonResult(times, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+            });
         }
 
         /// <summary>
@@ -77,24 +79,12 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/Laps")]
-        public JsonResult GetLaps(int start = 0)
+        public ActionResult GetLaps(int start = 0)
         {
-            if (manager.HasState)
+            return WrapWithManagerCheck(() =>
             {
                 return new JsonResult(manager.GetLapTimes(start), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
-            }
-            else
-            {
-                JObject body = new JObject
-                {
-                    { "Error", "Race tracking is not running. Provide a config first" }
-                };
-
-                JsonResult response = new JsonResult(body);
-                response.StatusCode = 500;
-
-                return response;
-            }
+            });
         }
 
         /// <summary>
@@ -103,24 +93,12 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/BestLapsByRider")]
-        public JsonResult GetLapsByRider()
+        public ActionResult GetLapsByRider()
         {
-            if (manager.HasState)
+            return WrapWithManagerCheck(() =>
             {
                 return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
-            }
-            else
-            {
-                JObject body = new JObject
-                {
-                    { "Error", "Race tracking is not running. Provide a config first" }
-                };
-
-                JsonResult response = new JsonResult(body);
-                response.StatusCode = 500;
-
-                return response;
-            }
+            });
         }
 
         /// <summary>
@@ -143,8 +121,8 @@ namespace WebAPI.Controllers
         /// <param name="summary"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("[controller]/Simulate")]
-        public StatusCodeResult Simulate([FromBody] JObject summary)
+        [Route("[controller]/Replay")]
+        public StatusCodeResult Replay([FromBody] JObject summary)
         {
             byte[] text = Encoding.UTF8.GetBytes(summary.ToString());
             RaceSummary parsed;
@@ -156,6 +134,14 @@ namespace WebAPI.Controllers
             return new StatusCodeResult(200);
         }
 
+        [HttpPost]
+        [Route("[controller]/Simulate")]
+        public StatusCodeResult Simulate([FromBody] JObject data, [FromQuery] int delayMilliseconds, [FromQuery] int? overrideEventDelayMilliseconds)
+        {
+            manager.Start(data.ToObject<SimulationData>(), delayMilliseconds, overrideEventDelayMilliseconds);
+            return new StatusCodeResult(200);
+        }
+
         /// <summary>
         /// Adds a new rider to the running race
         /// </summary>
@@ -163,10 +149,13 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("[controller]/Rider")]
-        public StatusCodeResult AddRider([FromBody] Rider rider)
+        public ActionResult AddRider([FromBody] Rider rider)
         {
-            manager.AddRider(rider);
-            return new StatusCodeResult(200);
+            return WrapWithManagerCheck(() => 
+            { 
+                manager.AddRider(rider); 
+                return new StatusCodeResult(200); 
+            });
         }
 
         /// <summary>
@@ -176,22 +165,75 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpDelete]
         [Route("[controller]/Rider")]
-        public StatusCodeResult DeleteRider([FromQuery] Guid id)
+        public ActionResult DeleteRider([FromQuery] Guid id)
         {
-            manager.RemoveRider(id);
-            return new StatusCodeResult(200);
+            return WrapWithManagerCheck(() =>
+            {
+                manager.RemoveRider(id);
+                return new StatusCodeResult(200);
+            });
         }
 
         /// <summary>
         /// Notifies the race manager that a new rider is waiting in the start box
         /// </summary>
-        /// <param name="riderID"></param>
+        /// <param name="riderId"></param>
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/RiderReady")]
-        public StatusCodeResult RiderReader([FromQuery] Guid riderID)
+        public ActionResult RiderReader([FromQuery] Guid riderId)
         {
-            throw new NotImplementedException();
+            return WrapWithManagerCheck(() =>
+            {
+                (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) state = manager.GetState;
+
+                JObject errorBody;
+
+                // if the start box is empty
+                if (state.waiting is null)
+                {
+                    // if the given rider is not on the track
+                    if (!state.onTrack.Any(tuple => tuple.rider.Rider.Id == riderId))
+                    {
+                        Rider rider = manager.GetRiderById(riderId);
+
+                        // if the given id corresponds to a known rider
+                        if (rider is not null)
+                        {
+                            manager.AddEvent(new RiderReadyEventArgs(DateTime.Now, riderId, "staff"));
+
+                            return new StatusCodeResult(200);
+                        }
+                        else
+                        {
+                            errorBody = new JObject
+                        {
+                            { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
+                        };
+                        }
+                    }
+                    else
+                    {
+                        errorBody = new JObject
+                    {
+                        { "Error", $"The given rider id {riderId} is already on track" }
+                    };
+                    }
+                }
+                else
+                {
+                    errorBody = new JObject
+                {
+                    { "Error", $"There is already a rider waiting: {state.waiting.Rider.Name}, id: {state.waiting.Rider.Id}" }
+                };
+                }
+
+                JsonResult errorResult = new JsonResult(errorBody);
+                errorResult.StatusCode = 500;
+
+                return errorResult;
+            });
+
         }
 
         /// <summary>
@@ -201,9 +243,13 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/ClearStartBox")]
-        public StatusCodeResult ClearStartBox()
+        public ActionResult ClearStartBox()
         {
-            throw new NotImplementedException();
+            return WrapWithManagerCheck(() =>
+            {
+                manager.AddEvent(new ClearReadyEventArgs(DateTime.Now, Guid.Empty, "staff"));
+                return new StatusCodeResult(200);
+            });
         }
 
         /// <summary>
@@ -215,9 +261,30 @@ namespace WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("[controller]/MatchEndTime")]
-        public JsonResult MatchEndTime([FromQuery] Guid riderId, [FromQuery] Guid timeId)
+        public ActionResult MatchEndTime([FromQuery] Guid riderId, [FromQuery] Guid timeId)
         {
-            throw new NotImplementedException();
+            return WrapWithManagerCheck(() =>
+            {
+                Rider rider = manager.GetRiderById(riderId);
+
+                if (rider is not null)
+                {
+                    manager.AddEvent(new RiderFinishedEventArgs(DateTime.Now, riderId, "staff", timeId));
+                    return new StatusCodeResult(200);
+                }
+                else
+                {
+                    JObject errorBody = new JObject
+                {
+                    { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
+                };
+
+                    JsonResult errorResult = new JsonResult(errorBody);
+                    errorResult.StatusCode = 500;
+
+                    return errorResult;
+                }
+            });
         }
 
         /// <summary>
@@ -259,6 +326,31 @@ namespace WebAPI.Controllers
         {
             manager.AddEvent(new DSQEventArgs(DateTime.Now, dsq.RiderId, dsq.StaffName, dsq.Reason));
             return new StatusCodeResult(200);
+        }
+
+        /// <summary>
+        /// Wraps endpoint code with a check and an approriate error for a running race manager
+        /// </summary>
+        /// <param name="endpoint"></param>
+        /// <returns></returns>
+        private ActionResult WrapWithManagerCheck(Func<ActionResult> endpoint)
+        {
+            if (manager.HasState)
+            {
+                return endpoint();
+            }
+            else
+            {
+                JObject body = new JObject
+                {
+                    { "Error", "Race tracking is not running. Provide a config first" }
+                };
+
+                JsonResult response = new JsonResult(body);
+                response.StatusCode = 500;
+
+                return response;
+            }
         }
     }
 }

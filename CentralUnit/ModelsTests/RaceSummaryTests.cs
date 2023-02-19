@@ -23,7 +23,6 @@ namespace ModelsTests
 
             TrackerConfig config = new TrackerConfig
             {
-                EndMatchTimeout = 9,
                 StartTimingGateId = 10,
                 EndTimingGateId = 11
             };
@@ -49,7 +48,6 @@ namespace ModelsTests
 
             Assert.AreEqual(config.StartTimingGateId, parsed.Config.StartTimingGateId);
             Assert.AreEqual(config.EndTimingGateId, parsed.Config.EndTimingGateId);
-            Assert.AreEqual(config.EndMatchTimeout, parsed.Config.EndMatchTimeout);
         }
 
         private bool CompareRiders(Rider r1, Rider r2)

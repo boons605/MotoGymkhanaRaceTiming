@@ -156,6 +156,7 @@ namespace Models
         public ManualDNFEvent(RiderReadyEvent started, string staffName, Guid eventId = new Guid()) 
             : base(started.Time, started.Rider, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
         {
+            ThisRider = started;
         }
     }
 

@@ -2,37 +2,57 @@
 using Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SensorUnits.TimingUnit
 {
-    public class SimulationTimingUnit : Simulation.BaseSimulationUnit<TimingEvent>, ITimingUnit, IDisplayUnit
+    public class SimulationTimingUnit : ITimingUnit, IDisplayUnit
     {
         public event EventHandler<TimingTriggeredEventArgs> OnTrigger;
 
-        public int StartId { get; private set; }
-        public int EndId { get; private set; }
+        public SimulationData Data { get; private set; }
 
         public int CurrentDisplay { get; private set; }
 
-        public SimulationTimingUnit(RaceSummary race)
-            : base(race)
-        {
-            FinishedEvent finish = race.Events.Find(r => r is FinishedEvent) as FinishedEvent;
+        public int StartId => Data.StartGateId;
 
-            StartId = finish.TimeStart.GateId;
-            EndId = finish.TimeEnd.GateId;
+        public int EndId => Data.EndGateId;
+
+        public SimulationTimingUnit(SimulationData data)
+        {
+            Data = data;
         }
 
-        public override void Initialize()
+        /// <summary>
+        /// Runs the simulation after the provided delay
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="delayMilliseconds"></param>
+        /// <param name="overrideEventDelayMilliseconds">if provided wait this amount of milliseconds in between events instead of the value provided in the events themselves</param>
+        /// <returns></returns>
+        public async Task Run(CancellationToken token, int delayMilliseconds, int? overrideEventDelayMilliseconds)
         {
-            eventsToReplay = new Queue<TimingEvent>(race.Events.Where(r => r is TimingEvent).Select(r => r as TimingEvent));
-        }
+            await Task.Delay(delayMilliseconds);
 
-        protected override void Replay(TimingEvent raceEvent)
-        {
-            OnTrigger?.Invoke(this, new TimingTriggeredEventArgs(raceEvent.Microseconds, "SimulatedTimer", raceEvent.GateId, raceEvent.Time));
+            int milliSecondsToWait = delayMilliseconds;
+
+            for(int i = 0; i<Data.Events.Count; i++)
+            {
+                SimulatedTimingEvent currentEvent = Data.Events[i];
+
+                await Task.Delay(overrideEventDelayMilliseconds ?? currentEvent.MillisecondsFromSimStart);
+
+                OnTrigger?.Invoke(this, new TimingTriggeredEventArgs(currentEvent.Microseconds, "SimulatedTimer", currentEvent.GateId, DateTime.Now));
+
+                if(token.IsCancellationRequested)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    return;
+                }
+            }
         }
 
         public void SetDisplayTime(int milliSeconds)

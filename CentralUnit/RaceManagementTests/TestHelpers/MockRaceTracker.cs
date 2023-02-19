@@ -34,7 +34,12 @@ namespace RaceManagementTests.TestHelpers
             //no action
         }
 
-        public void AddEvent<T>(T raceEvent) where T : ManualEventArgs
+        public void AddEvent<T>(T raceEvent) where T : EventArgs
+        {
+            throw new NotImplementedException();
+        }
+
+        public Rider GetRiderById(Guid id)
         {
             throw new NotImplementedException();
         }

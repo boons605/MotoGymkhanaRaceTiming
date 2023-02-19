@@ -28,7 +28,7 @@ namespace RaceManagement
         private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
 
-        public Task CombinedTasks { get; private set; }
+        public Task<RaceSummary> CombinedTasks { get; private set; }
 
         /// <summary>
         /// State is produced by a running RaceTracker. Before the first Start call there is no meanigful state
@@ -44,23 +44,54 @@ namespace RaceManagement
         }
 
         /// <summary>
-        /// Simulates a race from a json that contains all the race events
+        /// Simulates all the system events that happen during a race. Used to test interaction with ui
         /// </summary>
         /// <param name="simulationData"></param>
-        public void Start(RaceSummary simulationData)
+        /// <param name="delayMilliseconds">How many milliseconds to wait before starting simulation</param>
+        /// <param name="overrideEventDelayMilliseconds">how many milliseconds to wait in between events, if not provided use value in events</param>
+        public void Start(SimulationData simulationData, int delayMilliseconds, int? overrideEventDelayMilliseconds)
+        {
+            Stop();
+
+            XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
+
+            SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
+            displays.Add(timingUnit);
+            timing = timingUnit;
+
+            tracker = new RaceTracker(timing, new TrackerConfig { StartTimingGateId = simulationData.StartGateId, EndTimingGateId = simulationData.EndGateId }, simulationData.Riders);
+            HookEvents(tracker);
+
+            Task<RaceSummary> trackTask = tracker.Run(source.Token);
+
+            var timeTask = timingUnit.Run(source.Token, delayMilliseconds, overrideEventDelayMilliseconds);
+
+            CombinedTasks = Task.Run(() =>
+            {
+                timeTask.Wait();
+                source.Cancel();
+                return trackTask.Result;
+            });
+        }
+
+        /// <summary>
+        /// Replays a race from a json that contains all the race events
+        /// </summary>
+        /// <param name="replayData"></param>
+        public void Start(RaceSummary replayData)
         {
             Stop();
 
             XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
             
             //we need the simulation specific methods in the constructor
-            SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
+            ReplayTimingUnit timingUnit = new ReplayTimingUnit(replayData);
             displays.Add(timingUnit);
             timing = timingUnit;
 
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, simulationData.Config, simulationData.Riders);
+            tracker = new RaceTracker(timing, replayData.Config, replayData.Riders);
             HookEvents(tracker);
 
             Task<RaceSummary> trackTask = tracker.Run(source.Token);
@@ -71,7 +102,7 @@ namespace RaceManagement
             {
                 timeTask.Wait();
                 source.Cancel();
-                trackTask.Wait();
+                return trackTask.Result;
             });
         }
 
@@ -130,12 +161,14 @@ namespace RaceManagement
             }
         }
 
-        public void Stop()
+        public RaceSummary Stop()
         {
             source.Cancel();
-            CombinedTasks?.Wait();
+            RaceSummary summary = CombinedTasks?.Result;
             source = new CancellationTokenSource();
             displays.Clear();
+
+            return summary;
         }
 
         /// <summary>
@@ -178,7 +211,7 @@ namespace RaceManagement
 
             return fastestLaps;
         }
-        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+        public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
         }
@@ -192,5 +225,7 @@ namespace RaceManagement
         {
             tracker?.AddRider(rider);
         }
+
+        public Rider GetRiderById(Guid id) => tracker?.GetRiderById(id);
     }
 }

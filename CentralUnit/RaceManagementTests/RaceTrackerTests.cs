@@ -37,7 +37,6 @@ namespace RaceManagementTests
 
             TrackerConfig config = new TrackerConfig
             {
-                EndMatchTimeout = 10,
                 StartTimingGateId = 0,
                 EndTimingGateId = 1
             };
