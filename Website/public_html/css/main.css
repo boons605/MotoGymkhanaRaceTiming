@@ -11,6 +11,7 @@ body {
     color: black;
     font-weight: bold;
     text-align: center;
+    border-radius: 5px;
 }
 
 .btn {

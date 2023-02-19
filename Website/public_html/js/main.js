@@ -204,6 +204,8 @@ function ignoreStopEvent() {
 }
 
 function showStartQue() {
+    row = 0; // Resets row number
+    
     // Display all the rider who still have to start.
     
     var el = document.getElementById('startQue');
@@ -385,14 +387,14 @@ function addRowStartQue(currentValue, index, arr) {
     
     document.getElementById('startQue').innerHTML += 
           '<tr class="row">' +
-                '<td id="startQueNr' + index +'" class="tbCell riderNr">' +
-                    startQue[index].nr +
+                '<td id="startQueNr' + row +'" class="tbCell riderNr">' +
+                    currentValue.nr +
                 '</td>' +
-                '<td id="startQueName' + index +'" class="tbCell riderName">' +
-                    startQue[index].name +
+                '<td id="startQueName' + row +'" class="tbCell riderName">' +
+                    currentValue.name +
                 '</td>' +
 
-                '<td id="up' + index +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onClick="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="up' + row +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onClick="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8743;' +
                 '</td>' +
                 
@@ -400,7 +402,7 @@ function addRowStartQue(currentValue, index, arr) {
                     
                 '</td>' +
 
-                '<td id="down' + index +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onClick="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="down' + row +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onClick="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8744;' +
                 '</td>' +
                 
@@ -409,7 +411,7 @@ function addRowStartQue(currentValue, index, arr) {
                 '</td>' +
                
 
-                '<td id="startQueStart' + index +'" class="tbCell btn1 startButton' + hideGoButton() + '" onClick="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="startQueStart' + row +'" class="tbCell btn1 startButton' + hideGoButton() + '" onClick="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
                     'START' +
                 '</td>' +
                 
@@ -417,10 +419,12 @@ function addRowStartQue(currentValue, index, arr) {
                     
                 '</td>' +
 
-                '<td id="startQueDNS' + index +'" class="tbCell btn1 buttonDNS' + hideDNSbutton(currentValue.id) + '" onpointerdown="armDNS(\'' + currentValue.id + '\', ' + row + ')">' +
+                '<td id="startQueDNS' + row +'" class="tbCell btn1 buttonDNS' + hideDNSbutton(currentValue.id) + '" onpointerdown="armDNS(\'' + currentValue.id + '\', ' + row + ')">' +
                     dnsButtonText(currentValue.id) +
                 '</td>' +
             '</tr>';
+    
+    row++;
 }
 
 
@@ -480,7 +484,7 @@ function addRowInField(currentValue, index, arr) {
 
                 '</td>' +
 
-                '<td id="inFieldDNF' + row +'" class="tbCell btn ' + hideDNFbutton(currentValue.id) + 'dnf' + getDNFstatus(currentValue.id) + '" onpointerdown="armDNF(\'' + currentValue.id + '\', ' + row + ')">' +
+                '<td id="inFieldDNF' + row +'" class="tbCell btn' + hideDNFbutton(currentValue.id) + ' dnf' + getDNFstatus(currentValue.id) + '" onpointerdown="armDNF(\'' + currentValue.id + '\', ' + row + ')">' +
                     getDNFbuttonText(currentValue.id) +
                 '</td>' +
 
@@ -1189,7 +1193,7 @@ function dnsButtonText (id) {
 
 
 
-function hideDNSbutton(id) {
+function hideDNSbutton(id) { 
     var filteredDNS = armedDNS.filter(element => element.id === id);
     
     if (filteredDNS.length == 0 && armedDNSinterval > 0) {
@@ -1257,10 +1261,6 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
     }
     
     
-    
-    //arr.push(obj);
-    
-    
     return arr;
 }
 
@@ -1300,7 +1300,8 @@ function hideDNFbutton(riderId) {
     // hides the DNF button if the rider has already stopped
     let filtered = stoppedRiders.filter(element => element.id == riderId);
     if (filtered.length > 0) {
-        return "hidden";
+//        return "";
+        return " hideThis";
     }
     else {
         return "";
