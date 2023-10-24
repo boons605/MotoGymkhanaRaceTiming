@@ -33,7 +33,7 @@ const xhttp = new XMLHttpRequest();
 	xhttp.onload = function() {
     	alert(this.responseText);
     }
-xhttp.open("GET", "http://localhost:56781/RaceTracking/State", true);
+xhttp.open("GET", "/RaceTracking/State", true);
 xhttp.send()
 
 // Some random data to test with:
