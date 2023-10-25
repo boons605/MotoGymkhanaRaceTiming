@@ -142,6 +142,17 @@ namespace WebAPI.Controllers
             return new StatusCodeResult(200);
         }
 
+        [HttpGet]
+        [Route("[controller]/GetRiders")]
+        public ActionResult GetRiders()
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                return new JsonResult(JArray.FromObject(manager.GetKnownRiders()));
+            });
+
+        }
+
         /// <summary>
         /// Adds a new rider to the running race
         /// </summary>

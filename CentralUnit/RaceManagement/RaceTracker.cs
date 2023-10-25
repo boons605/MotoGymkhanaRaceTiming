@@ -126,6 +126,20 @@ namespace RaceManagement
             }
         }
 
+        /// <summary>
+        /// Returns a list of all the known riders
+        /// </summary>
+        public List<Rider> Riders
+        {
+            get
+            {
+                lock (StateLock)
+                {
+                    return knownRiders.Values.ToList();
+                }
+            }
+        }
+
         public Rider GetRiderById(Guid id)
         {
             lock (StateLock)
