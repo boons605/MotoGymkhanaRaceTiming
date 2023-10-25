@@ -211,6 +211,12 @@ namespace RaceManagement
 
             return fastestLaps;
         }
+
+        public List<Rider> GetKnownRiders()
+        {
+            return tracker.Riders;
+        }
+
         public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
