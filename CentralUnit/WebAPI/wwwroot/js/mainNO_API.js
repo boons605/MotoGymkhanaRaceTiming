@@ -18,64 +18,8 @@ var probablyStopped;
 var lastStoppedRider;
 var ignoredStopEvent = false;
 var delayTime = 15000;  // For testing set to low value. Live should be a larger value (around 20000).
-var url = "https://localhost:53742";
-var serverRequestInterval = 1000;
-var startTimes = [];
-var apiWaitingId = "";
-var unmatchedEndTimes = [];
 
-
-
-// List of contesters:
-var contesters = [
-    "Claud van Gessel",
-    "Frank Bock",
-    "Arjan Geitenbeek",
-    "Feike Eijlers",
-    "Marie Geerlings",
-    "Jan van Dieren",
-    "Paul Wonka",
-    "Bob Roodbaard",
-    "Paul Hille",
-    "Bert Schuld",
-    "Martijn Stapelbroek",
-    "Elias Shepherd",
-    "Richard van Schouwenburg"
-];
-
-var riderNumbers = [
-    1,2,3,4,5,6,7,8,9,10,11,12,13
-];
-
-
-
-
-function postAPI (url, data) {
-    // sends POST requests to server
-
-    let fetchData = {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: new Headers({
-        'Content-Type': 'application/json; charset=UTF-8'
-        })
-    };
-
-    fetch(url, fetchData)
-            .then(function() {
-                console.log("Sent data successfully to server.");
-                return 1;
-            })
-            .catch((error) => {
-              console.log("Server error");
-              console.log(error);
-              return 0;
-            });
-}
-
-
-
-
+var forTestingOnly;
 
 function uuidv4() {
     // create a unique id
@@ -85,230 +29,30 @@ function uuidv4() {
 }
 
 
+alert("succes!!");
+console.log("halooo");
 
-
-function loadWaitingList(c) {
-    
-    // Is rider list empty?
-    
-    fetch("/racetracking/getriders")
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-        let txt = data;
-
-        if (txt.length == 0) {
-            // Rider list is empty! So add riders to it.
-            
-            length = c.length;
-             i = 0;
-
-             console.log(length + " contesters");
-
-             while (i < length) {
-                 var data = {
-                     Name: contesters[i],
-                     Id: uuidv4()
-                 };
-
-                 console.log("Add rider: " + contesters[i]);
-                 postAPI("/racetracking/rider", data);
-
-                 i++;
-             }
-
-             console.log("Riders added.");
-        }
-        else {
-            // List already loaded, do nothing
-            return;
-        }
-    });
-}
-
-
-
-fetch("/racetracking/state")
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-        let txt = data;
-        if ('Error' in data) {
-            console.log('Simulation not running');
-        }
-        else {
-            console.log('Simulation status ok!');
-            loadWaitingList(contesters);
-        }
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-    
-    
-function updateRiderList () {    
-    fetch("/racetracking/getriders")
-        .then((response) => {
-          return response.json();
-        })
-        .then((data) => {
-            let txt = data;
-            
-            startQue = [];
-            
-            txt.forEach((contObj) => {
-                let name = contObj['Name'];
-                let id = contObj['Id'];
-                
-                var riderOnTrack = inField.filter((element) => element.id == id).length;
-                
-                if (riderOnTrack) {
-                    return;
-                }
-                
-                let index = contesters.indexOf(name);
-                
-                let nr = riderNumbers[index];
-                
-                startQue.push({nr: nr, id: id, name: name});
-            }); 
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-        
-        showStartQue();
-}
-
-setInterval(updateRiderList, serverRequestInterval);
-
-
-
-
-
-
-
-
-
-
-
-function updateState () {    
-    fetch("/racetracking/state")
-        .then((response) => {
-          return response.json();
-        })
-        .then((data) => {
-            let txt = data;
-    
-            //console.log(txt);
-            
-            if (txt['waiting'] === null) {
-                apiWaitingId = "";
-                console.log("Received from API no rider waiting");
-            }
-            else {
-                var obj = JSON.stringify(txt);
-                obj = JSON.parse(obj);
-                apiWaitingId = obj['waiting']['Rider']['Id'];
-                console.log("Waiting rider received from API: " + apiWaitingId);
-            }
-            
-            let onTrack = txt['onTrack'];
-            
-            inField = [];
-            
-            onTrack.forEach((contObj) => {
-                
-                let item = contObj['Item2'];
-                
-                let name = item['Rider']['Name'];
-                let id = item['Rider']['Id'];
-                
-                
-                let index = contesters.indexOf(name);
-                
-                let nr = riderNumbers[index];
-                
-                
-                // Calculate displayed time:
-                var t = 0;
-                var it = startTimes.filter(element => element.id == id);
-                if (it.length > 0) {
-                    var s = it[0].time;
-                    t = Math.floor((Date.now() - s)/1000);
-                }
-                
-                inField.push({nr: nr, id: id, name: name, time: t, p1: 0, p3: 0, dnf: false, dsq: false});
-                
-                
-                unmatchedEndTimes = [];
-                
-                var obj = JSON.stringify(txt);
-                obj = JSON.parse(obj);                
-                arr = obj['unmatchedEndTimes'];
-                
-                arr.forEach(
-                        (element) => {
-                            var ms = element.Microseconds;
-                            var tid = element.EventId;
-                            unmatchedEndTimes.push({time: ms, id: tid});
-                        }
-                    );
-                console.log(unmatchedEndTimes);
-                
-                unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
-                
-                if (unmatchedEndTimes.length > 0) {
-                    stopEvent();
-                }
-                
-                showInField();
-
-            }); 
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-}
-
-setInterval(updateState, serverRequestInterval);
-
-
-
-
-
-
-
-
-function updateStartBox() {
-    if (apiWaitingId != "") {
-        riderInStartPosition = true;
-        goButtonHidden = true;
-        waitingId = apiWaitingId;
-        
-        //showStartQue();
+// test ajax request
+const xhttp = new XMLHttpRequest();
+	xhttp.onload = function() {
+    	alert(this.responseText );
     }
-    else if (goButtonHidden == true) {
-        goButtonHidden = false;
-        riderInStartPosition = false;
-        waitingId = "";
-    }
-    
-//    else if (riderInStartPosition == false ) {
-//        
-//    }
+xhttp.open("GET", "/RaceTracking/State", true);
+xhttp.send()
 
-    showInField();
-    showStartQue();
-    
-}
+// Some random data to test with:
 
-setInterval(updateStartBox, serverRequestInterval);
+inField.push({nr: 9, id: uuidv4(), name: "Paul Hille", time: 30, p1: 0, p3: 0, dnf: false, dsq: false});
 
+inField.push({nr: 18, id: uuidv4(), name: "Richard van Schouwenburg", time: 145, p1: 0, p3: 0, dnf: false, dsq: false});
 
-
+startQue.push({nr: 7, id: uuidv4(), name: "Martijn Stapelbroek"});
+startQue.push({nr: 11, id: uuidv4(), name: "Romke Roodbaard"});
+startQue.push({nr: 5, id: uuidv4(), name: "Bert Schuld"});
+startQue.push({nr: 45, id: uuidv4(), name: "Marie Geerlings"});
+startQue.push({nr: 6, id: uuidv4(), name: "Test Rider"});
+startQue.push({nr: 8, id: uuidv4(), name: "Test Rider"});
+startQue.push({nr: 14, id: uuidv4(), name: "Test Rider"});
 
 showInField();
 showStartQue();
@@ -556,24 +300,76 @@ function hideGoButton() {
 function turnOnGreenLight(id) {
     console.log("Turn on green light for: " + id);  // Send ID to API
     
-    
-    // send to API
-    let url = "/RaceTracking/RiderReady?riderId=" + waitingId;
-    fetch(url)
-            .then((response) => {
-                console.log("Told server rider ready with id: " + waitingId + " RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY ");
-            })
-            .catch((error) => {
-              console.log(error);
-            });
+    goButtonHidden = true;
     
     
     
-//    goButtonHidden = true;
-//
-//    
-//    showInField();
-//    showStartQue();
+    
+    
+    
+    
+    
+    
+    
+    
+    /*
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     *  FOR TESTING ONLY
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     */
+    
+    
+    
+            const filteredStartQue = startQue.filter(element => element.id === id);
+            const riderObject = filteredStartQue[0];
+            forTestingOnly = setTimeout(() => {inField.push({nr: riderObject.nr, id: id, name: riderObject.name, time: 1, p1: 0, p3: 0, dnf: false, dsq: false})}, 3000);
+    
+    
+    
+    
+    /*
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     *          END OF FOR TESTING ONLY
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     */
+    
+    
+    
+    
+    
+    showInField();
+    showStartQue();
 }
 
 function cancelStart() {    // Removes rider from start Box
@@ -581,17 +377,11 @@ function cancelStart() {    // Removes rider from start Box
     goButtonHidden = false;
     console.log("Clear Start Box");
     
+    clearTimeout(forTestingOnly);
+    //forTestingOnly = null;
+    
     showInField();
     showStartQue();
-    
-    console.log("CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! ");
-    fetch("/racetracking/clearStartBox")
-        .then( (response) => {
-            console.log("Told server that startbox is clear.")}
-        )
-        .catch( (error) => {
-            console.log(error)}
-        );
 }
 
 
@@ -809,19 +599,64 @@ function isRiderStarted() {
         // If the rider is found in the field (information from API), it can be removed from the start Box
         riderInStartPosition = false;
         
-        // Record the time that rider started (e.g. first time appeared in the field)
-        var t = Date.now();
-        var it = startTimes.filter(element => element.id == waitingId);
-        if (it.length > 0) {
-            startTimes[index].time = t; // update existing id
-        }
-        else {
-            startTimes.push({id: waitingId, time: t}); // create new entry
-        }
-                
         
-        // Could be removed but smoothes out user experience:
-         startQue = startQue.filter(element => element.id !== waitingId);  
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        /*
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         *              FOR TESTING ONLY
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         */
+        
+        
+        
+        
+                startQue = startQue.filter(element => element.id !== waitingId);
+        
+        
+        
+        
+        /*
+         * 
+         * 
+         *
+         * 
+         * 
+         * 
+         * 
+         * 
+         *          END OF FOR TESTING ONLY
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         */
+        
+        
+        
+        
         
         
         
@@ -943,10 +778,8 @@ function sendRiderToStart(riderId) {
     riderInStartPosition = true;
     goButtonHidden = false;
     waitingId = riderId;
-    console.log("Armed rider to start: " + waitingId);
-    
-    
-    waitingIndex = index;   // Keep track which rider from startQue is in the startbox
+    console.log("Armed rider to start: " + waitingId);  // Send ID to API.
+    //waitingIndex = index;   // Keep track which rider from startQue is in the startbox
     showStartQue();
     showInField();
 }
@@ -1015,81 +848,24 @@ function addSmallPenalty(riderId, row) {
     console.log("Plus Small Penalty: " + riderId);
     buttonId = 'inFieldPlusS' + row;
     feedback(buttonId, ["smallPenalty"]);
-    
-    
-    //Send to server:
-    var data = {
-        RiderId: riderId,
-        StaffName: "UI",
-        Reason: "",
-        Seconds: 1
-    };
-    
-    postAPI("/racetracking/penalty", data);
-    
-    
 }
 
 function minusSmallPenalty(riderId, row) {
     console.log("Remove Small Penalty: " + riderId);
     buttonId = 'inFieldMinS' + row;
     feedback(buttonId, ["smallPenalty"]);
-    
-    
-    //Send to server:
-    var data = {
-        RiderId: riderId,
-        StaffName: "UI",
-        Reason: "",
-        Seconds: -1
-    };
-    
-    postAPI("/racetracking/penalty", data);
-    
-    
 }
 
 function addBigPenalty(riderId, row) {
     console.log("Plus Big Penalty: " + riderId);
     buttonId = 'inFieldPlusB' + row;
     feedback(buttonId, ["bigPenalty"]);
-    
-    
-    
-    
-    //Send to server:
-    var data = {
-        RiderId: riderId,
-        StaffName: "UI",
-        Reason: "",
-        Seconds: 3
-    };
-    
-    postAPI("/racetracking/penalty", data);
-    
-    
-    
 }
 
 function minusBigPenalty(riderId, row) {
     console.log("Remove Big Penalty: " + riderId);
     buttonId = 'inFieldMinB' + row;
     feedback(buttonId, ["bigPenalty"]);
-    
-    
-    
-    //Send to server:
-    var data = {
-        RiderId: riderId,
-        StaffName: "UI",
-        Reason: "",
-        Seconds: 1
-    };
-    
-    postAPI("/racetracking/penalty", data);
-    
-    
-    
 }
 
 
@@ -1162,6 +938,38 @@ function confirmStop(riderId) {
         setTimeout(stopEvent, 1000); // add a small delay to make inField update.
         
         
+        
+        
+/*
+     * 
+     * 
+     * 
+     *      FOR TESTING ONLY!
+     *      REMOVE CODE LATER
+     * 
+     * 
+     * 
+    */
+
+
+
+                inField.push(lastStoppedRider);
+
+
+
+    /*
+     * 
+     * 
+     * 
+     *          END OF 'FOR TESTING ONLY'
+     * 
+     * 
+     * 
+     */
+        
+        
+        
+        
         return;
     }
     
@@ -1171,23 +979,38 @@ function confirmStop(riderId) {
     details.stopTime = Date.now();
     
     stoppedRiders.push(details);
+    
+    /*
+     * 
+     * 
+     * 
+     *      FOR TESTING ONLY!
+     *      REMOVE CODE LATER
+     * 
+     * 
+     * 
+    */
+
+
+
+    inField = inField.filter(element => element.id != riderId);
+
+
+
+    /*
+     * 
+     * 
+     * 
+     *          END OF 'FOR TESTING ONLY'
+     * 
+     * 
+     * 
+     */
+
+
+
 
     console.log("Last STOP event was from rider: " + riderId); // Send id to API
-    
-    stopId = unmatchedEndTimes[0]['id'];
-    url = "/racetracking/matchendtimes?riderId=" + riderId + "&timeId=" + stopId;
-    console.log(url);
-    
-    fetch(url)
-            .then((response) => {
-                console.log("Sent stopped rider id to server successfully.");
-             })
-            .catch((error) => {
-                console.log(error);
-            });
-        
-    
-    
     stopEventActive = false;
     clearInterval(flashingInterval);
     flashingInterval = null;
@@ -1393,16 +1216,15 @@ function hideDNSbutton(id) {
 }
 
 
-// For testing only:
 
-//document.onkeydown = function (e) {
-//  // Simulate a stop event by pressing "s" button.
-//  
-//  if (e.key === "s" || e.key === "S") {
-//      stopEvent();
-//      showInField();
-//  }
-//};
+document.onkeydown = function (e) {
+  // Simulate a stop event by pressing "s" button.
+  
+  if (e.key === "s" || e.key === "S") {
+      stopEvent();
+      showInField();
+  }
+};
 
 
 function moveDownOrder(riderId) {
