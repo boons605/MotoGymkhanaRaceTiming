@@ -155,6 +155,14 @@ namespace RaceManagement
             }
         }
 
+        public void ChangePosition(Guid id, int targetPosition)
+        {
+            lock (StateLock)
+            {
+                knownRiders.ChangePosition(id, targetPosition);
+            }
+        }
+
         /// <summary>
         /// Run a task that communicates with the timing and rider units to track the state of a race
         /// </summary>

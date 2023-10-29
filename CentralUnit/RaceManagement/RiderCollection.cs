@@ -50,7 +50,7 @@ namespace RaceManagement
             {
                 Riders.Add(key, value);
             }
-            catch (Exception e) when (e is ArgumentException || e is ArgumentException)
+            catch (Exception e) when (e is ArgumentException || e is ArgumentNullException)
             {
                 throw;
             }
@@ -74,12 +74,12 @@ namespace RaceManagement
 
             if (targetPosition < 0)
             {
-                throw new ArgumentException($"Cannot assign a rider to a negative starting position");
+                throw new ArgumentException("Cannot assign a rider to a negative starting position");
             }
 
-            if(targetPosition > StartingOrder.Count)
+            if(targetPosition > StartingOrder.Count - 1)
             {
-                throw new ArgumentException($"Cannot assign a rider to a starting position more than the number of riders, that would leave a gap in the grid");
+                throw new ArgumentException($"Cannot assign a rider to a starting position more than the (number of riders - 1), that would leave a gap in the grid");
             }
 
             StartingOrder.Remove(riderId);

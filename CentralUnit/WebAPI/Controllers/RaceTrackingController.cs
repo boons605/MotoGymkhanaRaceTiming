@@ -185,6 +185,32 @@ namespace WebAPI.Controllers
             });
         }
 
+        [HttpGet]
+        [Route("[controller]/ChangeStartingOrder")]
+        public ActionResult ChangeStartingOrder([FromQuery] Guid riderId, [FromQuery] int newPosition)
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                try
+                {
+                    manager.ChangePosition(riderId, newPosition);
+                    return new StatusCodeResult(200);
+                }
+                catch (Exception e) when (e is ArgumentException || e is KeyNotFoundException)
+                {
+                    JObject errorBody = new JObject
+                    {
+                        { "Error", $"Could not change rider starting order: {e.Message}" }
+                    };
+
+                    JsonResult errorResult = new JsonResult(errorBody);
+                    errorResult.StatusCode = 400;
+
+                    return errorResult;
+                }
+            });
+        }
+
         /// <summary>
         /// Notifies the race manager that a new rider is waiting in the start box
         /// </summary>
@@ -218,25 +244,25 @@ namespace WebAPI.Controllers
                         else
                         {
                             errorBody = new JObject
-                        {
-                            { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
-                        };
+                            {
+                                { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
+                            };
                         }
                     }
                     else
                     {
                         errorBody = new JObject
-                    {
-                        { "Error", $"The given rider id {riderId} is already on track" }
-                    };
+                        {
+                            { "Error", $"The given rider id {riderId} is already on track" }
+                        };
                     }
                 }
                 else
                 {
                     errorBody = new JObject
-                {
-                    { "Error", $"There is already a rider waiting: {state.waiting.Rider.Name}, id: {state.waiting.Rider.Id}" }
-                };
+                    {
+                        { "Error", $"There is already a rider waiting: {state.waiting.Rider.Name}, id: {state.waiting.Rider.Id}" }
+                    };
                 }
 
                 JsonResult errorResult = new JsonResult(errorBody);

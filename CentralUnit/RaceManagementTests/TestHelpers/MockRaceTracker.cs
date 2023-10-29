@@ -44,5 +44,10 @@ namespace RaceManagementTests.TestHelpers
         {
             throw new NotImplementedException();
         }
+
+        public void ChangePosition(Guid id, int targetPosition)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

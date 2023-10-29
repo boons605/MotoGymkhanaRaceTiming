@@ -232,6 +232,11 @@ namespace RaceManagement
             tracker?.AddRider(rider);
         }
 
+        public void ChangePosition(Guid riderId, int targetPosition)
+        {
+            tracker?.ChangePosition(riderId, targetPosition);
+        }
+
         public Rider GetRiderById(Guid id) => tracker?.GetRiderById(id);
     }
 }
