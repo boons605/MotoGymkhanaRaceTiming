@@ -49,6 +49,7 @@ namespace RaceManagement
             try
             {
                 Riders.Add(key, value);
+                Console.WriteLine(value.Name);
             }
             catch (Exception e) when (e is ArgumentException || e is ArgumentNullException)
             {

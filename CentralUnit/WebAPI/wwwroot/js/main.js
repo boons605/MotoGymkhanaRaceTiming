@@ -9,7 +9,6 @@ var stopEventActive = false;
 var riderInStartPosition = false;
 var goButtonHidden = false;
 var waitingId;
-var waitingIndex;
 var showAll = false;
 var firstUpButtonShown = false;
 var ignoreDNFrule = false;
@@ -17,7 +16,7 @@ var row;
 var probablyStopped;
 var lastStoppedRider;
 var ignoredStopEvent = false;
-var delayTime = 15000;  // For testing set to low value. Live should be a larger value (around 20000).
+var delayTime = 4000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
 var serverRequestInterval = 1000;
 var startTimes = [];
@@ -47,9 +46,6 @@ var riderNumbers = [
     1,2,3,4,5,6,7,8,9,10,11,12,13
 ];
 
-
-
-
 function postAPI (url, data) {
     // sends POST requests to server
 
@@ -60,17 +56,8 @@ function postAPI (url, data) {
         'Content-Type': 'application/json; charset=UTF-8'
         })
     };
-
-    fetch(url, fetchData)
-            .then(function() {
-                console.log("Sent data successfully to server.");
-                return 1;
-            })
-            .catch((error) => {
-              console.log("Server error");
-              console.log(error);
-              return 0;
-            });
+    
+    return fetch(url, fetchData);
 }
 
 
@@ -87,44 +74,41 @@ function uuidv4() {
 
 
 
-function loadWaitingList(c) {
+async function loadWaitingList(c) {
     
     // Is rider list empty?
     
-    fetch("/racetracking/getriders")
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-        let txt = data;
+    var response = await fetch("/racetracking/getriders");
+    var data = await response.json();
+    
+    let txt = data;
 
-        if (txt.length == 0) {
-            // Rider list is empty! So add riders to it.
-            
-            length = c.length;
-             i = 0;
+    if (txt.length == 0) {
+        // Rider list is empty! So add riders to it.
 
-             console.log(length + " contesters");
+        length = c.length;
+         i = 0;
 
-             while (i < length) {
-                 var data = {
-                     Name: contesters[i],
-                     Id: uuidv4()
-                 };
+         console.log(length + " contesters");
 
-                 console.log("Add rider: " + contesters[i]);
-                 postAPI("/racetracking/rider", data);
+         while (i < length) {
+             var data = {
+                 Name: contesters[i],
+                 Id: uuidv4()
+             };
 
-                 i++;
-             }
+             console.log("Add rider: " + contesters[i]);
 
-             console.log("Riders added.");
-        }
-        else {
-            // List already loaded, do nothing
-            return;
-        }
-    });
+            await postAPI("/racetracking/rider", data);
+            i++;
+         }
+
+         console.log("Riders added.");
+    }
+    else {
+        // List already loaded, do nothing
+        return;
+    }
 }
 
 
@@ -158,6 +142,7 @@ function updateRiderList () {
             
             startQue = [];
             
+            var position = 0;
             txt.forEach((contObj) => {
                 let name = contObj['Name'];
                 let id = contObj['Id'];
@@ -172,7 +157,8 @@ function updateRiderList () {
                 
                 let nr = riderNumbers[index];
                 
-                startQue.push({nr: nr, id: id, name: name});
+                startQue.push({nr: nr, id: id, name: name, position: position});
+                position++;
             }); 
         })
         .catch((error) => {
@@ -183,10 +169,6 @@ function updateRiderList () {
 }
 
 setInterval(updateRiderList, serverRequestInterval);
-
-
-
-
 
 
 
@@ -206,13 +188,13 @@ function updateState () {
             
             if (txt['waiting'] === null) {
                 apiWaitingId = "";
-                console.log("Received from API no rider waiting");
+//                console.log("Received from API no rider waiting");
             }
             else {
                 var obj = JSON.stringify(txt);
                 obj = JSON.parse(obj);
                 apiWaitingId = obj['waiting']['Rider']['Id'];
-                console.log("Waiting rider received from API: " + apiWaitingId);
+//                console.log("Waiting rider received from API: " + apiWaitingId);
             }
             
             let onTrack = txt['onTrack'];
@@ -256,7 +238,6 @@ function updateState () {
                             unmatchedEndTimes.push({time: ms, id: tid});
                         }
                     );
-                console.log(unmatchedEndTimes);
                 
                 unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
                 
@@ -296,9 +277,6 @@ function updateStartBox() {
         waitingId = "";
     }
     
-//    else if (riderInStartPosition == false ) {
-//        
-//    }
 
     showInField();
     showStartQue();
@@ -315,49 +293,23 @@ showStartQue();
 
 
 
-function riderDNF (filteredDNFelement) {
+function riderDNF (filteredDNFelement) { console.log("Kees");
     // Send id to API
     console.log("Set rider as DNF: ", filteredDNFelement.id);
     //change 'sent' variable to 'true' to avoid sending same information to API more then once.
     armedDNF.forEach((armedDNFelement, index) => {if (armedDNFelement.id === filteredDNFelement.id) {armedDNF[index].sent = true} });
     
     
+
+    var riderId = filteredDNFelement.id;
+    console.log("DNFid to API: " + riderId)
     
+    var data = {
+        "RiderId": riderId,
+        "StaffName": "UI"
+    }
     
-    
-    
-    
-    
-    /*
-     * 
-     * 
-     * 
-     *      FOR TESTING ONLY!
-     *      REMOVE CODE LATER
-     * 
-     * 
-     * 
-    */
-
-
-
-    inField = inField.filter(element => element.id != filteredDNFelement.id);
-
-
-
-    /*
-     * 
-     * 
-     * 
-     *          END OF 'FOR TESTING ONLY'
-     * 
-     * 
-     * 
-     */
-
-
-
-    
+    postAPI("racetracking/dnf", data);
     
     
     
@@ -376,13 +328,14 @@ function riderDNF (filteredDNFelement) {
 }
 
 
-function dnfCheck() {
+function dnfCheck() { 
     // When selected, a rider gets a DNF status within UI. These riders are stored in armedDNF array.
     // After a delay of xxx milliseconds, the DNF will be communicated to API. And deleted from armedDNF array.
     
     // Search for DNF riders who are there for more then xxx milliseconds:
     const filteredDNF = armedDNF.filter(element => element.time < Date.now()-delayTime && element.sent === false);
     
+    console.log("Henk " + filteredDNF.length);
 
     // Communicate to API:
     filteredDNF.forEach(riderDNF);
@@ -413,7 +366,7 @@ function showInField() {
     // Combine info from dnfRiders and stoppedRiders:
     let vanishingRiders = [];
     armedDNF.forEach(       element => vanishingRiders.push({id: element.id, time: element.time,                type: "dnf"}) );
-    stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
+    //stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
     
     // Sort the array to display all the riders in order of time:
     vanishingRiders = sortArrayWithObjects(vanishingRiders, "time", "dsc");
@@ -898,6 +851,8 @@ function isRiderStarted() {
 
 
 function checkStopEvent(riderId) {
+    console.log("checkStopEvent");
+    
     let riderIsStopped;
     const filtered = stoppedRiders.filter(element => element.id === riderId);
     if (filtered.length > 0) {
@@ -906,6 +861,17 @@ function checkStopEvent(riderId) {
     else {
         riderIsStopped = false;
     }
+    
+    
+    if (stopEventActive) {
+        return "";
+    }
+    else {
+        return "hideThis";
+    }
+    
+    return;
+    
     if (!stopEventActive) {
         if (riderIsStopped) {
             return "";
@@ -913,16 +879,16 @@ function checkStopEvent(riderId) {
         return " hideThis";
     }
     else if (stopEventActive && riderIsStopped) {
-        return " hideThis";
+        return "";
     }
     else {
-        return "";
+        return " hideThis";
     }
 }
 
 
 
-
+setInterval(( () => {console.log(stoppedRiders.length)} ), 1000);
 
 function stopButtonText(riderId) {
     const filtered = stoppedRiders.filter(element => element.id === riderId);
@@ -945,8 +911,7 @@ function sendRiderToStart(riderId) {
     waitingId = riderId;
     console.log("Armed rider to start: " + waitingId);
     
-    
-    waitingIndex = index;   // Keep track which rider from startQue is in the startbox
+
     showStartQue();
     showInField();
 }
@@ -1123,6 +1088,14 @@ function flagDSQ(riderId) {
     
     
     console.log("DSQ: " + riderId); // Send id to API.
+    
+    var data = {
+    "RiderId": riderId,
+    "StaffName": "UI"
+    }
+    
+    postAPI("/racetracking/dsq", data);
+    
     inField.forEach(element => {if (element.id === riderId) element.dsq = true});
     showInField();
 }
@@ -1141,12 +1114,33 @@ function getInFieldIndex(id) {
 
 function cancelStop(riderId) {
     console.log("Cancel last stop event with rider id: " + riderId);
+    clearTimeout(deleteMatch[riderId]);
+    stoppedRiders.pop();
+    stopEvent();
+    flashingInterval = setInterval(flashStopButton, 500);
 }
 
 
 
+async function matchEndTimeToServer(riderId, stopTimeId) {
+    stopEventActive = false;
+    
+    url = "/racetracking/matchendtime?riderId=" + riderId + "&timeId=" + stopTimeId;
 
-function confirmStop(riderId) {    
+       fetch(url)
+               .then((response) => {
+                   console.log("Sent stopped rider id to server successfully.");
+                })
+               .catch((error) => {
+                   console.log(error);
+               });
+}
+
+
+var deleteMatch = [];
+
+function confirmStop(riderId) {   
+    console.log("confirm stop");
     // After a stop event, this function sends the correct id of the rider which passed the stop sensor to API.
     let index = getInFieldIndex(riderId);
     
@@ -1174,21 +1168,10 @@ function confirmStop(riderId) {
 
     console.log("Last STOP event was from rider: " + riderId); // Send id to API
     
-    stopId = unmatchedEndTimes[0]['id'];
-    url = "/racetracking/matchendtimes?riderId=" + riderId + "&timeId=" + stopId;
-    console.log(url);
-    
-    fetch(url)
-            .then((response) => {
-                console.log("Sent stopped rider id to server successfully.");
-             })
-            .catch((error) => {
-                console.log(error);
-            });
+    stopTimeId = unmatchedEndTimes[0]['id'];
         
+    deleteMatch[riderId] = setTimeout(matchEndTimeToServer, delayTime, riderId, stopTimeId);
     
-    
-    stopEventActive = false;
     clearInterval(flashingInterval);
     flashingInterval = null;
     showInField();
@@ -1407,10 +1390,32 @@ function hideDNSbutton(id) {
 
 function moveDownOrder(riderId) {
     console.log("Move down in starting order: " + riderId); // Send rider id to API
+    
+    orderToServer(riderId, 1);
 }
 
 function moveUpOrder(riderId) {
     console.log("Move up in starting order: " + riderId); // Send rider id to API
+    
+    orderToServer(riderId, -1);
+}
+
+
+function orderToServer (riderId, direction) {
+    // to move DOWN order, make direction +1, to move UP order make direction -1.
+    var filteredStartQue =  startQue.filter((element) => element.id === riderId);
+    console.log(filteredStartQue);
+    var currentPosition = filteredStartQue[0].position;
+    
+    var newPosition = currentPosition + direction;
+    console.log("NEW POSITION: " + newPosition);
+    
+    var url = "/racetracking/ChangeStartingOrder?riderId=" + riderId + "&newPosition=" + newPosition;
+    
+    fetch(url)
+            .catch( (error) => {
+                console.log(error);
+    });
 }
 
 
