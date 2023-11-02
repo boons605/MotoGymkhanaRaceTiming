@@ -18,7 +18,7 @@ var lastStoppedRider;
 var ignoredStopEvent = false;
 var delayTime = 4000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
-var serverRequestInterval = 100;
+var serverRequestInterval = 1000;
 var startTimes = [];
 var apiWaitingId = "";
 var unmatchedEndTimes = [];
@@ -131,56 +131,41 @@ fetch("/racetracking/state")
       console.log(error);
     });
     
-   
-
-
-
-
-
-
-var serverRiderDataTxt = "";
-
-async function updateRiderList() {
-//    console.log("Hello server. (Rider Data)");
     
-    var response = await fetch("/racetracking/getRiders");
-    var data = await response.json();
-    
-    var oldServerRiderDataTxt = serverRiderDataTxt;
-    serverRiderDataTxt = JSON.stringify(data);
-    
-    // only continue if server data changed:
-    if (oldServerRiderDataTxt === serverRiderDataTxt) {
-        return;
-    }
-    
-    
-    console.log("rider update found");
-
-    let txt = data;
-
-    startQue = [];
-
-    var position = 0;
-    txt.forEach((contObj) => {
-        let name = contObj['Name'];
-        let id = contObj['Id'];
-
-        var riderOnTrack = inField.filter((element) => element.id == id).length;
-
-        if (riderOnTrack) {
-            //return;
-        }
-
-        let index = contesters.indexOf(name);
-
-        let nr = riderNumbers[index];
-
-        startQue.push({nr: nr, id: id, name: name, position: position});
-        position++;
-    }); 
-
-    showStartQue();
+function updateRiderList () {    
+    fetch("/racetracking/getriders")
+        .then((response) => {
+          return response.json();
+        })
+        .then((data) => {
+            let txt = data;
+            
+            startQue = [];
+            
+            var position = 0;
+            txt.forEach((contObj) => {
+                let name = contObj['Name'];
+                let id = contObj['Id'];
+                
+                var riderOnTrack = inField.filter((element) => element.id == id).length;
+                
+                if (riderOnTrack) {
+                    return;
+                }
+                
+                let index = contesters.indexOf(name);
+                
+                let nr = riderNumbers[index];
+                
+                startQue.push({nr: nr, id: id, name: name, position: position});
+                position++;
+            }); 
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+        
+        showStartQue();
 }
 
 setInterval(updateRiderList, serverRequestInterval);
@@ -189,142 +174,91 @@ setInterval(updateRiderList, serverRequestInterval);
 
 
 
-var serverDataTxt = "";
 
-async function getDataFromServer() {
+
+function updateState () {    
+    fetch("/racetracking/state")
+        .then((response) => {
+          return response.json();
+        })
+        .then((data) => {
+            let txt = data;
     
-    var response = await fetch("/racetracking/state");
-    var data = await response.json();
-    
-    var oldServerDataTxt = serverDataTxt;
-    serverDataTxt = JSON.stringify(data);
-    
-    // only continue if server data changed:
-    if (oldServerDataTxt === serverDataTxt) {
-        return;
-    }
-    
-    
-    console.log("Server update detected.");
-    
-    
-    let txt = data;
-
-    //console.log(txt);
-
-    if (txt['waiting'] === null) {
-        apiWaitingId = "";
-    //                console.log("Received from API no rider waiting");
-    }
-    else {
-        var obj = JSON.stringify(txt);
-        obj = JSON.parse(obj);
-        apiWaitingId = obj['waiting']['Rider']['Id'];
-    //                console.log("Waiting rider received from API: " + apiWaitingId);
-    }
-
-    let onTrack = txt['onTrack'];
-
-    inField = [];
-
-    onTrack.forEach((contObj) => {
-
-        let item = contObj['Item2'];
-
-        let name = item['Rider']['Name'];
-        let id = item['Rider']['Id'];
-        let startMillis = item['Microseconds'];
-
-
-        let index = contesters.indexOf(name);
-
-        let nr = riderNumbers[index];
-
-
-        // Calculate displayed time:
-        var t = 0;
-        var it = startTimes.filter(element => element.id == id);
-        if (it.length > 0) {
-            var s = it[0].time;
-            t = Math.floor((Date.now() - s)/1000);
-        }
-
-        inField.push({nr: nr, id: id, name: name, time: t, p1: 0, p3: 0, dnf: false, dsq: false, startMillis: startMillis});
-        
-        inField = sortArrayWithObjects(inField, "startMillis", "desc");
-
-
-        unmatchedEndTimes = [];
-
-        var obj = JSON.stringify(txt);
-        obj = JSON.parse(obj);                
-        arr = obj['unmatchedEndTimes'];
-
-        arr.forEach(
-                (element) => {
-                    var ms = element.Microseconds;
-                    var tid = element.EventId;
-                    unmatchedEndTimes.push({time: ms, id: tid});
+            //console.log(txt);
+            
+            if (txt['waiting'] === null) {
+                apiWaitingId = "";
+//                console.log("Received from API no rider waiting");
+            }
+            else {
+                var obj = JSON.stringify(txt);
+                obj = JSON.parse(obj);
+                apiWaitingId = obj['waiting']['Rider']['Id'];
+//                console.log("Waiting rider received from API: " + apiWaitingId);
+            }
+            
+            let onTrack = txt['onTrack'];
+            
+            inField = [];
+            
+            onTrack.forEach((contObj) => {
+                
+                let item = contObj['Item2'];
+                
+                let name = item['Rider']['Name'];
+                let id = item['Rider']['Id'];
+                
+                
+                let index = contesters.indexOf(name);
+                
+                let nr = riderNumbers[index];
+                
+                
+                // Calculate displayed time:
+                var t = 0;
+                var it = startTimes.filter(element => element.id == id);
+                if (it.length > 0) {
+                    var s = it[0].time;
+                    t = Math.floor((Date.now() - s)/1000);
                 }
-            );
+                
+                inField.push({nr: nr, id: id, name: name, time: t, p1: 0, p3: 0, dnf: false, dsq: false});
+                
+                
+                unmatchedEndTimes = [];
+                
+                var obj = JSON.stringify(txt);
+                obj = JSON.parse(obj);                
+                arr = obj['unmatchedEndTimes'];
+                
+                arr.forEach(
+                        (element) => {
+                            var ms = element.Microseconds;
+                            var tid = element.EventId;
+                            unmatchedEndTimes.push({time: ms, id: tid});
+                        }
+                    );
+                
+                unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
+                
+                if (unmatchedEndTimes.length > 0) {
+                    stopEvent();
+                }
+                
+                showInField();
 
-        unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
-        
-        if (unmatchedEndTimes.length > 1) {
-            console.log("First stopEvent not confirmed. Second stopEvent detected. Force match with unmatchedEndTime.");
-            forceMatch();
-        }
-
-        if (unmatchedEndTimes.length > 0) {
-            stopEvent();
-        }
-
-    }); 
-    
-    updateStartBox();
-    showInField();
-    showStartQue();
+            }); 
+        })
+        .catch((error) => {
+          console.log(error);
+        });
 }
 
-
-setInterval(getDataFromServer, serverRequestInterval);
-
+setInterval(updateState, serverRequestInterval);
 
 
 
 
-
-
-
-var serverResultsTxt = "";
-var ridersWithResults = [];
-
-async function getResultsFromServer() {
-    
-    var response = await fetch("/racetracking/laps");
-    var data = await response.json();
-    
-    var oldServerResultsTxt = serverResultsTxt;
-    serverResultsTxt = JSON.stringify(data);
-    
-    // only continue if server data changed:
-    if (oldServerResultsTxt === serverResultsTxt) {
-        return;
-    }
-    
-    ridersWithResults = [];
-    startQue.forEach((rider) => {
-        var id = rider.id;
-        if (serverResultsTxt.search(id) >= 0) {
-            ridersWithResults.push(id);
-        }
-    });
-    
-    showStartQue();
-    
-}
-
-setInterval(getResultsFromServer, serverRequestInterval);
 
 
 
@@ -335,7 +269,7 @@ function updateStartBox() {
         goButtonHidden = true;
         waitingId = apiWaitingId;
         
-        ////231101 showStartQue();
+        //showStartQue();
     }
     else if (goButtonHidden == true) {
         goButtonHidden = false;
@@ -344,18 +278,18 @@ function updateStartBox() {
     }
     
 
-    //231101 showInField();
-    //231101 showStartQue();
+    showInField();
+    showStartQue();
     
 }
 
-//setInterval(updateStartBox, serverRequestInterval);
+setInterval(updateStartBox, serverRequestInterval);
 
 
 
 
-//231101 showInField();
-//231101 showStartQue();
+showInField();
+showStartQue();
 
 
 
@@ -390,7 +324,7 @@ function riderDNF (filteredDNFelement) { console.log("Kees");
     
     // delete the element from armedDNF.
     armedDNF = armedDNF.filter(armedDNFelement => filteredDNFelement.id != armedDNFelement.id);
-    //231101 showInField();
+    showInField();
 }
 
 
@@ -400,27 +334,17 @@ function dnfCheck() {
     
     // Search for DNF riders who are there for more then xxx milliseconds:
     const filteredDNF = armedDNF.filter(element => element.time < Date.now()-delayTime && element.sent === false);
+    
+    console.log("Henk " + filteredDNF.length);
 
     // Communicate to API:
-    filteredDNF.forEach( (rider) => {
-        var id = rider.id;
-        var data = {
-            RiderId: id,
-            StaffName: "UI"
-        };
-        postAPI("/racetracking/dnf", data);
-        console.log("Send to server DNF flag for id: " + id);
-        armedDNF = armedDNF.filter(element => element.id != id);
-    }
-            );
+    filteredDNF.forEach(riderDNF);
 }
-
-setInterval(dnfCheck, 500);
 
 
 function stoppedCheck() {
     stoppedRiders = stoppedRiders.filter(element => element.stopTime > Date.now() - delayTime);   // Set to 5000 for TESTING purposes. Should be longer.
-    //231101 showInField();
+    showInField();
 }
 
 
@@ -431,14 +355,11 @@ function showInField() {
     document.getElementById('inField').innerHTML = "";  // Empty the table first
     showStartPosition();    // Shows the rider who is in the start box
     
+    
     inField = sortArrayWithObjects(inField, "time");
-    timerLocation = [];
     inField.forEach(addRowInField);     // Add all the riders row by row to the HTML table  who are now riding (in the field)
     
     
-        
-    return;    
-        
         
     // At the bottom of inField table, show the stopped riders and riders with a DNF flag:
     
@@ -485,7 +406,7 @@ function ignoreStopEvent() {
     if (ignoredStopEvent) {
         stopEvent();
         console.log("Last stop event should no longer be ignored.");
-        //231101 showInField();
+        showInField();
         return;
     }
     
@@ -498,7 +419,7 @@ function ignoreStopEvent() {
     ignoreStopEventTimeout = setTimeout(() => ignoredStopEvent = false, delayTime);
     
     console.log("Ignore Stop Event.");
-    //231101 showInField();
+    showInField();
 }
 
 function showStartQue() {
@@ -511,7 +432,6 @@ function showStartQue() {
     firstUpButtonShown = false; // Hide the first 'up' button
     
     el.innerHTML = "";  // Empty the HTML table
-    ridersDisplayedInStartQue = 0;
     startQue.forEach(addRowStartQue);   // Add all the riders row by row to the table.
     
     
@@ -525,26 +445,6 @@ function showStartQue() {
         '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onClick="makeStartQueSmaller()">&#8593; SHOW LESS</td></tr>';  
     }
 }
-
-
-
-function stopwatch () {
-    inField.forEach((rider) => {
-        arr = startTimes.filter(element => (element.id === rider.id));
-        if (arr.length === 0) {
-            startTimes.push({id: rider.id, time: Date.now()});
-        }
-        var t = startTimes.filter(element => (element.id === rider.id));
-        t = t[0];
-        var ms = Date.now() - t.time;
-        t = Math.floor(ms/1000);
-        document.getElementById('inFieldTime' + timerLocation[rider.id]).innerHTML = displayTime(t);
-    });
-}
-
-setInterval(stopwatch, 100);
-
-
 
 
 function showCompleteStartQue() {
@@ -607,14 +507,14 @@ function hideGoButton() {
 
 
 function turnOnGreenLight(id) {
-    console.log("Turn on green light for: " + id);
+    console.log("Turn on green light for: " + id);  // Send ID to API
     
     
     // send to API
     let url = "/RaceTracking/RiderReady?riderId=" + waitingId;
     fetch(url)
             .then((response) => {
-                console.log("Told server rider ready with id: " + waitingId);
+                console.log("Told server rider ready with id: " + waitingId + " RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY RIDER READY ");
             })
             .catch((error) => {
               console.log(error);
@@ -625,8 +525,8 @@ function turnOnGreenLight(id) {
 //    goButtonHidden = true;
 //
 //    
-//    //231101 showInField();
-//    //231101 showStartQue();
+//    showInField();
+//    showStartQue();
 }
 
 function cancelStart() {    // Removes rider from start Box
@@ -634,9 +534,10 @@ function cancelStart() {    // Removes rider from start Box
     goButtonHidden = false;
     console.log("Clear Start Box");
     
-    //231101 showInField();
-    //231101 showStartQue();
+    showInField();
+    showStartQue();
     
+    console.log("CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! CLEAR START BOX! ");
     fetch("/racetracking/clearStartBox")
         .then( (response) => {
             console.log("Told server that startbox is clear.")}
@@ -644,13 +545,8 @@ function cancelStart() {    // Removes rider from start Box
         .catch( (error) => {
             console.log(error)}
         );
-
-     showInField();
-     showStartQue();
 }
 
-
-ridersDisplayedInStartQue = 0;
 
 function addRowStartQue(currentValue, index, arr) {
     // If the rider is in start position, don't display it here.
@@ -658,24 +554,9 @@ function addRowStartQue(currentValue, index, arr) {
         return;
     }
     
-    // If the rider in the field, don't display it in the startlist.
-    if (inField.filter(element => (element.id ===currentValue['id'])).length > 0) {
-        return;
-    }
-    
-    
-    if (ridersWithResults.indexOf(currentValue.id) >= 0) {
-        // Rider already in with result
-        return;
-    }
-    
-    
-    
-    if (ridersDisplayedInStartQue > 3  && showAll === false) {
+    if (index > 3 + riderInStartPosition && showAll === false) {
         return; // Don't show more then 4 items for the compact view
     }
-    
-    ridersDisplayedInStartQue++;
     
     document.getElementById('startQue').innerHTML += 
           '<tr class="row">' +
@@ -724,25 +605,12 @@ var isDNF = false;
 
 
 
-var timerLocation = [];
-var probablyStoppedRow;
-
 function addRowInField(currentValue, index, arr) {
     
     // Dont't show a rider if he has a DNF status. These riders will be shown last. To make this possible, 'ignoreDNFrule' can be switched to 'true'.
     
-//    if (armedDNF.find(element => element.id == currentValue.id) && !ignoreDNFrule) {
-//        return;
-//    }
-    
-    
-    // stores the location of the rider stopwatch times so it can be displayed correctly
-    timerLocation[currentValue.id] = row;
-    
-    probablyStoppedId = whichRiderWasMostProbablyStopped();
-    
-    if (currentValue.id === probablyStoppedId) {
-        probablyStoppedRow = row;
+    if (armedDNF.find(element => element.id == currentValue.id) && !ignoreDNFrule) {
+        return;
     }
     
     document.getElementById('inField').innerHTML += 
@@ -805,7 +673,7 @@ function addRowInField(currentValue, index, arr) {
 
                 '</td>' +
 
-                '<td id="inFieldStop' + row +'" class="tbCell stop btn' + checkStopEvent(currentValue.id) + '" onpointerdown="confirmStop(\'' + currentValue.id + '\', ' + row + ')">' +
+                '<td id="inFieldStop' + row +'" class="tbCell ' + stopClass(currentValue.id) + ' btn' + checkStopEvent(currentValue.id) + '" onpointerdown="confirmStop(\'' + currentValue.id + '\', ' + row + ')">' +
                     stopButtonText(currentValue.id) +
                 '</td>' + 
              '</tr>';
@@ -894,15 +762,15 @@ function isRiderStarted() {
         // If the rider is found in the field (information from API), it can be removed from the start Box
         riderInStartPosition = false;
         
-        // Record the time that rider started (i.e. first time appeared in the field)
-//        var t = Date.now();
-//        var it = startTimes.filter(element => element.id == waitingId);
-//        if (it.length > 0) {
-//            startTimes[index].time = t; // update existing id
-//        }
-//        else {
-//            startTimes.push({id: waitingId, time: t}); // create new entry
-//        }
+        // Record the time that rider started (e.g. first time appeared in the field)
+        var t = Date.now();
+        var it = startTimes.filter(element => element.id == waitingId);
+        if (it.length > 0) {
+            startTimes[index].time = t; // update existing id
+        }
+        else {
+            startTimes.push({id: waitingId, time: t}); // create new entry
+        }
                 
         
         // Could be removed but smoothes out user experience:
@@ -943,7 +811,7 @@ function isRiderStarted() {
         
         
         
-                //231101 showStartQue();
+                showStartQue();
         
         
         
@@ -983,10 +851,11 @@ function isRiderStarted() {
 
 
 function checkStopEvent(riderId) {
+    console.log("checkStopEvent");
     
     let riderIsStopped;
-    const filteredRider = stoppedRiders.filter(element => element.id === riderId);
-    if (filteredRider.length > 0) {
+    const filtered = stoppedRiders.filter(element => element.id === riderId);
+    if (filtered.length > 0) {
         riderIsStopped = true;
     }
     else {
@@ -994,49 +863,32 @@ function checkStopEvent(riderId) {
     }
     
     
-    let riderIsDNF;
-    const filteredDNF = armedDNF.filter(element => element.id === riderId);
-    if (filteredDNF.length > 0) {
-        riderIsDNF = true;
-    }
-    else {
-        riderIsDNF = false;
-    }
-    
-    
-    
-    if (!stopEventActive) {
-        return " hideThis";
-    }
-    else if (riderIsDNF) {
-        return " hideThis";
-    }
-    else if (armStop && !riderIsStopped) {
-        return " hideThis";
-    }
-    else {
+    if (stopEventActive) {
         return "";
+    }
+    else {
+        return "hideThis";
     }
     
     return;
     
-//    if (!stopEventActive) {
-//        if (riderIsStopped) {
-//            return "";
-//        }
-//        return " hideThis";
-//    }
-//    else if (stopEventActive && riderIsStopped) {
-//        return "";
-//    }
-//    else {
-//        return " hideThis";
-//    }
+    if (!stopEventActive) {
+        if (riderIsStopped) {
+            return "";
+        }
+        return " hideThis";
+    }
+    else if (stopEventActive && riderIsStopped) {
+        return "";
+    }
+    else {
+        return " hideThis";
+    }
 }
 
 
 
-//setInterval(( () => {console.log(stoppedRiders.length)} ), 1000);
+setInterval(( () => {console.log(stoppedRiders.length)} ), 1000);
 
 function stopButtonText(riderId) {
     const filtered = stoppedRiders.filter(element => element.id === riderId);
@@ -1068,7 +920,6 @@ function sendRiderToStart(riderId) {
 
 
 function armDNF(riderId) {
-    console.log("Set to DNF: " + riderId);
     // Function to select a rider as DNF.
     // There is a delay between clicking DNF and sending the information to API.
     // When clicking DNF, first the rider is placed in armedDNF array.
@@ -1082,12 +933,48 @@ function armDNF(riderId) {
     }
     else { // The rider is not in armedDNF array. Add it now.
         armedDNF.push({id: riderId, time: Date.now(), sent: false});
+        
+//        
+//        if (armedDNF.length > 1) {
+//            console.log("SWAP!");
+//            [armedDNF[0], armedDNF[1]] = [armedDNF[1], armedDNF[0]];
+//        }
+//        
+//        console.log(armedDNF);
+        
+//        console.log(1);
+//        console.log(armedDNF);
+        // set new entry to top WERKT NIET
+//        let x = armedDNF.length;
+//        let temporary = x;
+//        x--;
+//        while (x > 0) {
+//            
+//            console.log(x);
+//            
+//            console.log(armedDNF);
+//            
+//            let element = armedDNF[1];
+//            
+//            console.log(element);
+//            
+//            armedDNF[x] = armedDNF[x-1];
+//            
+//            console.log(armedDNF);
+//            
+//            armedDNF[x-1] = element;
+//            
+//            console.log(armedDNF);
+//            
+//            x--;
+//        }
+//        console.log(armedDNF);
     }
     showInField();
 }
 
-//setInterval(dnfCheck, 1000);
-//setInterval(stoppedCheck, 1000);
+setInterval(dnfCheck, 1000);
+setInterval(stoppedCheck, 1000);
 
 function addSmallPenalty(riderId, row) {
     console.log("Plus Small Penalty: " + riderId);
@@ -1193,7 +1080,7 @@ function flagDSQ(riderId) {
         // Cancel DSQ flag
         console.log("Candel DSQ: " + riderId);
         inField.forEach(element => {if (element.id === riderId) element.dsq = false});
-        //231101 showInField();
+        showInField();
         return;
     }
     
@@ -1210,7 +1097,7 @@ function flagDSQ(riderId) {
     postAPI("/racetracking/dsq", data);
     
     inField.forEach(element => {if (element.id === riderId) element.dsq = true});
-    //231101 showInField();
+    showInField();
 }
 
 
@@ -1228,25 +1115,21 @@ function getInFieldIndex(id) {
 function cancelStop(riderId) {
     console.log("Cancel last stop event with rider id: " + riderId);
     clearTimeout(deleteMatch[riderId]);
-    deleteMatch[riderId] = null;
-    armStop = false;
     stoppedRiders.pop();
     stopEvent();
-    showInField();
+    flashingInterval = setInterval(flashStopButton, 500);
 }
 
 
 
 async function matchEndTimeToServer(riderId, stopTimeId) {
+    stopEventActive = false;
     
     url = "/racetracking/matchendtime?riderId=" + riderId + "&timeId=" + stopTimeId;
 
        fetch(url)
                .then((response) => {
-                   console.log("Sent stopped rider id to server.");
-                    stopEventActive = false;
-                    armStop = false;
-                    showInField();
+                   console.log("Sent stopped rider id to server successfully.");
                 })
                .catch((error) => {
                    console.log(error);
@@ -1255,7 +1138,6 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
 
 
 var deleteMatch = [];
-var armStop = false;
 
 function confirmStop(riderId) {   
     console.log("confirm stop");
@@ -1271,7 +1153,7 @@ function confirmStop(riderId) {
         // Rider was already stopped. Cancel this action.
         cancelStop(riderId);
         stoppedRiders = stoppedRiders.filter(element => element.id != riderId);
-        stopEvent();
+        setTimeout(stopEvent, 1000); // add a small delay to make inField update.
         
         
         return;
@@ -1289,33 +1171,11 @@ function confirmStop(riderId) {
     stopTimeId = unmatchedEndTimes[0]['id'];
         
     deleteMatch[riderId] = setTimeout(matchEndTimeToServer, delayTime, riderId, stopTimeId);
-    armStop = true;
     
+    clearInterval(flashingInterval);
+    flashingInterval = null;
     showInField();
 }
-
-
-
-function forceMatch() {
-    // Execute when there are more then 1 unmatchedEndTimes
-    
-    if (armStop) {
-        // execute the planned stop immediately
-        clearTimeout(deleteMatch[lastStoppedRider.id]);
-        deleteMatch[lastStoppedRider.id] = null;
-        matchEndTimeToServer(lastStoppedRider.id, unmatchedEndTimes[0]['id']);
-    }
-    else {
-        // match unmatched time with most probable rider
-        var id = whichRiderWasMostProbablyStopped();
-        matchEndTimeToServer(id, unmatchedEndTimes[0]['id']);
-    }
-}
-
-
-
-
-
 
 function displayTime(seconds) {
     // Outputs correct time format
@@ -1360,34 +1220,26 @@ function stopEvent() {
     clearTimeout(ignoreStopEventTimeout);
     ignoreStopEventTimeout = null;
     console.log("A stop event was detected.");
+    flashingInterval = setInterval(flashStopButton, 500);
     stopEventActive = true;
-    //231101 showInField();
+    showInField();
 }
 
 
+var stopButtonFlash = false;
 
 function flashStopButton() {
-    if (!stopEventActive) {
-        return;
+    if (stopButtonFlash) {
+        stopButtonFlash = false;
     }
-  
-    
-    var row = probablyStoppedRow;
-    
-    if (armStop) {
-        // this means the stopEvent was confirmed by user, so no need to flash
-        return;
+    else {
+        stopButtonFlash = true;
     }
     
-    var html = document.getElementById('inFieldStop' + row);
-    html.classList.toggle("stop");
-    html.classList.toggle("stopFlash");
+    probablyStopped = whichRiderWasMostProbablyStopped();
+    showInField();
+//    console.log(stopButtonFlash);
 }
-
-setInterval(flashStopButton,500);
-
-
-
 
 function whichRiderWasMostProbablyStopped() {
     let arr = inField.filter(inFieldElement =>
@@ -1398,16 +1250,8 @@ function whichRiderWasMostProbablyStopped() {
             else
                 {return true;}
         });
-        
-    let id;
-    if (typeof arr[0] !== "undefined") { console.log("defined");
-        arr = sortArrayWithObjects(arr, "startMillis");
-        id = arr[0].id;
-    }
-    else {
-        id = "";
-    }
-//    console.log("MOST PROBABLY STOPPED ID: " + id);
+    arr = sortArrayWithObjects(arr, "time", "dsc");
+    let id = arr[0].id;
     return id;
 }
 
@@ -1468,7 +1312,7 @@ function countdownDNS() {
         armedDNSinterval = null;
     }
 
-    //231101 showStartQue();
+    showStartQue();
 }
 
 var armDNSid;
@@ -1487,7 +1331,7 @@ function armDNS(id) {
     if (armedDNSinterval == null) {
         armedDNSinterval = setInterval(countdownDNS, 1000);
     }
-    //231101 showStartQue();
+    showStartQue();
 }
 
 
@@ -1497,7 +1341,7 @@ function cancelDNS(id) {
         clearInterval(armedDNSinterval);
         armedDNSinterval = null;
     }
-    //231101 showStartQue();
+    showStartQue();
 }
 
 
@@ -1539,7 +1383,7 @@ function hideDNSbutton(id) {
 //  
 //  if (e.key === "s" || e.key === "S") {
 //      stopEvent();
-//      //231101 showInField();
+//      showInField();
 //  }
 //};
 
@@ -1560,7 +1404,7 @@ function moveUpOrder(riderId) {
 function orderToServer (riderId, direction) {
     // to move DOWN order, make direction +1, to move UP order make direction -1.
     var filteredStartQue =  startQue.filter((element) => element.id === riderId);
-//    console.log(filteredStartQue);
+    console.log(filteredStartQue);
     var currentPosition = filteredStartQue[0].position;
     
     var newPosition = currentPosition + direction;
@@ -1603,11 +1447,8 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
         
         if (compare) {
             const obj = arr[i-1];
-            if (arr[i-1][key] !== arr[i][key])
-            {
-                i = 0;
-            }
             arr = arr.filter(element => element != obj);
+            i = 0;
             arr.push(obj);
         }
     }
@@ -1618,15 +1459,15 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
 
 
 
-//function stopClass(riderId) {
-//    if (riderId != probablyStopped || !stopButtonFlash || !stopEventActive) {
-//        return "stop";
-//    }
-//    // changes stopButton css class to make it flash.
-//    else {
-//        return "stopFlash";
-//    }
-//}
+function stopClass(riderId) {
+    if (riderId != probablyStopped || !stopButtonFlash || !stopEventActive) {
+        return "stop";
+    }
+    // changes stopButton css class to make it flash.
+    else {
+        return "stopFlash";
+    }
+}
 
 
 
