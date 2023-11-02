@@ -16,7 +16,7 @@ var row;
 var probablyStopped;
 var lastStoppedRider;
 var ignoredStopEvent = false;
-var delayTime = 4000;  // For testing set to low value. Live should be a larger value (around 20000).
+var delayTime = 40000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
 var serverRequestInterval = 100;
 var startTimes = [];
@@ -535,10 +535,16 @@ function stopwatch () {
             startTimes.push({id: rider.id, time: Date.now()});
         }
         var t = startTimes.filter(element => (element.id === rider.id));
-        t = t[0];
-        var ms = Date.now() - t.time;
-        t = Math.floor(ms/1000);
-        document.getElementById('inFieldTime' + timerLocation[rider.id]).innerHTML = displayTime(t);
+        var ms = Date.now() - t[0].time;;
+        var display = displayTime(ms);
+        
+        // If rider already stopped, get the actual result from timer
+        if (stoppedRiders.filter(element => element.id === rider.id).length > 0) {
+            ms = results[rider.id];
+            display = displayTime(ms, "ms");
+        }
+        
+        document.getElementById('inFieldTime' + timerLocation[rider.id]).innerHTML = display;
     });
 }
 
@@ -1256,6 +1262,7 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
 
 var deleteMatch = [];
 var armStop = false;
+var results = [];
 
 function confirmStop(riderId) {   
     console.log("confirm stop");
@@ -1284,7 +1291,13 @@ function confirmStop(riderId) {
     
     stoppedRiders.push(details);
 
-    console.log("Last STOP event was from rider: " + riderId); // Send id to API
+    var millisStart = details.startMillis;
+    var millisEnd = unmatchedEndTimes[0]['time'];
+    var ms = millisEnd - millisStart;
+    
+    results[riderId] = ms;
+
+    console.log("Last STOP event was from rider: " + riderId + ". Ride time: " + ms + "ms."); // Send id to API
     
     stopTimeId = unmatchedEndTimes[0]['id'];
         
@@ -1317,8 +1330,21 @@ function forceMatch() {
 
 
 
-function displayTime(seconds) {
+function displayTime(ms, format = "s") {
     // Outputs correct time format
+    
+    var seconds = Math.floor(ms/1000);
+    ms -= seconds * 1000;
+    
+    strMs = "" + ms;
+    
+    if (ms < 100) {
+        strMs = "0" + strMs;
+    }
+    if (ms < 10) {
+        strMs = "0" + strMs;
+    }
+    
     var s = seconds % 60;
     var m = (seconds - s) / 60;
     if (s < 10) {
@@ -1328,7 +1354,13 @@ function displayTime(seconds) {
         m = "0" + m;
     }
     var txt = m + ":" + s;
-    return txt;
+    
+    if (format === "s") {
+        return txt;
+    }
+    else if (format === "ms") {
+        return txt + "." + strMs;
+    }
 }
 
 
@@ -1400,7 +1432,7 @@ function whichRiderWasMostProbablyStopped() {
         });
         
     let id;
-    if (typeof arr[0] !== "undefined") { console.log("defined");
+    if (typeof arr[0] !== "undefined") {
         arr = sortArrayWithObjects(arr, "startMillis");
         id = arr[0].id;
     }
