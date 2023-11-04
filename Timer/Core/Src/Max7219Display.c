@@ -40,12 +40,26 @@ static const uint16_t digits[] =
     REG_DIGIT_7
 };
 
-static const uint16_t max7219InitActions[4] =
+static const uint16_t max7219InitActions[] =
 {
-    REG_SHUTDOWN | 0x01,
-    REG_DECODE_MODE | 0x00,
-    REG_SCAN_LIMIT | 0x07,
-    REG_INTENSITY | DISPLAYBRIGHTNESS
+		REG_NO_OP		| 0x00,
+		REG_DIGIT_0 	| 0x00,
+		REG_DIGIT_1 	| 0x00,
+		REG_DIGIT_2 	| 0x00,
+		REG_DIGIT_3 	| 0x00,
+		REG_DIGIT_4 	| 0x00,
+		REG_DIGIT_5 	| 0x00,
+		REG_DIGIT_6 	| 0x00,
+		REG_DIGIT_7 	| 0x00,
+		REG_DECODE_MODE | 0x00,
+		REG_INTENSITY 	| 0x00,
+		REG_SCAN_LIMIT 	| 0x00,
+		REG_SHUTDOWN 	| 0x00,
+		REG_DISPLAY_TEST | 0x00,
+		REG_SHUTDOWN | 0x01,
+		REG_DECODE_MODE | 0x00,
+		REG_SCAN_LIMIT | 0x07,
+		REG_INTENSITY | DISPLAYBRIGHTNESS
 };
 
 static uint16_t max7219SpiBuffer[DISPLAYCOUNT] = {0};
@@ -128,6 +142,7 @@ void InitMax7219Display(void)
         }
         initState++;
     }
+
 }
 
 static uint32_t GenerateDisplayData(void)
@@ -200,7 +215,7 @@ static void UpdateMax7219DisplayTime(void)
 
 void RunMax7219Display(void)
 {
-    if(initState > 3U)
+    if(initState > (sizeof(max7219InitActions) / sizeof(uint16_t)))
     {
         UpdateMax7219DisplayTime();
     }
