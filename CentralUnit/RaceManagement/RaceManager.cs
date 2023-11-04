@@ -211,6 +211,12 @@ namespace RaceManagement
 
             return fastestLaps;
         }
+
+        public List<Rider> GetKnownRiders()
+        {
+            return tracker.Riders;
+        }
+
         public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
@@ -224,6 +230,11 @@ namespace RaceManagement
         public void AddRider(Rider rider)
         {
             tracker?.AddRider(rider);
+        }
+
+        public void ChangePosition(Guid riderId, int targetPosition)
+        {
+            tracker?.ChangePosition(riderId, targetPosition);
         }
 
         public Rider GetRiderById(Guid id) => tracker?.GetRiderById(id);

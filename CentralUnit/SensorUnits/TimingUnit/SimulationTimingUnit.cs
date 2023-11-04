@@ -48,8 +48,6 @@ namespace SensorUnits.TimingUnit
 
                 if(token.IsCancellationRequested)
                 {
-                    token.ThrowIfCancellationRequested();
-
                     return;
                 }
             }

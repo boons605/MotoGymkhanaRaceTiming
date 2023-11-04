@@ -142,6 +142,17 @@ namespace WebAPI.Controllers
             return new StatusCodeResult(200);
         }
 
+        [HttpGet]
+        [Route("[controller]/GetRiders")]
+        public ActionResult GetRiders()
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                return new JsonResult(JArray.FromObject(manager.GetKnownRiders()));
+            });
+
+        }
+
         /// <summary>
         /// Adds a new rider to the running race
         /// </summary>
@@ -171,6 +182,32 @@ namespace WebAPI.Controllers
             {
                 manager.RemoveRider(id);
                 return new StatusCodeResult(200);
+            });
+        }
+
+        [HttpGet]
+        [Route("[controller]/ChangeStartingOrder")]
+        public ActionResult ChangeStartingOrder([FromQuery] Guid riderId, [FromQuery] int newPosition)
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                try
+                {
+                    manager.ChangePosition(riderId, newPosition);
+                    return new StatusCodeResult(200);
+                }
+                catch (Exception e) when (e is ArgumentException || e is KeyNotFoundException)
+                {
+                    JObject errorBody = new JObject
+                    {
+                        { "Error", $"Could not change rider starting order: {e.Message}" }
+                    };
+
+                    JsonResult errorResult = new JsonResult(errorBody);
+                    errorResult.StatusCode = 400;
+
+                    return errorResult;
+                }
             });
         }
 
@@ -207,25 +244,25 @@ namespace WebAPI.Controllers
                         else
                         {
                             errorBody = new JObject
-                        {
-                            { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
-                        };
+                            {
+                                { "Error", $"The given rider id {riderId} does not correspond to a known rider" }
+                            };
                         }
                     }
                     else
                     {
                         errorBody = new JObject
-                    {
-                        { "Error", $"The given rider id {riderId} is already on track" }
-                    };
+                        {
+                            { "Error", $"The given rider id {riderId} is already on track" }
+                        };
                     }
                 }
                 else
                 {
                     errorBody = new JObject
-                {
-                    { "Error", $"There is already a rider waiting: {state.waiting.Rider.Name}, id: {state.waiting.Rider.Id}" }
-                };
+                    {
+                        { "Error", $"There is already a rider waiting: {state.waiting.Rider.Name}, id: {state.waiting.Rider.Id}" }
+                    };
                 }
 
                 JsonResult errorResult = new JsonResult(errorBody);

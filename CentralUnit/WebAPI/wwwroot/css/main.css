@@ -11,6 +11,7 @@ body {
     color: black;
     font-weight: bold;
     text-align: center;
+    border-radius: 5px;
 }
 
 .btn {
@@ -61,7 +62,7 @@ body {
 }
 
 .riderName {
-    width: auto;
+    width: 300px;;
     padding-right: 20px;
 }
 
@@ -101,6 +102,10 @@ body {
 
 .stop {
     background-color: gray;
+}
+
+.stopFlash {
+    background-color: red;
 }
 
 .penaltyCounter {

@@ -64,7 +64,7 @@ namespace RaceManagement
         private Dictionary<Guid, DSQEvent> pendingDisqualifications = new Dictionary<Guid, DSQEvent>();
         private Dictionary<Guid, List<PenaltyEvent>> pendingPenalties = new Dictionary<Guid, List<PenaltyEvent>>();
 
-        private Dictionary<Guid, Rider> knownRiders = new Dictionary<Guid, Rider>();
+        private RiderCollection knownRiders = new RiderCollection();
 
         /// <summary>
         /// Fired when the system is ready for the next rider to trigger the start timing gate
@@ -86,7 +86,13 @@ namespace RaceManagement
         public RaceTracker(ITimingUnit timing, TrackerConfig config, List<Rider> knownRiders)
         {
             this.timing = timing;
-            this.knownRiders = knownRiders.ToDictionary(r => r.Id);
+            this.knownRiders = new RiderCollection();
+
+            foreach(Rider r in knownRiders)
+            {
+                this.knownRiders.Add(r);
+            }
+
             this.config = config;
 
             this.StateLock = new object();
@@ -126,12 +132,34 @@ namespace RaceManagement
             }
         }
 
+        /// <summary>
+        /// Returns a list of all the known riders
+        /// </summary>
+        public List<Rider> Riders
+        {
+            get
+            {
+                lock (StateLock)
+                {
+                    return knownRiders.Values.ToList();
+                }
+            }
+        }
+
         public Rider GetRiderById(Guid id)
         {
             lock (StateLock)
             {
                 knownRiders.TryGetValue(id, out Rider result);
                 return result;
+            }
+        }
+
+        public void ChangePosition(Guid id, int targetPosition)
+        {
+            lock (StateLock)
+            {
+                knownRiders.ChangePosition(id, targetPosition);
             }
         }
 

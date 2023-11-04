@@ -13,6 +13,7 @@ namespace RaceManagementTests.TestHelpers
         public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
 
         public List<Lap> Laps => new List<Lap>();
+        public List<Rider> Riders => new List<Rider>();
 
         public event EventHandler<LapCompletedEventArgs> OnRiderDNF;
         public event EventHandler<LapCompletedEventArgs> OnRiderMatched;
@@ -40,6 +41,11 @@ namespace RaceManagementTests.TestHelpers
         }
 
         public Rider GetRiderById(Guid id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ChangePosition(Guid id, int targetPosition)
         {
             throw new NotImplementedException();
         }
