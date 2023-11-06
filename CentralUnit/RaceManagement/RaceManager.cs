@@ -66,7 +66,16 @@ namespace RaceManagement
             }
             else if (File.Exists("HardwareConfig.json"))
             {
-                throw new NotImplementedException();
+                Log.Info("Starting race from from HardwareConfig.json");
+                using (FileStream stream = new FileStream("HardwareConfig.json", FileMode.Open))
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, false))
+                    {
+                        string jsonData = reader.ReadToEnd();
+
+                        Start(JsonConvert.DeserializeObject<RaceConfig>(jsonData), new List<Rider>());
+                    }
+                }
             }
         }
 
