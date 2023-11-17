@@ -12,16 +12,15 @@ namespace ModelsTests
         [TestMethod]
         public void CompareTo_ShouldConsiderPernalties()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
 
             //make a fast lap with loads of penalties
-            IdEvent startId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
-            TimingEvent startTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent endId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
-            TimingEvent endTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderReadyEvent fastReady = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
+            TimingEvent fastStartTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
+            TimingEvent fastEndTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderFinishedEvent fastEnd = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", fastEndTiming);
 
-            FinishedEvent fastFinish = new FinishedEvent(startId, startTiming, endTiming, endId);
+            FinishedEvent fastFinish = new FinishedEvent(fastReady, fastStartTiming, fastEnd);
 
             Lap fast = new Lap(fastFinish);
             fast.AddPenalties(new List<PenaltyEvent>
@@ -31,12 +30,12 @@ namespace ModelsTests
             });
 
             //make a slower lap without penalties
-            IdEvent slowStartId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent slowReady = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
             TimingEvent slowStartTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent slowEndId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
             TimingEvent slowEndTiming = new TimingEvent(DateTime.Now, martijn, 300, 1);
+            RiderFinishedEvent slowEnd = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", slowEndTiming);
 
-            FinishedEvent slowFinish = new FinishedEvent(slowStartId, slowStartTiming, slowEndTiming, slowEndId);
+            FinishedEvent slowFinish = new FinishedEvent(slowReady, slowStartTiming, slowEnd);
 
             Lap slow = new Lap(slowFinish);
 
@@ -56,63 +55,53 @@ namespace ModelsTests
         [TestMethod]
         public void CompareTo_ShouldConsiderDNFSlower()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
 
             //make a regular lap
-            IdEvent startId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent startId = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
             TimingEvent startTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent endId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
-            TimingEvent endTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
 
-            FinishedEvent finish = new FinishedEvent(startId, startTiming, endTiming, endId);
+            TimingEvent endTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderFinishedEvent endId = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", endTiming);
+
+            FinishedEvent finish = new FinishedEvent(startId, startTiming, endId);
 
             Lap normalLap = new Lap(finish);
 
             //make a DNF lap
-            IdEvent dnfStartId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent dnfStartId = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
 
             ManualDNFEvent manualDnf = new ManualDNFEvent(dnfStartId, "staff");
-            UnitDNFEvent unitDnf = new UnitDNFEvent(finish, dnfStartId);
 
             Lap manualDnfLap = new Lap(manualDnf);
-            Lap unitDnfLap = new Lap(unitDnf);
 
             //a dnf lap should always be slower (bigger) than a finished lap
             Assert.AreEqual(1, manualDnfLap.CompareTo(normalLap));
             Assert.AreEqual(-1, normalLap.CompareTo(manualDnfLap));
-
-            Assert.AreEqual(1, unitDnfLap.CompareTo(normalLap));
-            Assert.AreEqual(-1, normalLap.CompareTo(unitDnfLap));
-
-            //dnf laps have no mutual ordering
-            Assert.AreEqual(1, manualDnfLap.CompareTo(unitDnfLap));
-            Assert.AreEqual(1, unitDnfLap.CompareTo(manualDnfLap));
         }
 
         [TestMethod]
         public void CompareTo_ShouldConsiderDSQOnFinshedLaps()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
 
             //make a fast lap 
-            IdEvent startId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
-            TimingEvent startTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent endId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
-            TimingEvent endTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderReadyEvent fastReady = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
+            TimingEvent fastStartTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
+            TimingEvent fastEndTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderFinishedEvent fastEnd = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", fastEndTiming);
 
-            FinishedEvent fastFinish = new FinishedEvent(startId, startTiming, endTiming, endId);
+            FinishedEvent fastFinish = new FinishedEvent(fastReady, fastStartTiming, fastEnd);
 
             Lap fast = new Lap(fastFinish);
 
             //make a slower lap without penalties
-            IdEvent slowStartId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent slowStartId = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
             TimingEvent slowStartTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent slowEndId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
             TimingEvent slowEndTiming = new TimingEvent(DateTime.Now, martijn, 300, 1);
+            RiderFinishedEvent slowEnd = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", slowEndTiming);
 
-            FinishedEvent slowFinish = new FinishedEvent(slowStartId, slowStartTiming, slowEndTiming, slowEndId);
+            FinishedEvent slowFinish = new FinishedEvent(slowStartId, slowStartTiming, slowEnd);
 
             Lap slow = new Lap(slowFinish);
 
@@ -136,35 +125,29 @@ namespace ModelsTests
         [TestMethod]
         public void CompareTo_ShouldConsiderDNFSlowerThanDSQ()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 2);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
 
             //make a regular lap with DSQ
-            IdEvent startId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent ready = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
             TimingEvent startTiming = new TimingEvent(DateTime.Now, martijn, 100, 0);
-            IdEvent endId = new IdEvent(DateTime.Now, martijn, "EndId", Direction.Enter);
             TimingEvent endTiming = new TimingEvent(DateTime.Now, martijn, 200, 1);
+            RiderFinishedEvent end = new RiderFinishedEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff", endTiming);
 
-            FinishedEvent finish = new FinishedEvent(startId, startTiming, endTiming, endId);
+            FinishedEvent finish = new FinishedEvent(ready, startTiming, end);
 
-            Lap normalLap = new Lap(finish);
-            normalLap.SetDsq(new DSQEvent(DateTime.Now, martijn, "staff", "reason"));
+            Lap dsqLap = new Lap(finish);
+            dsqLap.SetDsq(new DSQEvent(DateTime.Now, martijn, "staff", "reason"));
 
             //make a DNF lap
-            IdEvent dnfStartId = new IdEvent(DateTime.Now, martijn, "StartId", Direction.Enter);
+            RiderReadyEvent dnfReady = new RiderReadyEvent(DateTime.Now, martijn, Guid.NewGuid(), "staff");
 
-            ManualDNFEvent manualDnf = new ManualDNFEvent(dnfStartId, "staff");
-            UnitDNFEvent unitDnf = new UnitDNFEvent(finish, dnfStartId);
+            ManualDNFEvent manualDnf = new ManualDNFEvent(dnfReady, "staff");
 
             Lap manualDnfLap = new Lap(manualDnf);
-            Lap unitDnfLap = new Lap(unitDnf);
 
             //a dnf lap should always be slower (bigger) than a finished with DSQ lap
-            Assert.AreEqual(1, manualDnfLap.CompareTo(normalLap));
-            Assert.AreEqual(-1, normalLap.CompareTo(manualDnfLap));
-
-            Assert.AreEqual(1, unitDnfLap.CompareTo(normalLap));
-            Assert.AreEqual(-1, normalLap.CompareTo(unitDnfLap));
+            Assert.AreEqual(1, manualDnfLap.CompareTo(dsqLap));
+            Assert.AreEqual(-1, dsqLap.CompareTo(manualDnfLap));
         }
     }
 }

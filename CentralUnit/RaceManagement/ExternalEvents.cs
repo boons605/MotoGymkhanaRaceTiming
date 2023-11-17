@@ -17,20 +17,20 @@ namespace RaceManagement
         /// The rider this event applies to
         /// </summary>
         [JsonRequired]
-        public readonly string RiderName;
+        public readonly Guid RiderId;
 
-        public ManualEventArgs(DateTime received, string riderName, string staffName)
+        public ManualEventArgs(DateTime received, Guid riderId, string staffName)
         {
             Received = received;
             StaffName = staffName;
-            RiderName = riderName;
+            RiderId = riderId;
         }
     }
 
     public class ManualDNFEventArgs : ManualEventArgs
     {
-        public ManualDNFEventArgs(DateTime received, string riderName, string staffName) 
-            : base(received, riderName, staffName)
+        public ManualDNFEventArgs(DateTime received, Guid riderId, string staffName) 
+            : base(received, riderId, staffName)
         {
         }
     }
@@ -44,8 +44,8 @@ namespace RaceManagement
         [JsonRequired]
         public readonly string Reason;
 
-        public DSQEventArgs(DateTime received, string riderName, string staffName, string reason) 
-            : base(received, riderName, staffName)
+        public DSQEventArgs(DateTime received, Guid riderId, string staffName, string reason) 
+            : base(received, riderId, staffName)
         {
             Reason = reason;
         }
@@ -59,10 +59,37 @@ namespace RaceManagement
         [JsonRequired]
         public readonly int Seconds;
 
-        public PenaltyEventArgs(DateTime received, string riderName, string staffName, string reason, int seconds) : base(received, riderName, staffName)
+        public PenaltyEventArgs(DateTime received, Guid riderId, string staffName, string reason, int seconds) : base(received, riderId, staffName)
         {
             Reason = reason;
             Seconds = seconds;
+        }
+    }
+
+    public class RiderReadyEventArgs : ManualEventArgs
+    {
+        public RiderReadyEventArgs(DateTime received, Guid riderId, string staffName) : base(received, riderId, staffName)
+        {
+        }
+    }
+
+    public class RiderFinishedEventArgs : ManualEventArgs
+    {
+        /// <summary>
+        /// The id of the timing event that should be matched to the rider
+        /// </summary>
+        public readonly Guid TimeId;
+
+        public RiderFinishedEventArgs(DateTime received, Guid riderId, string staffName, Guid timeId) : base(received, riderId, staffName)
+        {
+            TimeId = timeId;
+        }
+    }
+
+    public class ClearReadyEventArgs : ManualEventArgs
+    {
+        public ClearReadyEventArgs(DateTime received, Guid riderId, string staffName) : base(received, riderId, staffName)
+        {
         }
     }
 }

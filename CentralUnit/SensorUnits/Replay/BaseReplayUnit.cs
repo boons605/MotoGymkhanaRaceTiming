@@ -1,8 +1,6 @@
 ﻿using Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,12 +9,12 @@ namespace SensorUnits.Simulation
     /// <summary>
     /// This class provides base functionality to simulate a sensor based on a RaceSummary
     /// </summary>
-    public abstract class BaseSimulationUnit<T> where T : RaceEvent
+    public abstract class BaseReplayUnit<T> where T : RaceEvent
     {
         protected Queue<T> eventsToReplay;
         protected RaceSummary race;
 
-        public BaseSimulationUnit(RaceSummary race)
+        public BaseReplayUnit(RaceSummary race)
         {
             this.race = race;
         }

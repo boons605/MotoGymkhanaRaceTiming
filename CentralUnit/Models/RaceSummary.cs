@@ -5,12 +5,10 @@
 using Models.Config;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace Models
 {
@@ -26,15 +24,12 @@ namespace Models
 
         public TrackerConfig Config { get; private set; }
 
-        public string StartId { get; private set; }
-
-        public string EndId { get; private set; }
-
         /// <summary>
         /// All the riders that participated in this race
         /// </summary>
         public List<Rider> Riders => Events
                 .Select(e => e.Rider)
+                .Where(e => e != null)
                 .Distinct(new RiderNameEquality())
                 .ToList();
 
@@ -48,12 +43,10 @@ namespace Models
         /// <summary>
         /// Constructor for general use. Riders will be collected from events
         /// </summary>
-        public RaceSummary(List<RaceEvent> events, TrackerConfig config, string startId, string endId)
+        public RaceSummary(List<RaceEvent> events, TrackerConfig config)
         {
             Events = events;
             Config = config;
-            StartId = startId;
-            EndId = endId;
         }
 
         /// <summary>
@@ -73,8 +66,6 @@ namespace Models
             JObject composite = new JObject();
             composite.Add("Riders", riders);
             composite.Add("Events", events);
-            composite.Add("StartId", StartId);
-            composite.Add("EndId", EndId);
             composite.Add("Config", JObject.FromObject(Config));
 
             using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true))//we dont own the stream, so dont close it when the writer closes
@@ -97,7 +88,7 @@ namespace Models
 
                 List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
 
-                return new RaceSummary(events, intermediate["Config"].ToObject<TrackerConfig>(), intermediate["StartId"].ToString(), intermediate["EndId"].ToString());
+                return new RaceSummary(events, intermediate["Config"].ToObject<TrackerConfig>());
             }
         }
 

@@ -1,0 +1,7 @@
+{
+  //Place this file in the output directory to start with a race configuration using a hardware timer
+  "TimingUnitId": "directserial:/dev/ttyAMA3", //Specify the serial port the timer is connected to
+  "StartLightUnitId": "directserial:/dev/ttyAMA4", //Specify the serial port the start 'traffic light' unit is connect to
+  "StartTimingGateId": 0,
+  "EndTimingGateId": 1
+}

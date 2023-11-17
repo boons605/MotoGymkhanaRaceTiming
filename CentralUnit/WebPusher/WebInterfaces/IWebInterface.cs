@@ -16,7 +16,7 @@ namespace WebPusher.WebInterfaces
         /// Must be robust to receiving this call for a rider thats already driving a lap
         /// </summary>
         /// <param name="start"></param>
-        public Task StartLap(IdEvent start);
+        public Task StartLap(RiderReadyEvent start);
 
         /// <summary>
         /// Signals that a lap has been completed.
@@ -30,7 +30,7 @@ namespace WebPusher.WebInterfaces
         /// Signals that a rider has received a DNF or DSQ. Ends the lap, must have received a penalty first.
         /// Useful if you cannot wait until you receive a Lap object from the WebAPI
         /// </summary>
-        public Task EndLap(IdEvent end);
+        public Task EndLap(RiderFinishedEvent end);
 
         /// <summary>
         /// Adds a penalty to a lap that was posted previously with <see cref="NewTime(Lap)"/>

@@ -7,30 +7,10 @@
 
   <ItemGroup>
     <None Remove="logConfig.xml" />
-    <None Remove="StaticFiles\ajax\libs\jquery\3.5.1\jquery.min.js" />
-    <None Remove="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css" />
-    <None Remove="StaticFiles\bootstrap\3.7.7\js\bootstrap.min.js.js" />
-    <None Remove="StaticFiles\schep.jpg" />
-    <None Remove="StaticFiles\timingInterface.js" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="logConfig.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="StaticFiles\ajax\libs\jquery\3.5.1\jquery.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="StaticFiles\bootstrap\3.7.7\css\bootstrap.min.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="StaticFiles\bootstrap\3.7.7\js\bootstrap.min.js.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="StaticFiles\schep.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="StaticFiles\timingInterface.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -42,6 +22,19 @@
   <ItemGroup>
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\RaceManagement\RaceManagement.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="HardwareConfig.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Update="SimulationConfig.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 

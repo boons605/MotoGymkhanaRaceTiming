@@ -1,7 +1,7 @@
 ﻿// <copyright file="BLERiderIdUnit.cs" company="Moto Gymkhana">
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
-namespace SensorUnits.RiderIdUnit
+namespace StartLightUnit
 {
     using System;
     using System.Collections.Concurrent;
@@ -18,7 +18,7 @@ namespace SensorUnits.RiderIdUnit
     /// <summary>
     /// Rider ID Unit implementation for the ESP32-based Rider ID unit employing BLE iBeacons for identifying riders.
     /// </summary>
-    public class BLERiderIdUnit : AbstractCommunicatingUnit, IRiderIdUnit, IStartLightUnit
+    public class BLEStartLightUnit : AbstractCommunicatingUnit, IRiderIdUnit, IStartLightUnit
     {
         /// <summary>
         /// A list of known <see cref="Rider"/> objects with <see cref="Beacon"/> object
@@ -287,7 +287,7 @@ namespace SensorUnits.RiderIdUnit
                 Log.Info($"{this.unitId}:Event thread ended for unit {this.unitId} for other reasons");
             }
 
-            
+
         }
 
         /// <inheritdoc/>
@@ -339,7 +339,7 @@ namespace SensorUnits.RiderIdUnit
                 {
                     Log.Warn($"{this.unitId}: Failure while clearing known riders, got packet status {packet.Status}");
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -432,7 +432,7 @@ namespace SensorUnits.RiderIdUnit
                     }
                     this.closestRider = newClosest;
                 }
-                
+
             }
             else if (this.closestRider != null)
             {
@@ -621,7 +621,7 @@ namespace SensorUnits.RiderIdUnit
                             Log.Warn($"{this.unitId}: Failure while adding rider, got packet status {packet.Status}");
                             break;
                     }
-                    
+
                 }
             }
             catch (Exception ex)

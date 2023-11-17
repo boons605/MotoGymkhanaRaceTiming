@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using DisplayUnit;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Models;
@@ -15,11 +14,7 @@ namespace RaceManagementTests
     [TestClass]
     public class RaceManagerTests
     {
-        MockRiderIdUnit startId;
-        MockRiderIdUnit endId;
         MockTimingUnit timer;
-
-        CancellationTokenSource source;
 
         RaceTracker tracker;
         RaceManager subject;
@@ -27,29 +22,21 @@ namespace RaceManagementTests
         [TestInitialize]
         public void Init()
         {
-            startId = new MockRiderIdUnit("StartId");
-            endId = new MockRiderIdUnit("EndId");
             timer = new MockTimingUnit();
-
-            source = new CancellationTokenSource();
 
             TrackerConfig config = new TrackerConfig
             {
-                EndMatchTimeout = 20,
                 StartTimingGateId = 0,
                 EndTimingGateId = 1
             };
 
             //riders are addded in the SimulateRace method
-            tracker = new RaceTracker(timer, startId, endId, config, new List<Rider>());
+            tracker = new RaceTracker(timer, config, new List<Rider>());
 
             subject = new RaceManager();
             subject.Start(tracker, new List<IDisplayUnit> { timer });
 
             SimulateRace();
-
-            //wait for the tracker to process all events
-            Thread.Sleep(2000);
 
             subject.Stop();
         }
@@ -63,12 +50,12 @@ namespace RaceManagementTests
             //DNFs ar also counted as a kind of lap
             Assert.AreEqual(8, laps.Count);
 
-            Assert.AreEqual("Rider-1", laps[0].Rider.Name);
-            Assert.AreEqual(10000000, laps[0].GetLapTime());
-
             //A DNF
-            Assert.AreEqual("Rider-0", laps[1].Rider.Name);
-            Assert.AreEqual(-1, laps[1].GetLapTime());
+            Assert.AreEqual("Rider-0", laps[0].Rider.Name);
+            Assert.AreEqual(-1, laps[0].GetLapTime());
+
+            Assert.AreEqual("Rider-1", laps[1].Rider.Name);
+            Assert.AreEqual(10000000, laps[1].GetLapTime());
 
             Assert.AreEqual("Rider-2", laps[2].Rider.Name);
             Assert.AreEqual(20000000, laps[2].GetLapTime());
@@ -80,11 +67,12 @@ namespace RaceManagementTests
             Assert.AreEqual("Rider-0", laps[4].Rider.Name);
             Assert.AreEqual(50000000, laps[4].GetLapTime());
 
-            Assert.AreEqual("Rider-2", laps[5].Rider.Name);
-            Assert.AreEqual(40000000, laps[5].GetLapTime());
+            Assert.AreEqual("Rider-1", laps[5].Rider.Name);
+            Assert.AreEqual(-1, laps[5].GetLapTime());
 
-            Assert.AreEqual("Rider-1", laps[6].Rider.Name);
-            Assert.AreEqual(-1, laps[6].GetLapTime());
+            Assert.AreEqual("Rider-2", laps[6].Rider.Name);
+            Assert.AreEqual(40000000, laps[6].GetLapTime());
+
 
             Assert.AreEqual("Rider-3", laps[7].Rider.Name);
             Assert.AreEqual(15000000, laps[7].GetLapTime());
@@ -159,8 +147,7 @@ namespace RaceManagementTests
             List<Rider> riders = new List<Rider>();
             for (byte i = 0; i < 4; i++)
             {
-                Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, i }, 0);
-                Rider rider = new Rider($"Rider-{i}", beacon);
+                Rider rider = new Rider($"Rider-{i}", Guid.NewGuid());
                 riders.Add(rider);
                 tracker.AddRider(rider);
             }
@@ -168,24 +155,24 @@ namespace RaceManagementTests
             DateTime currentTime = new DateTime(2000, 1, 1);
 
             //first laps for all riders
-            MakeDNF(riders[0], currentTime, startId, timer);
+            MakeDNF(riders[0], currentTime, tracker, timer);
             currentTime = currentTime.AddSeconds(1);
 
-            currentTime = MakeLap(riders[1], currentTime, 10000000, startId, endId, timer);
+            currentTime = MakeLap(riders[1], currentTime, 10000000, tracker, timer);
 
-            currentTime = MakeLap(riders[2], currentTime, 20000000, startId, endId, timer);
+            currentTime = MakeLap(riders[2], currentTime, 20000000, tracker, timer);
 
-            currentTime = MakeLap(riders[3], currentTime, 30000000, startId, endId, timer);
+            currentTime = MakeLap(riders[3], currentTime, 30000000, tracker, timer);
 
             //second laps for all riders
-            currentTime = MakeLap(riders[0], currentTime, 50000000, startId, endId, timer);
+            currentTime = MakeLap(riders[0], currentTime, 50000000, tracker, timer);
 
-            MakeDNF(riders[1], currentTime, startId, timer);
+            MakeDNF(riders[1], currentTime, tracker, timer);
             currentTime = currentTime.AddSeconds(1);
 
-            currentTime = MakeLap(riders[2], currentTime, 40000000, startId, endId, timer);
+            currentTime = MakeLap(riders[2], currentTime, 40000000, tracker, timer);
 
-            MakeLap(riders[3], currentTime, 15000000, startId, endId, timer);
+            MakeLap(riders[3], currentTime, 15000000, tracker, timer);
         }
 
         /// <summary>
@@ -198,51 +185,66 @@ namespace RaceManagementTests
         /// <param name="end"></param>
         /// <param name="time"></param>
         /// <returns> the time at which the rider finishes the lap (start + lap time)</returns>
-        private DateTime MakeLap(Rider rider, DateTime startTime, long lapMicroseconds, MockRiderIdUnit start, MockRiderIdUnit end, MockTimingUnit time)
+        private DateTime MakeLap(Rider rider, DateTime startTime, long lapMicroseconds, RaceTracker tracker, MockTimingUnit time)
         {
             long startMicroseconds = startTime.Ticks / (TimeSpan.TicksPerMillisecond / 1000);
             long endMicroseconds = startMicroseconds + lapMicroseconds;
 
             DateTime endTime = startTime.AddMilliseconds(lapMicroseconds / 1000);
 
-            MakeStartEvents(rider, startTime, startMicroseconds, start, time);
-            MakeEndEvents(rider, endTime, endMicroseconds, end, time);
+            MakeStartEvents(rider, startTime, startMicroseconds, tracker, time);
+            MakeEndEvents(rider, endTime, endMicroseconds, tracker, time);
 
             return endTime;
         }
 
-        private void MakeDNF(Rider rider, DateTime startTime, MockRiderIdUnit start, MockTimingUnit time)
+        private void MakeDNF(Rider rider, DateTime startTime, RaceTracker tracker, MockTimingUnit time)
         {
             long startMicroseconds = startTime.Ticks / (TimeSpan.TicksPerMillisecond / 1000);
-            MakeStartEvents(rider, startTime, startMicroseconds, start, time);
+            MakeStartEvents(rider, startTime, startMicroseconds, tracker, time);
+
+            tracker.AddEvent(new ManualDNFEventArgs(startTime, rider.Id, "staff"));
         }
 
         /// <summary>
         /// Makes events for a lap begin at start
         /// </summary>
-        /// <param name="riderName"></param>
-        /// <param name="sensorId"></param>
-        /// <param name="start"></param>
-        /// <param name="id"></param>
-        /// <param name="time"></param>
-        private void MakeStartEvents(Rider rider, DateTime start, long microseconds, MockRiderIdUnit id, MockTimingUnit time)
+        /// <param name="rider">The rider that is starting</param>
+        /// <param name="start">The moment when the events are received</param>
+        /// <param name="microseconds">The value of the timer at the timer event</param>
+        /// <param name="tracker">The tracker to emit the events to</param>
+        /// <param name="time">The timing unit that should emit the timing events</param>
+        private void MakeStartEvents(Rider rider, DateTime start, long microseconds, RaceTracker tracker, MockTimingUnit time)
         {
-            id.EmitIdEvent(rider, start);
+            tracker.AddEvent(new RiderReadyEventArgs(start, rider.Id, "staff"));
             time.EmitTriggerEvent(microseconds, "Timer", 0, start);
         }
 
         /// <summary>
         /// Makes events for a lap finish at start + 1 minute
         /// </summary>
-        /// <param name="riderName"></param>
-        /// <param name="sensorId"></param>
-        /// <param name="end"></param>
-        /// <param name="id"></param>
-        /// <param name="time"></param>
-        private void MakeEndEvents(Rider rider, DateTime end, long microseconds, MockRiderIdUnit id, MockTimingUnit time)
+        /// <param name="rider">The rider that is finishing</param>
+        /// <param name="start">The moment when the events are received</param>
+        /// <param name="microseconds">The value of the timer at the timer event</param>
+        /// <param name="tracker">The tracker to emit the events to</param>
+        /// <param name="time">The timing unit that should emit the timing events</param>
+        private void MakeEndEvents(Rider rider, DateTime end, long microseconds, RaceTracker tracker, MockTimingUnit time)
         {
-            id.EmitIdEvent(rider, end);
+            int previousUnmacthedTimes = tracker.GetState.unmatchedTimes.Count;
+
+            // rider triggers end timing gate
             time.EmitTriggerEvent(microseconds, "Timer", 1, end);
+
+            // wait for tracker to process events
+            while (tracker.GetState.unmatchedTimes.Count == previousUnmacthedTimes)
+            {
+                Thread.Yield();
+            }
+
+            //we need to know the id of the end timing event
+            Guid timingId = tracker.GetState.unmatchedTimes.Last().EventId;
+
+            tracker.AddEvent(new RiderFinishedEventArgs(end.AddSeconds(1), rider.Id, "staff", timingId));
         }
     }
 }

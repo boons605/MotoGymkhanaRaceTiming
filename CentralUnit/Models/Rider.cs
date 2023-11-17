@@ -8,7 +8,7 @@ namespace Models
     using System.Text;
 
     /// <summary>
-    /// Contains rider information, like the rider name and the beacon belonging to the rider.
+    /// Contains rider information, like the rider name and unique identifier
     /// </summary>
     public class Rider
     {
@@ -18,25 +18,25 @@ namespace Models
         public string Name { get; private set; }
 
         /// <summary>
-        /// The beacon that belongs to this rider.
+        /// The unique id for this rider.
         /// </summary>
-        public Beacon Beacon { get; private set; }
+        public Guid Id { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Rider"/> class with a name and a beacon to identify the rider.
         /// </summary>
         /// <param name="name">The name of the rider.</param>
-        /// <param name="beacon">The <see cref="Beacon"/> belonging to the rider.</param>
-        public Rider(string name, Beacon beacon)
+        /// <param name="id">The unique id associated with this rider</param>
+        public Rider(string name, Guid id)
         {
             Name = name;
-            Beacon = beacon;
+            Id = id;
         }
 
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"Rider {this.Name} with beacon {this.Beacon}";
+            return $"Rider {this.Name} with id {this.Id}";
         }
 
         /// <inheritdoc/>
@@ -49,9 +49,9 @@ namespace Models
                     Rider other = (Rider)obj;
                     if (this.Name == other.Name)
                     {
-                        if (this.Beacon != null)
+                        if (this.Id != null)
                         {
-                            return this.Beacon.Equals(other.Beacon);
+                            return this.Id.Equals(other.Id);
                         }
                     }
                 }
@@ -69,9 +69,9 @@ namespace Models
                 retVal = Name.GetHashCode();
             }
 
-            if (this.Beacon != null)
+            if (this.Id != null)
             {
-                retVal ^= Beacon.GetHashCode();
+                retVal ^= Id.GetHashCode();
             }
 
             return retVal;

@@ -2,7 +2,6 @@
 using log4net;
 using log4net.Config;
 using Models;
-using SensorUnits.RiderIdUnit;
 using SensorUnits.TimingUnit;
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,9 @@ using System.Threading.Tasks;
 using System.Linq;
 using DisplayUnit;
 using Models.Config;
-using StartLightUnit;
+using SensorUnits.StartLightUnit;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace RaceManagement
 {
@@ -25,12 +26,12 @@ namespace RaceManagement
 
         private ITimingUnit timing;
         private List<IDisplayUnit> displays = new List<IDisplayUnit>();
-        private IRiderIdUnit startGate, endGate;
         private IRaceTracker tracker;
         private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
+        private DateTime RaceStartTime = DateTime.Now;
 
-        public Task CombinedTasks { get; private set; }
+        public Task<RaceSummary> CombinedTasks { get; private set; }
 
         /// <summary>
         /// State is produced by a running RaceTracker. Before the first Start call there is no meanigful state
@@ -46,45 +47,98 @@ namespace RaceManagement
         }
 
         /// <summary>
-        /// Simulates a race from a json that contains all the race events
+        /// Attempt to start the race manager from a locally stored config, for example for testing or fixed setups
+        /// </summary>
+        public void AttemptStartFromLocalConfig()
+        {
+            if (File.Exists("SimulationConfig.json"))
+            {
+                Log.Info("Starting simulation from SimulationConfig.json");
+                using (FileStream stream = new FileStream("SimulationConfig.json", FileMode.Open))
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, false))
+                    {
+                        string jsonData = reader.ReadToEnd();
+
+                        Start(JsonConvert.DeserializeObject<SimulationData>(jsonData), 1000, null);
+                    }
+                }
+            }
+            else if (File.Exists("HardwareConfig.json"))
+            {
+                Log.Info("Starting race from from HardwareConfig.json");
+                using (FileStream stream = new FileStream("HardwareConfig.json", FileMode.Open))
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, false))
+                    {
+                        string jsonData = reader.ReadToEnd();
+
+                        Start(JsonConvert.DeserializeObject<RaceConfig>(jsonData), new List<Rider>());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Simulates all the system events that happen during a race. Used to test interaction with ui
         /// </summary>
         /// <param name="simulationData"></param>
-        public void Start(RaceSummary simulationData)
+        /// <param name="delayMilliseconds">How many milliseconds to wait before starting simulation</param>
+        /// <param name="overrideEventDelayMilliseconds">how many milliseconds to wait in between events, if not provided use value in events</param>
+        public void Start(SimulationData simulationData, int delayMilliseconds, int? overrideEventDelayMilliseconds)
+        {
+            Stop();
+
+            XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
+
+            SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
+            displays.Add(timingUnit);
+            timing = timingUnit;
+
+            tracker = new RaceTracker(timing, new TrackerConfig { StartTimingGateId = simulationData.StartGateId, EndTimingGateId = simulationData.EndGateId }, simulationData.Riders);
+            HookEvents(tracker);
+
+            Task<RaceSummary> trackTask = tracker.Run(source.Token);
+
+            var timeTask = timingUnit.Run(source.Token, delayMilliseconds, overrideEventDelayMilliseconds);
+
+            CombinedTasks = Task.Run(() =>
+            {
+                timeTask.Wait();
+                source.Cancel();
+                return trackTask.Result;
+            });
+        }
+
+        /// <summary>
+        /// Replays a race from a json that contains all the race events
+        /// </summary>
+        /// <param name="replayData"></param>
+        public void Start(RaceSummary replayData)
         {
             Stop();
 
             XmlConfigurator.Configure(new FileInfo("logConfig.xml"));
             
             //we need the simulation specific methods in the constructor
-            SimulationRiderIdUnit startId = new SimulationRiderIdUnit(simulationData.StartId, simulationData);
-            SimulationRiderIdUnit endId = new SimulationRiderIdUnit(simulationData.EndId, simulationData);
-            SimulationTimingUnit timingUnit = new SimulationTimingUnit(simulationData);
+            ReplayTimingUnit timingUnit = new ReplayTimingUnit(replayData);
             displays.Add(timingUnit);
-            startGate = startId;
-            endGate = endId;
             timing = timingUnit;
 
-            startId.Initialize();
-            endId.Initialize();
             timingUnit.Initialize();
 
-            tracker = new RaceTracker(timing, startId, endId, simulationData.Config, simulationData.Riders);
+            tracker = new RaceTracker(timing, replayData.Config, replayData.Riders);
             HookEvents(tracker);
 
-            var trackTask = tracker.Run(source.Token);
+            Task<RaceSummary> trackTask = tracker.Run(source.Token);
 
-            var startTask = startId.Run(source.Token);
-            var endTask = endId.Run(source.Token);
             var timeTask = timingUnit.Run(source.Token);
-
-            //will complete when all units run out of events to simulate
-            var unitsTask = Task.WhenAll(startTask, endTask, timeTask);
 
             CombinedTasks = Task.Run(() =>
             {
-                unitsTask.Wait();
+                timeTask.Wait();
                 source.Cancel();
-                trackTask.Wait();
+                return trackTask.Result;
             });
         }
 
@@ -100,25 +154,22 @@ namespace RaceManagement
             SerialTimingUnit timer = new SerialTimingUnit(CommunicationManager.GetCommunicationDevice(config.TimingUnitId), "timerUnit", source.Token, config.StartTimingGateId, config.EndTimingGateId);
             timing = timer;
             displays.Add(timer);
-            BLERiderIdUnit realStartId = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.StartIdUnitId), "startUnit", config.StartIdRange, source.Token);
-            endGate = new BLERiderIdUnit(CommunicationManager.GetCommunicationDevice(config.EndIdUnitId), "finishUnit", config.EndIdRange, source.Token);
 
-            startGate = realStartId;
-            startLight = realStartId;
-
-            startGate?.ClearKnownRiders();
-            endGate?.ClearKnownRiders();
+            startLight = new BLEStartLightUnit(CommunicationManager.GetCommunicationDevice(config.StartLightUnitId), "lightUnit", source.Token);
 
             startLight.SetStartLightColor(StartLightColor.YELLOW);
 
-            startGate.AddKnownRiders(riders);
-
-            tracker = new RaceTracker(timing, startGate, endGate, config.ExtractTrackerConfig(), riders);
+            tracker = new RaceTracker(timing, config.ExtractTrackerConfig(), riders);
             HookEvents(tracker);
 
             CombinedTasks = tracker.Run(source.Token);
         }
 
+        /// <summary>
+        /// Test instrumentation
+        /// </summary>
+        /// <param name="tracker">Race tracker from unit test</param>
+        /// <param name="displays">Display unit from unit test</param>
         public void Start(IRaceTracker tracker, List<IDisplayUnit> displays)
         {
             Stop();
@@ -132,10 +183,10 @@ namespace RaceManagement
 
         private void HookEvents(IRaceTracker tracker)
         {
-            tracker.OnRiderFinished += HandleFinish;
+            tracker.OnRiderMatched += HandleFinish;
 
-            tracker.OnRiderFinished += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
-            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish since {(e.Lap.End as UnitDNFEvent).OtherRider.Rider.Name} finshed before them");
+            tracker.OnRiderMatched += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} finished with a lap time of {e.Lap.GetLapTime()} microseconds");
+            tracker.OnRiderDNF += (o, e) => Log.Info($"Rider {e.Lap.Rider.Name} did not finish");
             tracker.OnRiderWaiting += (o, e) => Log.Info($"Rider {e.Rider.Rider.Name} can start");
             tracker.OnStartEmpty += (o, e) => Log.Info("Start box is empty");
 
@@ -143,7 +194,7 @@ namespace RaceManagement
             tracker.OnStartEmpty += (o, e) => startLight?.SetStartLightColor(StartLightColor.YELLOW);
         }
 
-        private void HandleFinish(object o, FinishedRiderEventArgs e)
+        private void HandleFinish(object o, LapCompletedEventArgs e)
         {
             foreach (var display in displays)
             {
@@ -151,28 +202,20 @@ namespace RaceManagement
             }
         }
 
-        public void Stop()
+        public RaceSummary Stop()
         {
-            startGate?.ClearKnownRiders();
-            endGate?.ClearKnownRiders();
-            //give the units time to process the commaands
-            Thread.Sleep(1000);
-
             source.Cancel();
-            CombinedTasks?.Wait();
+            RaceSummary summary = CombinedTasks?.Result;
             source = new CancellationTokenSource();
             displays.Clear();
+
+            return summary;
         }
 
         /// <summary>
         /// Gets a summary of the current state of the race
         /// </summary>
-        public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
-
-        /// <summary>
-        /// Get the beacons currently detected by the start and end id units
-        /// </summary>
-        public (Rider startRider, Rider endRider) GetBeacons => (startGate?.Closest, endGate?.Closest);
+        public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState => tracker.GetState;
 
         /// <summary>
         /// Returns all lap times driven so far
@@ -209,19 +252,40 @@ namespace RaceManagement
 
             return fastestLaps;
         }
-        public void AddEvent<T>(T manualEvent) where T : ManualEventArgs
+
+        public List<Rider> GetKnownRiders()
+        {
+            return tracker.Riders;
+        }
+
+        public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
         }
 
-        public void RemoveRider(string name)
+        public void TriggerTimingEvent(int gateId)
         {
-            tracker?.RemoveRider(name);
+            double millis = DateTime.Now.Subtract(RaceStartTime).TotalMilliseconds;
+            long micros = (long)(millis * 1000);
+            Log.Info($"Manually triggered timing event from gate {gateId} at timestamp {micros} at {millis} after start");
+            tracker?.AddEvent(new TimingTriggeredEventArgs(micros, gateId));
+        }
+
+        public void RemoveRider(Guid id)
+        {
+            tracker?.RemoveRider(id);
         }
 
         public void AddRider(Rider rider)
         {
             tracker?.AddRider(rider);
         }
+
+        public void ChangePosition(Guid riderId, int targetPosition)
+        {
+            tracker?.ChangePosition(riderId, targetPosition);
+        }
+
+        public Rider GetRiderById(Guid id) => tracker?.GetRiderById(id);
     }
 }

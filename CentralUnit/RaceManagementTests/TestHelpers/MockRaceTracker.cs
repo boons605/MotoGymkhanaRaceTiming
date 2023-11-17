@@ -10,12 +10,13 @@ namespace RaceManagementTests.TestHelpers
 {
     public class MockRaceTracker : IRaceTracker
     {
-        public (List<IdEvent> waiting, List<(IdEvent id, TimingEvent timer)> onTrack, List<IdEvent> unmatchedIds, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
+        public (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState => throw new NotImplementedException();
 
         public List<Lap> Laps => new List<Lap>();
+        public List<Rider> Riders => new List<Rider>();
 
-        public event EventHandler<FinishedRiderEventArgs> OnRiderDNF;
-        public event EventHandler<FinishedRiderEventArgs> OnRiderFinished;
+        public event EventHandler<LapCompletedEventArgs> OnRiderDNF;
+        public event EventHandler<LapCompletedEventArgs> OnRiderMatched;
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         public event EventHandler OnStartEmpty;
 
@@ -29,12 +30,22 @@ namespace RaceManagementTests.TestHelpers
             //no action
         }
 
-        public void RemoveRider(string name)
+        public void RemoveRider(Guid id)
         {
             //no action
         }
 
-        public void AddEvent<T>(T raceEvent) where T : ManualEventArgs
+        public void AddEvent<T>(T raceEvent) where T : EventArgs
+        {
+            throw new NotImplementedException();
+        }
+
+        public Rider GetRiderById(Guid id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ChangePosition(Guid id, int targetPosition)
         {
             throw new NotImplementedException();
         }

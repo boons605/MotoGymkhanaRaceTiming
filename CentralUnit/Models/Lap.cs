@@ -34,11 +34,6 @@ namespace Models
             End = finish;
         }
 
-        public Lap(UnitDNFEvent dnf)
-        {
-            End = dnf;
-        }
-
         public Lap(ManualDNFEvent dnf)
         {
             End = dnf;

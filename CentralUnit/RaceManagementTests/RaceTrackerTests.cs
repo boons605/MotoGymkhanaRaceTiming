@@ -18,8 +18,7 @@ namespace RaceManagementTests
     [TestClass]
     public class RaceTrackerTests
     {
-        MockRiderIdUnit startId;
-        MockRiderIdUnit endId;
+        MockStartLightUnit lightUnit;
         MockTimingUnit timer;
 
         CancellationTokenSource source;
@@ -31,44 +30,45 @@ namespace RaceManagementTests
         [TestInitialize]
         public void Init()
         {
-            startId = new MockRiderIdUnit("StartId");
-            endId = new MockRiderIdUnit("EndId");
+            lightUnit = new MockStartLightUnit();
             timer = new MockTimingUnit();
 
             source = new CancellationTokenSource();
 
             TrackerConfig config = new TrackerConfig
             {
-                EndMatchTimeout = 10,
                 StartTimingGateId = 0,
                 EndTimingGateId = 1
             };
 
-            subject = new RaceTracker(timer, startId, endId, config, new List<Rider> { });
+            subject = new RaceTracker(timer, config, new List<Rider> { });
+
+            subject.OnRiderWaiting += (o, e) => lightUnit.SetStartLightColor(SensorUnits.StartLightUnit.StartLightColor.GREEN);
+            subject.OnStartEmpty += (o, e) => lightUnit.SetStartLightColor(SensorUnits.StartLightUnit.StartLightColor.RED);
 
             race = subject.Run(source.Token);
         }
 
         [TestMethod]
-        public void OnStartId_ShouldSaveEvent()
+        public void OnRiderReady_ShouldSaveEvent()
         {
-            Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", beacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             source.Cancel();
 
             RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
             Assert.AreEqual(1, summary.Events.Count);
 
-            IdEvent entered = summary.Events[0] as IdEvent;
-            Assert.AreEqual(entered, state.waiting[0]);
+            RiderReadyEvent entered = summary.Events[0] as RiderReadyEvent;
+            Assert.AreEqual(entered, waiting);
 
             Assert.AreEqual("Martijn", entered.Rider.Name);
-            CollectionAssert.AreEqual(new byte[] { 0, 0, 0, 0, 0, 1 }, entered.Rider.Beacon.Identifier);
+            Assert.AreEqual(martijn.Id, entered.Rider.Id);
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), entered.Time);
         }
 
@@ -81,21 +81,21 @@ namespace RaceManagementTests
             source.Cancel();
 
             RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
             Assert.AreEqual(0, summary.Events.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-            Assert.AreEqual(0, state.waiting.Count);
+            Assert.AreEqual(0, onTrack.Count);
+            Assert.IsNull(waiting);
         }
 
         [TestMethod]
         public void OnTimer_ForStart_WitWaitingRider_ShouldMatchWithRider()
         {
-            Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", beacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
@@ -103,23 +103,22 @@ namespace RaceManagementTests
             source.Cancel();
 
             RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
             //we expect an EnteredEvent and a TimingEvent, in that order
             Assert.AreEqual(2, summary.Events.Count);
 
-            IdEvent id = summary.Events[0] as IdEvent;
+            RiderReadyEvent ready = summary.Events[0] as RiderReadyEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
-            Assert.AreEqual(state.onTrack[0].id, id);
-            Assert.AreEqual(state.onTrack[0].timer, start);
+            Assert.AreEqual(onTrack[0].rider, ready);
+            Assert.AreEqual(onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider.Name);
             Assert.AreEqual(100L, start.Microseconds);
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), start.Time);
 
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
+            Assert.IsNull(waiting);
+            Assert.AreEqual(0, unmatchedTimes.Count);
         }
 
         [TestMethod]
@@ -133,8 +132,7 @@ namespace RaceManagementTests
             RaceSummary summary = race.Result;
             var state = subject.GetState;
 
-            //It is possible for the end timing gate to be triggered before the rider id is caught be the end id unit
-            //save the timer event for later matching
+            // since the user has to manually match an end timing event for a rider the timing event will always come in first and have to be saved
             Assert.AreEqual(1, summary.Events.Count);
 
             //the state should match the summary
@@ -147,88 +145,89 @@ namespace RaceManagementTests
         }
 
         [TestMethod]
-        public void OnEndId_WithoutRiderOnTrack_ShouldIgnoreEvent()
+        public void OnRiderFinished_WithoutRiderOnTrack_ShouldIgnoreEvent()
         {
-            Beacon beacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", beacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
 
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff", Guid.NewGuid()));
 
             source.Cancel();
 
             RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
             Assert.AreEqual(0, summary.Events.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
+            Assert.AreEqual(0, onTrack.Count);
+            Assert.AreEqual(0, unmatchedTimes.Count);
+            Assert.IsNull(waiting);
         }
 
         [TestMethod]
         public void OnEndId_WithDifferentRiderOnTrack_ShouldIgnoreEvent()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
 
-            Beacon richardBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider richard = new Rider("Richard", richardBeacon);
+            Rider richard = new Rider("Richard", Guid.NewGuid());
+            subject.AddRider(richard);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
-            //rider triggers timing gate
+            //rider triggers start timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
 
-            //rider not on track triggers end id
-            endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 1));
+            // rider triggers end timing gate
+            timer.EmitTriggerEvent(100, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            // wait for tracker to process events
+            while (subject.GetState.unmatchedTimes.Count == 0)
+            {
+                Thread.Yield();
+            }
+
+            //we need to know the id of the end timing event
+            Guid timingId = subject.GetState.unmatchedTimes[0].EventId;
+
+            //rider not on track triggers end id, should not be recorded
+            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), richard.Id, "staff", timingId));
 
             source.Cancel();
 
             RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
 
-            //we expect only the events for Martijn tto be recorded
-            Assert.AreEqual(2, summary.Events.Count);
+            //we expect only the events for Martijn to be recorded
+            Assert.AreEqual(3, summary.Events.Count);
 
-            IdEvent id = summary.Events[0] as IdEvent;
+            RiderReadyEvent ready = summary.Events[0] as RiderReadyEvent;
             TimingEvent start = summary.Events[1] as TimingEvent;
-            Assert.AreEqual(state.onTrack[0].id, id);
-            Assert.AreEqual(state.onTrack[0].timer, start);
+            Assert.AreEqual(onTrack[0].rider.Rider.Id, ready.Rider.Id);
+            Assert.AreEqual(onTrack[0].timer, start);
 
             Assert.AreEqual("Martijn", start.Rider.Name);
             Assert.AreEqual(100L, start.Microseconds);
             Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), start.Time);
 
             //no riders should be waiting at the start.
-            //no end times or ids shoudl be waiting to be matched
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
+            //there is still the end timing event to be matched
+            Assert.IsNull(waiting);
+            Assert.AreEqual(1, unmatchedTimes.Count);
         }
 
         [TestMethod]
-        [DataRow(true, true, false)]
-        [DataRow(false, false, false)]
-        [DataRow(true, false, false)]
-        [DataRow(false, true, false)]
-        [DataRow(true, true, true)]
-        [DataRow(false, false, true)]
-        [DataRow(true, false, true)]
-        [DataRow(false, true, true)]
-        public void OnEndId_WithMatchingTiming_ShouldCompleteLap(bool includeUnmatchedTime, bool includeUnmatchedId, bool flipEndEvents)
+        [DataRow(true)]
+        [DataRow(false)]
+        public void OnEndId_WithMatchingTiming_ShouldCompleteLap(bool includeUnmatchedTime)
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon richardBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider richard = new Rider("Richard", richardBeacon);
+            Rider richard = new Rider("Richard", Guid.NewGuid());
             subject.AddRider(richard);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //rider triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 2));
@@ -239,34 +238,22 @@ namespace RaceManagementTests
                 timer.EmitTriggerEvent(400, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 12));
             }
 
-            //a different rider gets too close to the stop box
-            if (includeUnmatchedId)
+            // rider triggers end timing gate
+            timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
+
+            // wait for tracker to process events
+            while (subject.GetState.unmatchedTimes.Count == 0)
             {
-                endId.EmitIdEvent(richard, new DateTime(2000, 1, 1, 1, 1, 30));
+                Thread.Yield();
             }
 
-            List<Action> endEvents = new List<Action>
-            { 
-                //rider triggers id in stop box
-                () => endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1)),
+            //we need to know the id of the end timing event
+            Guid timingId = subject.GetState.unmatchedTimes.Last().EventId;
 
-                //rider triggers timing in stop box
-                () => timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 2))
-            };
-
-            if (flipEndEvents)
-            {
-                endEvents.Reverse();
-            }
-
-            foreach (Action a in endEvents)
-            {
-                a.Invoke();
-            }
+            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff", timingId));
 
             source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) state = subject.GetState;
 
             FinishedEvent finish = race.Result.Events.Last() as FinishedEvent;
 
@@ -274,104 +261,24 @@ namespace RaceManagementTests
             Assert.AreEqual("Martijn", finish.Rider.Name);
             Assert.AreEqual(400L, finish.LapTime);
 
-            //There should be nothing going on in the race at this point
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-        }
+            //There should be nothing going on in the race at this point, but there should still be an unmatched time
+            Assert.IsNull(state.waiting);
 
-        [TestMethod]
-        [DataRow(10)]
-        [DataRow(-10)]
-        public void OnEndId_ShouldRespectTimeout(int timeDifference)
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
-
-            //rider triggers timing in stop box
-            timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20));
-
-            //end id is triggered 11 seconds apart, should not match
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)));
-
-            //end id is triggered 10 seconds apart, should match
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference));
-
-            source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
-
-            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
-
-            Assert.AreEqual(20 + timeDifference, finish.Left.Time.Second);
-
-            //There should be nothing going on in the race at this point
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-
-            //depending on whether the timeDifference is negative or positive the unmatched time should be cleared
-            //on positive timeDifference the unmatched time is not old enough to be cleared
-            if (timeDifference > 0)
+            if (includeUnmatchedTime)
             {
-                Assert.AreEqual(1, state.unmatchedIds.Count);
+                Assert.AreEqual(1, state.unmatchedTimes.Count);
             }
             else
             {
-                Assert.AreEqual(0, state.unmatchedIds.Count);
+                Assert.AreEqual(0, state.unmatchedTimes.Count);
             }
-        }
 
-        [TestMethod]
-        [DataRow(10)]
-        [DataRow(-10)]
-        public void OnTimer_ForEnd_ShouldRespectTimeout(int timeDifference)
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 20));
-
-            //rider triggers id in stop box
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20));
-
-            //end timer triggered 11 seconds apart, should not match
-            timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference + Math.Sign(timeDifference)));
-
-            //end timer triggered 10 seconds apart, should match
-            timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 20 + timeDifference));
-
-            source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
-
-            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
-
-            Assert.AreEqual(20 + timeDifference, finish.TimeEnd.Time.Second);
-
-            //There should be nothing going on in the race at this point
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
             Assert.AreEqual(0, state.onTrack.Count);
 
-            //depending on whether the timeDifference is negative or positive the unmatched id should be cleared
-            //on positive timeDifference the unmatched time is not old enough to be cleared
-            if (timeDifference > 0)
+            // make sure the unmacthed time is left
+            if (includeUnmatchedTime)
             {
-                Assert.AreEqual(1, state.unmatchedTimes.Count);
+                Assert.AreNotEqual(timingId, state.unmatchedTimes[0].EventId);
             }
             else
             {
@@ -380,76 +287,12 @@ namespace RaceManagementTests
         }
 
         [TestMethod]
-        public void RaceWithMultipleOnTrack_AndDNF_ShouldWork()
+        public void OnRiderRead_WithWaitingRider_ShouldbeIgnored()
         {
-            SimulateRaceWithDNF();
-
-            source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
-
-            List<FinishedEvent> finishes = summary.Events.Where(e => e is FinishedEvent).Select(e => e as FinishedEvent).ToList();
-            UnitDNFEvent dnf = summary.Events.Last() as UnitDNFEvent;
-
-            Assert.AreEqual("Martijn", finishes[0].Rider.Name);
-            Assert.AreEqual("Bert", finishes[1].Rider.Name);
-
-            Assert.AreEqual("Richard", dnf.Rider.Name);
-            Assert.AreEqual("Bert", dnf.OtherRider.Rider.Name);
-
-            //There should be nothing going on in the race at this point
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.unmatchedIds.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
-        }
-
-        [TestMethod]
-        public void OnEndId_WithAccidentalEndId_ShouldMatch()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //rider triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //rider triggers id in stop box accidentally (maybe the track was constructed to pass too close to stop box
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 20));
-
-            //rider triggers id in stop box for real five seconds later
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 25));
-
-            //end timer triggered 1 second later
-            timer.EmitTriggerEvent(500, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 26));
-
-            source.Cancel();
-            RaceSummary summary = race.Result;
-            var state = subject.GetState;
-
-            FinishedEvent finish = summary.Events.Last() as FinishedEvent;
-            Assert.AreEqual(25, finish.Left.Time.Second);
-
-            //There should be nothing going on in the race at this point, except for the lingering end id event
-            Assert.AreEqual(0, state.waiting.Count);
-            Assert.AreEqual(0, state.onTrack.Count);
-            Assert.AreEqual(0, state.unmatchedTimes.Count);
-
-            Assert.AreEqual(1, state.unmatchedIds.Count);
-        }
-
-        [TestMethod]
-        public void OnRiderWaiting_WithFirstAndSecondRider_ShouldFire()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             string waiting = null;
@@ -457,7 +300,7 @@ namespace RaceManagementTests
             subject.OnRiderWaiting += (obj, args) => waiting = args.Rider.Rider.Name;
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //the race tracker is processing events in a different thread, we must wait for it
             Thread.Sleep(1000);
@@ -466,7 +309,7 @@ namespace RaceManagementTests
             Assert.AreEqual(waiting, "Martijn");
 
             //Second rider enters the queue to start
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 2, 1), bert.Id, "staff"));
 
             //the race tracker is processing events in a different thread, we must wait for it
             Thread.Sleep(1000);
@@ -479,20 +322,15 @@ namespace RaceManagementTests
 
             source.Cancel();
             race.Wait();
-
-            //Bert moves to the front of the waiting queue, so he is now ready to start
-            Assert.AreEqual(waiting, "Bert");
         }
 
         [TestMethod]
-        public void OnStartEmpty_WhenLastRiderStart_ShouldFire()
+        public void OnStartEmpty_WhenRiderStart_ShouldFire()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             bool isEmpty = false;
@@ -500,7 +338,7 @@ namespace RaceManagementTests
             subject.OnStartEmpty += (obj, args) => isEmpty = true;
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //the race tracker is processing events in a different thread, we must wait for it
             Thread.Sleep(1000);
@@ -508,15 +346,11 @@ namespace RaceManagementTests
             //event should not have fired
             Assert.IsFalse(isEmpty);
 
-            //Second rider enters the queue to start
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 2, 1));
-
             //event should not have fired
             Assert.IsFalse(isEmpty);
 
-            //Martijn and Bert trigger timing gate
+            //Martijn leaves start box
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 2));
 
             source.Cancel();
             race.Wait();
@@ -529,7 +363,7 @@ namespace RaceManagementTests
         {
             List<string> finished = new List<string>();
 
-            subject.OnRiderFinished += (obj, args) => finished.Add(args.Lap.Rider.Name);
+            subject.OnRiderMatched += (obj, args) => finished.Add(args.Lap.Rider.Name);
 
             SimulateRaceWithDNF();
 
@@ -539,145 +373,25 @@ namespace RaceManagementTests
             Assert.AreEqual(2, finished.Count);
             Assert.AreEqual("Martijn", finished[0]);
             Assert.AreEqual("Bert", finished[1]);
-
-            Assert.AreEqual(3, startId.KnownRiders.Count);
-            Assert.AreEqual("Martijn", startId.KnownRiders[0].Name);
-            Assert.AreEqual("Bert", startId.KnownRiders[1].Name);
-            Assert.AreEqual("Richard", startId.KnownRiders[2].Name);
-        }
-
-        [TestMethod]
-        public void OnlyWaitingRider_LeavingRangeOfStart_ShouldRemoveThem()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            bool isEmpty = false;
-
-            subject.OnStartEmpty += (obj, args) => isEmpty = true;
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //the race tracker is processing events in a different thread, we must wait for it
-            Thread.Sleep(1000);
-
-            //event should not have fired
-            Assert.IsFalse(isEmpty);
-
-            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            source.Cancel();
-            race.Wait();
-
-            var state = subject.GetState;
-            Assert.AreEqual(0, state.waiting.Count);
-
-            Assert.IsTrue(isEmpty);
-        }
-
-        [TestMethod]
-        public void FirstWaitingRider_LeavingRangeOfStart_ShouldMoveSecondUp()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
-            subject.AddRider(bert);
-
-            bool isEmpty = false;
-
-            subject.OnStartEmpty += (obj, args) => isEmpty = true;
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //the race tracker is processing events in a different thread, we must wait for it
-            Thread.Sleep(1000);
-
-            //event should not have fired
-            Assert.IsFalse(isEmpty);
-
-            //Martijn and Bert trigger timing gate
-            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            source.Cancel();
-            race.Wait();
-
-            var state = subject.GetState;
-            Assert.AreEqual(1, state.waiting.Count);
-            Assert.AreEqual(bert, state.waiting[0].Rider);
-
-            Assert.IsFalse(isEmpty);
-        }
-
-        [TestMethod]
-        public void RiderOnTrack_LeavingRangeOfStart_ShouldRemoveThemFromUnit()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //Martijn triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
-            startId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
-
-            source.Cancel();
-            race.Wait();
-
-            var state = subject.GetState;
-
-            Assert.AreEqual(1, state.onTrack.Count);
-            Assert.AreEqual(martijn, state.onTrack[0].id.Rider);
-
-            Assert.AreEqual(0, startId.KnownRiders.Count);
-        }
-
-        [TestMethod]
-        public void RiderEnteringTrack_ShouldAddToEndUnit()
-        {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
-            subject.AddRider(martijn);
-
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
-
-            //Martijn triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
-
-            source.Cancel();
-            race.Wait();
-
-            Assert.AreEqual(1, endId.KnownRiders.Count);
         }
 
         [TestMethod]
         public void ManualDnf_WithRiderOnTrack_ShouldEndLap()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
-            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, martijn.Name, "staff"));
+            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, martijn.Id, "staff"));
 
             source.Cancel();
             race.Wait();
 
-            Assert.AreEqual(0, endId.KnownRiders.Count);
             Assert.AreEqual(1, subject.Laps.Count);
 
             Lap lap = subject.Laps[0];
@@ -690,74 +404,60 @@ namespace RaceManagementTests
         [TestMethod]
         public void ManualDnf_WithoutRiderOnTrack_ShouldBeIgnored()
         {
-            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, "Nope", "staff"));
+            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, Guid.NewGuid(), "staff"));
 
             source.Cancel();
             race.Wait();
 
-            Assert.AreEqual(0, endId.KnownRiders.Count);
             Assert.AreEqual(0, subject.Laps.Count);
         }
 
         [TestMethod]
         public void ManualDnf_WithDifferentRiderOnTrack_ShouldBeIgnored()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", martijnBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
-            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, "bert", "staff"));
+            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, bert.Id, "staff"));
 
             source.Cancel();
             race.Wait();
 
-            source.Cancel();
-            race.Wait();
-
-            Assert.AreEqual(1, endId.KnownRiders.Count);
             Assert.AreEqual(0, subject.Laps.Count);
         }
 
         [TestMethod]
         public void ManualDnf_WithMultipleRidersOnTrack_ShouldPickCorrect()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", martijnBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
-            startId.EmitIdEvent(bert, new DateTime(2000, 1, 1, 1, 1, 2));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 2), bert.Id, "staff"));
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 2));
 
-            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, "Bert", "staff"));
+            subject.AddEvent(new ManualDNFEventArgs(DateTime.Now, bert.Id, "staff"));
 
             source.Cancel();
             race.Wait();
 
-            source.Cancel();
-            race.Wait();
-
-            Assert.AreEqual(1, endId.KnownRiders.Count);
-            Assert.AreEqual(martijn, endId.KnownRiders[0]);
             Assert.AreEqual(1, subject.Laps.Count);
 
             Lap lap = subject.Laps[0];
@@ -771,7 +471,7 @@ namespace RaceManagementTests
         [TestMethod]
         public void Penalty_WithoutRiderOnTrack_ShouldBeIgnored()
         {
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, "nope", "staff", "test", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, Guid.NewGuid(), "staff", "test", 1));
 
             source.Cancel();
             RaceSummary summary = race.Result;
@@ -779,7 +479,7 @@ namespace RaceManagementTests
             //The penalty event is still recorded, but its not applied to any lap
             Assert.AreEqual(1, summary.Events.Count);
             PenaltyEvent penalty = summary.Events[0] as PenaltyEvent;
-            Assert.IsNull(penalty.Rider);
+            Assert.AreEqual("unknown", penalty.Rider.Name);
             Assert.AreEqual("test", penalty.Reason);
             Assert.AreEqual("staff", penalty.StaffName);
             Assert.AreEqual(1, penalty.Seconds);
@@ -788,33 +488,31 @@ namespace RaceManagementTests
         [TestMethod]
         public void Penalty_WithRiderOnTrack_ShouldApplyOnFinish()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
             //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
 
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Name, "staff", "testEvent", 1));
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Name, "staff", "testEvent", 2));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 2));
 
             //finish the lap
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
             timer.EmitTriggerEvent(200, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 1));
-            endId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
+            Guid timingId = subject.GetState.unmatchedTimes[0].EventId;
+            subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff", timingId));
 
 
             //do another lap, this one should not have any penalties
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
             source.Cancel();
             race.Wait();
 
-            Assert.AreEqual(0, endId.KnownRiders.Count);
             Assert.AreEqual(2, subject.Laps.Count);
 
             Lap penaltyLap = subject.Laps[0];
@@ -835,34 +533,32 @@ namespace RaceManagementTests
         [TestMethod]
         public void Penalty_WithDifferentRiderOnTrack_ShouldBeIgnored()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             //start a lap, for martijn
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
 
             //somebody accidentally enters a penalty for bert
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, "bert", "staff", "test", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, bert.Id, "staff", "test", 1));
 
             //martijn finishes
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
             //bert does a lap
-            MakeStartEvents(bert, DateTime.Now, startId, timer);
-            MakeEndEvents(bert, DateTime.Now, endId, timer);
+            MakeStartEvents(bert, DateTime.Now, timer, subject);
+            MakeEndEvents(bert, DateTime.Now, timer, subject);
 
             source.Cancel();
             race.Wait();
 
             Assert.AreEqual(2, subject.Laps.Count);
-            
+
             //neither lap should have a penalty
-            foreach(Lap l in subject.Laps)
+            foreach (Lap l in subject.Laps)
             {
                 Assert.AreEqual(0, l.Penalties.Count);
             }
@@ -871,25 +567,23 @@ namespace RaceManagementTests
         [TestMethod]
         public void Penalty_WithExistingLapAndNotOnTrack_ShouldApplyToLastLap()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
-            MakeStartEvents(bert, DateTime.Now, startId, timer);
-            MakeEndEvents(bert, DateTime.Now, endId, timer);
+            MakeStartEvents(bert, DateTime.Now, timer, subject);
+            MakeEndEvents(bert, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, "Bert", "staff", "test", 1));
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, "Martijn", "staff", "test", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, bert.Id, "staff", "test", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "test", 1));
 
 
             source.Cancel();
@@ -911,18 +605,17 @@ namespace RaceManagementTests
         [TestMethod]
         public void Penalty_WithExistingLapAndOnTrack_ShouldApplyOnFinish()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
 
-            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, "Martijn", "staff", "test", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "test", 1));
 
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
             source.Cancel();
             race.Wait();
@@ -939,7 +632,7 @@ namespace RaceManagementTests
         [TestMethod]
         public void DSQ_WithoutRiderOnTrack_ShouldBeIgnored()
         {
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, "nope", "staff", "test"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, Guid.NewGuid(), "staff", "test"));
 
             source.Cancel();
             RaceSummary summary = race.Result;
@@ -947,7 +640,7 @@ namespace RaceManagementTests
             //The dsq event is still recorded, but its not applied to any lap
             Assert.AreEqual(1, summary.Events.Count);
             DSQEvent dsq = summary.Events[0] as DSQEvent;
-            Assert.IsNull(dsq.Rider);
+            Assert.AreEqual("unknown", dsq.Rider.Name);
             Assert.AreEqual("test", dsq.Reason);
             Assert.AreEqual("staff", dsq.StaffName);
         }
@@ -955,32 +648,24 @@ namespace RaceManagementTests
         [TestMethod]
         public void DSQ_WithRiderOnTrack_ShouldApplyOnFinish()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            //rider enters start box
-            startId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 1, 1));
+            MakeStartEvents(martijn, new DateTime(2000, 1, 1), timer, subject, 100);
 
-            //Martijn triggers timing gate
-            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
-
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Name, "staff", "testEvent"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent"));
 
             //finish the lap
-            endId.EmitIdEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
-            timer.EmitTriggerEvent(200, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 1));
-            endId.EmitExitEvent(martijn, new DateTime(2000, 1, 1, 1, 2, 1));
+            MakeEndEvents(martijn, new DateTime(2000, 1, 1, 1, 2, 1), timer, subject, 200);
 
 
             //do another lap, this one should not be disqualified
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 300);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject, 500);
 
             source.Cancel();
             race.Wait();
 
-            Assert.AreEqual(0, endId.KnownRiders.Count);
             Assert.AreEqual(2, subject.Laps.Count);
 
             Lap dsqLap = subject.Laps[0];
@@ -993,34 +678,31 @@ namespace RaceManagementTests
             Lap normalLap = subject.Laps[1];
 
             Assert.IsTrue(normalLap.End is FinishedEvent);
-            //Lap from MakeEvent methods has nonsense lap time
-            Assert.AreEqual(0, normalLap.GetLapTime());
+            Assert.AreEqual(200, normalLap.GetLapTime());
             Assert.IsFalse(normalLap.Disqualified);
         }
 
         [TestMethod]
         public void DSQ_WithDifferentRiderOnTrack_ShouldBeIgnored()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
             //start a lap, for martijn
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
 
             //somebody accidentally enters a DSQ for bert
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, "bert", "staff", "test"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, bert.Id, "staff", "test"));
 
             //martijn finishes
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
             //bert does a lap
-            MakeStartEvents(bert, DateTime.Now, startId, timer);
-            MakeEndEvents(bert, DateTime.Now, endId, timer);
+            MakeStartEvents(bert, DateTime.Now, timer, subject);
+            MakeEndEvents(bert, DateTime.Now, timer, subject);
 
             source.Cancel();
             race.Wait();
@@ -1037,25 +719,23 @@ namespace RaceManagementTests
         [TestMethod]
         public void DSQ_WithExistingLapAndNotOnTrack_ShouldApplyToLastLap()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
-            MakeStartEvents(bert, DateTime.Now, startId, timer);
-            MakeEndEvents(bert, DateTime.Now, endId, timer);
+            MakeStartEvents(bert, DateTime.Now, timer, subject);
+            MakeEndEvents(bert, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, "Bert", "staff", "test"));
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, "Martijn", "staff", "test"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, bert.Id, "staff", "test"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "test"));
 
 
             source.Cancel();
@@ -1077,18 +757,17 @@ namespace RaceManagementTests
         [TestMethod]
         public void DSQ_WithExistingLapAndOnTrack_ShouldApplyOnFinish()
         {
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
-            MakeStartEvents(martijn, DateTime.Now, startId, timer);
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
 
-            subject.AddEvent(new DSQEventArgs(DateTime.Now, "Martijn", "staff", "test"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "test"));
 
-            MakeEndEvents(martijn, DateTime.Now, endId, timer);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
 
             source.Cancel();
             race.Wait();
@@ -1109,66 +788,74 @@ namespace RaceManagementTests
         {
             DateTime start = new DateTime(2000, 1, 1, 1, 1, 1);
 
-            Beacon martijnBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 1 }, 0);
-            Rider martijn = new Rider("Martijn", martijnBeacon);
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
 
-            Beacon richardBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 2 }, 0);
-            Rider richard = new Rider("Richard", richardBeacon);
+            Rider richard = new Rider("Richard", Guid.NewGuid());
             subject.AddRider(richard);
 
-            Beacon bertBeacon = new Beacon(new byte[] { 0, 0, 0, 0, 0, 3 }, 0);
-            Rider bert = new Rider("Bert", bertBeacon);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
             subject.AddRider(bert);
 
-            MakeStartEvents(martijn, start, startId, timer);
+            MakeStartEvents(martijn, start, timer, subject);
 
             start = start.AddSeconds(30);
 
-            MakeStartEvents(richard, start, startId, timer);
+            MakeStartEvents(richard, start, timer, subject);
 
             start = start.AddSeconds(30);
 
-            MakeStartEvents(bert, start, startId, timer);
+            MakeStartEvents(bert, start, timer, subject);
 
             //all riders have started. Martijn and bert will finsh, this will mark Richard as DNF
             start = start.AddSeconds(30);
 
-            MakeEndEvents(martijn, start, endId, timer);
+            MakeEndEvents(martijn, start, timer, subject);
 
             start = start.AddSeconds(30);
 
-            MakeEndEvents(bert, start, endId, timer);
+            MakeEndEvents(bert, start, timer, subject);
         }
 
         /// <summary>
         /// Makes events for a lap begin at start
         /// </summary>
-        /// <param name="riderName"></param>
-        /// <param name="sensorId"></param>
-        /// <param name="start"></param>
-        /// <param name="id"></param>
-        /// <param name="time"></param>
-        private void MakeStartEvents(Rider rider, DateTime start, MockRiderIdUnit id, MockTimingUnit time)
+        ///<param name="rider">The rider to start the lap</param>
+        ///<param name="start">Whne the lap starts</param>
+        ///<param name="time">The timing unit to emit timing events</param>
+        ///<param name="tracker">The tracker to receive the rider ready event</param>
+        ///<param name="microseconds">microseconds from timer at start of lap</param>
+        private void MakeStartEvents(Rider rider, DateTime start, MockTimingUnit time, RaceTracker tracker, long microseconds = 100)
         {
-            id.EmitIdEvent(rider, start);
-            time.EmitTriggerEvent(100, "Timer", 0, start);
-            id.EmitExitEvent(rider, start);
+            tracker.AddEvent(new RiderReadyEventArgs(start, rider.Id, "staff"));
+            time.EmitTriggerEvent(microseconds, "Timer", 0, start.AddSeconds(1));
         }
 
         /// <summary>
-        /// Makes events for a lap finish at start + 1 minute
+        /// Makes events for a lap finish
         /// </summary>
-        /// <param name="riderName"></param>
-        /// <param name="sensorId"></param>
-        /// <param name="end"></param>
-        /// <param name="id"></param>
-        /// <param name="time"></param>
-        private void MakeEndEvents(Rider rider, DateTime end, MockRiderIdUnit id, MockTimingUnit time)
+        ///<param name="rider">The rider to start the lap</param>
+        ///<param name="end">Whne the lap ends</param>
+        ///<param name="time">The timing unit to emit timing events</param>
+        ///<param name="tracker">The tracker to receive the rider finished event</param>
+        ///<param name="microseconds">microseconds from timer at end of lap</param>
+        private void MakeEndEvents(Rider rider, DateTime end, MockTimingUnit time, RaceTracker tracker, long microseconds = 100)
         {
-            id.EmitIdEvent(rider, end);
-            time.EmitTriggerEvent(100, "Timer", 1, end);
-            id.EmitExitEvent(rider, end);
+            int previousUnmacthedTimes = tracker.GetState.unmatchedTimes.Count;
+
+            // rider triggers end timing gate
+            time.EmitTriggerEvent(microseconds, "Timer", 1, end);
+
+            // wait for tracker to process events
+            while (tracker.GetState.unmatchedTimes.Count == previousUnmacthedTimes)
+            {
+                Thread.Yield();
+            }
+
+            //we need to know the id of the end timing event
+            Guid timingId = tracker.GetState.unmatchedTimes.Last().EventId;
+
+            tracker.AddEvent(new RiderFinishedEventArgs(end.AddSeconds(1), rider.Id, "staff", timingId));
         }
     }
 }
