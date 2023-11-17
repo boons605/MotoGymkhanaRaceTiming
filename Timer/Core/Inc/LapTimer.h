@@ -29,6 +29,7 @@ uint8_t IsFirstLap(void);
 uint32_t GetCurrentLapStartTime(void);
 Lap* GetCurrentLap(void);
 uint8_t GetLapIndex(Lap* lap);
+Lap* GetLastStartedLap(void);
 uint32_t GetLapDurationMs(Lap* lap);
 void InvalidateLapIndex(uint8_t index);
 

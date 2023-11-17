@@ -384,9 +384,9 @@ RiderDetection/PCB/RiderDetection/RiderDetection.png
 CentralUnit/PCB/CentralUnit/CentralUnit-cache.lib
 RiderDetection/PCB/RiderDetection/RiderDetection-cache.lib
 Timer/PCB/MotoGymkhanaRaceTiming/MotoGymkhanaRaceTiming-rescue.lib
-/Website/nbproject/private/
+Timer/MotoGymkhanaRaceTiming Debug.cfg
 Timer/PCB/BOM.pdf
 Timer/PCB/BOM.xlsx
 Timer/PCB/MotoGymkhanaRaceTiming/MotoGymkhanaRaceTiming
 Timer/PCB/MotoGymkhanaRaceTiming/MotoGymkhanaRaceTiming.xml
-Timer/MotoGymkhanaRaceTiming Debug.cfg
+/Website/nbproject/private/

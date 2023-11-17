@@ -129,7 +129,14 @@ void RunAutoConfiguration(void)
         if(InputGetState(&UserInputs[JmpSensorCount]) == 1U)
         {
             sensorMode = DualSensor;
-            localOperationMode = SingleRunTimerOperation;
+            if(InputGetState(&UserInputs[JmpOpMode]) == 1U)
+			{
+				localOperationMode = SingleRunTimerOperation;
+			}
+			else
+			{
+				localOperationMode = MultiRunTimerOperation;
+			}
         }
         else
         {
@@ -180,21 +187,25 @@ uint8_t SetNewConfigMode(uint8_t mode)
         OperationModes newOpMode = (OperationModes)mode;
         switch(newOpMode)
         {
-            case ConnectedTimestampCollector:
-            {
-                operationMode = newOpMode;
-                retVal = 1U;
-                break;
-            }
-            case LaptimerOperation:
-            {
-                if(sensorMode == SingleSensor)
-                {
-                    operationMode = newOpMode;
-                    retVal = 1U;
-                }
-                break;
-            }
+        	case LaptimerOperation:
+			{
+				if(sensorMode == SingleSensor)
+				{
+					operationMode = newOpMode;
+					retVal = 1U;
+				}
+				break;
+			}
+        	case MultiRunTimerOperation:
+        	{
+				if(sensorMode == DualSensor)
+				{
+					operationMode = newOpMode;
+					retVal = 1U;
+				}
+				break;
+			}
+        	case ConnectedTimestampCollector:
             case SingleRunTimerOperation:
             {
                 operationMode = newOpMode;
