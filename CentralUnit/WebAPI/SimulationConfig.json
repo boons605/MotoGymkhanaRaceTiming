@@ -1,0 +1,13 @@
+{
+  //Place this file in the output directory to start with a simulation
+  "Riders": [],
+  "StartGateId": 0,
+  "EndGateId": 1,
+  "Events": [
+    {
+      "GateId": 1,
+      "Microseconds": 140000,
+      "MillisecondsFromSimStart": 999999999
+    }
+  ]
+}

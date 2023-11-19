@@ -31,5 +31,14 @@ namespace WebAPI.Controllers
 
             return new StatusCodeResult(200);
         }
+
+        [HttpPost]
+        [Route("[controller]/TriggerTimingGate")]
+        public ActionResult TriggerTimingGate([FromForm] int gateId)
+        {
+            manager.TriggerTimingEvent(gateId);
+
+            return new StatusCodeResult(200);
+        }
     }
 }

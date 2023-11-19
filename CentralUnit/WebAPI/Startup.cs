@@ -22,7 +22,7 @@ namespace WebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-
+            
             RaceManager manager = new RaceManager();
 
             services.AddSingleton<RaceManager>(manager);
@@ -44,6 +44,8 @@ namespace WebAPI
                     .AllowAnyOrigin();
                 });
             });
+
+            manager.AttemptStartFromLocalConfig();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

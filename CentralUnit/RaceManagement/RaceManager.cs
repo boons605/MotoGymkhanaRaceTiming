@@ -12,6 +12,8 @@ using System.Linq;
 using DisplayUnit;
 using Models.Config;
 using SensorUnits.StartLightUnit;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace RaceManagement
 {
@@ -27,6 +29,7 @@ namespace RaceManagement
         private IRaceTracker tracker;
         private IStartLightUnit startLight;
         private CancellationTokenSource source = new CancellationTokenSource();
+        private DateTime RaceStartTime = DateTime.Now;
 
         public Task<RaceSummary> CombinedTasks { get; private set; }
 
@@ -41,6 +44,39 @@ namespace RaceManagement
         /// </summary>
         public RaceManager()
         {
+        }
+
+        /// <summary>
+        /// Attempt to start the race manager from a locally stored config, for example for testing or fixed setups
+        /// </summary>
+        public void AttemptStartFromLocalConfig()
+        {
+            if (File.Exists("SimulationConfig.json"))
+            {
+                Log.Info("Starting simulation from SimulationConfig.json");
+                using (FileStream stream = new FileStream("SimulationConfig.json", FileMode.Open))
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, false))
+                    {
+                        string jsonData = reader.ReadToEnd();
+
+                        Start(JsonConvert.DeserializeObject<SimulationData>(jsonData), 1000, null);
+                    }
+                }
+            }
+            else if (File.Exists("HardwareConfig.json"))
+            {
+                Log.Info("Starting race from from HardwareConfig.json");
+                using (FileStream stream = new FileStream("HardwareConfig.json", FileMode.Open))
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, false))
+                    {
+                        string jsonData = reader.ReadToEnd();
+
+                        Start(JsonConvert.DeserializeObject<RaceConfig>(jsonData), new List<Rider>());
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -129,6 +165,11 @@ namespace RaceManagement
             CombinedTasks = tracker.Run(source.Token);
         }
 
+        /// <summary>
+        /// Test instrumentation
+        /// </summary>
+        /// <param name="tracker">Race tracker from unit test</param>
+        /// <param name="displays">Display unit from unit test</param>
         public void Start(IRaceTracker tracker, List<IDisplayUnit> displays)
         {
             Stop();
@@ -220,6 +261,14 @@ namespace RaceManagement
         public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);
+        }
+
+        public void TriggerTimingEvent(int gateId)
+        {
+            double millis = DateTime.Now.Subtract(RaceStartTime).TotalMilliseconds;
+            long micros = (long)(millis * 1000);
+            Log.Info($"Manually triggered timing event from gate {gateId} at timestamp {micros} at {millis} after start");
+            tracker?.AddEvent(new TimingTriggeredEventArgs(micros, gateId));
         }
 
         public void RemoveRider(Guid id)
