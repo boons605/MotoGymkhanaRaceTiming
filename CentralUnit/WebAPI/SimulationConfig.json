@@ -1,19 +1,10 @@
 {
   //Place this file in the output directory to start with a simulation
   "Riders": [
-    {
-      "Name": "Test",
-      "Id": "0694d10b-3cc4-424b-823a-2b45b1b3455f"
-    }
   ],
   "StartGateId": 0,
   "EndGateId": 1,
   "Events": [
-    {
-      "GateId": 0,
-      "Microseconds": 100,
-      "MillisecondsFromSimStart": 10000
-    },
     {
       "GateId": 1,
       "Microseconds": 140000,

@@ -16,7 +16,7 @@ var row;
 var probablyStopped;
 var lastStoppedRider;
 var ignoredStopEvent = false;
-var delayTime = 40000;  // For testing set to low value. Live should be a larger value (around 20000).
+var delayTime = 5000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
 var serverRequestInterval = 100;
 var startTimes = [];
@@ -419,7 +419,7 @@ setInterval(dnfCheck, 500);
 
 
 function stoppedCheck() {
-    stoppedRiders = stoppedRiders.filter(element => element.stopTime > Date.now() - delayTime);   // Set to 5000 for TESTING purposes. Should be longer.
+    stoppedRiders = stoppedRiders.filter(element => element.stopTime > Date.now() - (delayTime + 10000));   // Set to 5000 for TESTING purposes. Should be longer.
     //231101 showInField();
 }
 
@@ -1291,9 +1291,10 @@ function confirmStop(riderId) {
     
     stoppedRiders.push(details);
 
-    var millisStart = details.startMillis;
-    var millisEnd = unmatchedEndTimes[0]['time'];
-    var ms = millisEnd - millisStart;
+    var usStart = details.startMillis;
+    var usEnd = unmatchedEndTimes[0]['time'];
+    var us = usEnd - usStart;
+    var ms = Math.floor(us/1000);
     
     results[riderId] = ms;
 
@@ -1566,14 +1567,32 @@ function hideDNSbutton(id) {
 
 // For testing only:
 
-//document.onkeydown = function (e) {
-//  // Simulate a stop event by pressing "s" button.
-//  
-//  if (e.key === "s" || e.key === "S") {
-//      stopEvent();
-//      //231101 showInField();
-//  }
-//};
+document.onkeydown = async function (e) {
+ //  Send a manual event trigger to server by pressing a key.
+ 
+ 
+    let formData = new FormData();
+  
+    if (e.key === "o" || e.key === "O") {
+        console.log('Manual Stop Event');
+
+        formData.set('gateId', 1);
+    }
+    else if (e.key === "a" || e.key === "A") {
+          console.log('Manual Start Event');
+
+           formData.set('gateId', 0);
+      }
+      else {
+          return;
+      }
+
+    let response = await fetch('/debug/triggertiminggate', {
+        method: 'POST',
+        body: formData
+    });
+     
+};
 
 
 function moveDownOrder(riderId) {
@@ -1650,15 +1669,6 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
 
 
 
-//function stopClass(riderId) {
-//    if (riderId != probablyStopped || !stopButtonFlash || !stopEventActive) {
-//        return "stop";
-//    }
-//    // changes stopButton css class to make it flash.
-//    else {
-//        return "stopFlash";
-//    }
-//}
 
 
 
