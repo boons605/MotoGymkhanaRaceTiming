@@ -483,6 +483,7 @@ namespace RaceManagementTests
             Assert.AreEqual("test", penalty.Reason);
             Assert.AreEqual("staff", penalty.StaffName);
             Assert.AreEqual(1, penalty.Seconds);
+            Assert.AreEqual(0, subject.PendingPenalties.Count);
         }
 
         [TestMethod]
@@ -514,6 +515,8 @@ namespace RaceManagementTests
             race.Wait();
 
             Assert.AreEqual(2, subject.Laps.Count);
+            Assert.AreEqual(1, subject.PendingPenalties.Count);
+            Assert.AreEqual(0, subject.PendingPenalties[martijn.Id].Count);
 
             Lap penaltyLap = subject.Laps[0];
 
@@ -556,6 +559,9 @@ namespace RaceManagementTests
             race.Wait();
 
             Assert.AreEqual(2, subject.Laps.Count);
+            Assert.AreEqual(2, subject.PendingPenalties.Count);
+            Assert.AreEqual(0, subject.PendingPenalties[martijn.Id].Count);
+            Assert.AreEqual(0, subject.PendingPenalties[bert.Id].Count);
 
             //neither lap should have a penalty
             foreach (Lap l in subject.Laps)
@@ -590,6 +596,9 @@ namespace RaceManagementTests
             race.Wait();
 
             Assert.AreEqual(3, subject.Laps.Count);
+            Assert.AreEqual(2, subject.PendingPenalties.Count);
+            Assert.AreEqual(0, subject.PendingPenalties[martijn.Id].Count);
+            Assert.AreEqual(0, subject.PendingPenalties[bert.Id].Count);
 
             //Bert has only one lap, so all penalties should land there
             Assert.AreEqual(1, subject.Laps[0].Penalties.Count);
@@ -621,12 +630,50 @@ namespace RaceManagementTests
             race.Wait();
 
             Assert.AreEqual(2, subject.Laps.Count);
+            Assert.AreEqual(1, subject.PendingPenalties.Count);
+            Assert.AreEqual(0, subject.PendingPenalties[martijn.Id].Count);
 
             //Martijn has 2 laps, penalties were sent when he was on track for lap 2.
             Assert.AreEqual(0, subject.Laps[0].Penalties.Count);
 
             Assert.AreEqual(1, subject.Laps[1].Penalties.Count);
             Assert.AreEqual(martijn, subject.Laps[1].Penalties[0].Rider);
+        }
+
+        [TestMethod]
+        public void Penalty_WithRiderOnTrack_ShouldbeReturned()
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            Rider bert = new Rider("Bert", Guid.NewGuid());
+            subject.AddRider(martijn);
+            subject.AddRider(bert);
+
+            //rider enters start box
+            subject.AddEvent(new RiderReadyEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff"));
+
+            //Martijn triggers timing gate
+            timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 1));
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 2));
+
+
+            //do another lap, this one should not have any penalties
+            MakeStartEvents(bert, DateTime.Now, timer, subject);
+
+            source.Cancel();
+            race.Wait();
+
+            Assert.AreEqual(0, subject.Laps.Count);
+
+            Dictionary<Guid, List<PenaltyEvent>> penalties = subject.PendingPenalties;
+
+            Assert.AreEqual(2, penalties.Count);
+            Assert.AreEqual(2, penalties[martijn.Id].Count);
+            Assert.AreEqual(1, penalties[martijn.Id][0].Seconds, 1);
+            Assert.AreEqual(1, penalties[martijn.Id][0].Seconds, 2);
+
+            Assert.AreEqual(0, penalties[bert.Id].Count);
         }
 
         [TestMethod]

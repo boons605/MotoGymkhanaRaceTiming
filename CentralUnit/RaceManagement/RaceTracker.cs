@@ -146,6 +146,23 @@ namespace RaceManagement
             }
         }
 
+        /// <summary>
+        /// Gets all penalties that are pending for riders currently on track.
+        /// These penalties will be applied to their lap when they finish
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public Dictionary<Guid, List<PenaltyEvent>> PendingPenalties
+        {
+            get
+            {
+                lock(StateLock)
+                {
+                    return new Dictionary<Guid, List<PenaltyEvent>>(pendingPenalties);
+                }
+            }
+        }
+
         public Rider GetRiderById(Guid id)
         {
             lock (StateLock)
@@ -433,6 +450,7 @@ namespace RaceManagement
                     }
                     else
                     {
+                        ApplyPendingEvents(lastLap);
                         lastLap.SetDsq(dsq);
                     }
                 }

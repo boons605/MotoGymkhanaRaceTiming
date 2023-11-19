@@ -68,7 +68,7 @@ namespace WebAPI.Controllers
             {
                 List<TimingEvent> times = manager.GetState.unmatchedTimes;
 
-                return new JsonResult(times, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                return new JsonResult(times);
             });
         }
 
@@ -83,7 +83,7 @@ namespace WebAPI.Controllers
         {
             return WrapWithManagerCheck(() =>
             {
-                return new JsonResult(manager.GetLapTimes(start), new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                return new JsonResult(manager.GetLapTimes(start));
             });
         }
 
@@ -97,7 +97,17 @@ namespace WebAPI.Controllers
         {
             return WrapWithManagerCheck(() =>
             {
-                return new JsonResult(JArray.FromObject(manager.GetBestLaps()));
+                return new JsonResult(manager.GetBestLaps());
+            });
+        }
+
+        [HttpGet]
+        [Route("[controller]/Penalties")]
+        public ActionResult GetPendingPenalties()
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                return new JsonResult(manager.GetPendingPenalties());
             });
         }
 

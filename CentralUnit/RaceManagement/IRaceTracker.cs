@@ -15,6 +15,7 @@ namespace RaceManagement
         (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) GetState { get; }
         List<Lap> Laps { get; }
         List<Rider> Riders { get; }
+        Dictionary<Guid, List<PenaltyEvent>> PendingPenalties { get; }
 
         event EventHandler<LapCompletedEventArgs> OnRiderDNF;
         event EventHandler<LapCompletedEventArgs> OnRiderMatched;

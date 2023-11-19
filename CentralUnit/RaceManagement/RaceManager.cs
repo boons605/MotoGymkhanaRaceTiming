@@ -258,6 +258,11 @@ namespace RaceManagement
             return tracker.Riders;
         }
 
+        public Dictionary<Guid, List<PenaltyEvent>> GetPendingPenalties()
+        {
+            return tracker.PendingPenalties;
+        }
+
         public void AddEvent<T>(T manualEvent) where T : EventArgs
         {
             tracker?.AddEvent(manualEvent);

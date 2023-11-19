@@ -15,11 +15,15 @@ namespace ModelsTests
         [TestMethod]
         public void RaceSummary_ReadAndWrite_ShouldBeSymmetric()
         {
-            Guid martijnId = Guid.NewGuid();
-            Guid bertId = Guid.NewGuid();
-
-            RiderReadyEvent entered = new RiderReadyEvent(new DateTime(2000, 1, 1), new Rider("Martijn", martijnId), Guid.NewGuid(), "staff");
-            TimingEvent timing = new TimingEvent(new DateTime(2000, 1, 1), new Rider("Bert", bertId),100, 1);
+            Rider bert = new Rider("Bert", Guid.NewGuid());
+            RiderReadyEvent entered = new RiderReadyEvent(new DateTime(2000, 1, 1), bert, Guid.NewGuid(), "staff");
+            TimingEvent start = new TimingEvent(new DateTime(2000, 1, 1), bert ,100, 10);
+            TimingEvent end = new TimingEvent(new DateTime(2000, 1, 1), bert , 200, 11);
+            RiderFinishedEvent left = new RiderFinishedEvent(new DateTime(2000, 1, 1), bert, Guid.NewGuid(), "staff", end);
+            FinishedEvent finished = new FinishedEvent(entered, start, left);
+            DSQEvent dsq = new DSQEvent(new DateTime(2000, 1, 1), bert, "staff", "reason");
+            PenaltyEvent penalty = new PenaltyEvent(new DateTime(2000, 1, 1), bert, "reason", 3, "staff");
+            ClearReadyEvent clear = new ClearReadyEvent(new DateTime(2000, 1, 1), new Rider("Martijn", Guid.NewGuid()), Guid.NewGuid(), "staff");
 
             TrackerConfig config = new TrackerConfig
             {
@@ -27,7 +31,16 @@ namespace ModelsTests
                 EndTimingGateId = 11
             };
 
-            RaceSummary subject = new RaceSummary(new List<RaceEvent> { entered, timing }, config);
+            RaceSummary subject = new RaceSummary(new List<RaceEvent> {
+                entered, 
+                start ,
+                end,
+                left,
+                finished,
+                dsq,
+                penalty,
+                clear
+            }, config);
 
             MemoryStream stream = new MemoryStream();
 

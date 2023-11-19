@@ -59,7 +59,6 @@ namespace Models
 
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new RiderConverter(null));
-            serializer.TypeNameHandling = TypeNameHandling.Auto;
 
             JArray events = JArray.FromObject(this.Events, serializer);
 
@@ -84,7 +83,6 @@ namespace Models
 
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Converters.Add(new RiderConverter(riders));
-                serializer.TypeNameHandling = TypeNameHandling.Auto;
 
                 List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
 
