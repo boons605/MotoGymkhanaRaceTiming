@@ -121,8 +121,10 @@ fetch("/racetracking/state")
         let txt = data;
         if ('Error' in data) {
             console.log('Simulation not running');
+            document.getElementById("errorMessage").innerHTML = "Simulation not running.";
         }
         else {
+            document.getElementById("errorMessage").innerHTML = "";
             console.log('Simulation status ok!');
             loadWaitingList(contesters);
         }

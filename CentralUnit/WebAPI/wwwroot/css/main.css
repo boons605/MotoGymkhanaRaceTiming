@@ -23,6 +23,11 @@ body {
     font-size: 12px;
 }
 
+.errorMessage {
+    font-size: 20px;
+    font-weight: bold;
+}
+
 .hideThis {
     visibility: hidden;
 }
