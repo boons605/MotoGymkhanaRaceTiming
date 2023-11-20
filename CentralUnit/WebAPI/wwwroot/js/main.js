@@ -189,18 +189,24 @@ setInterval(updateRiderList, serverRequestInterval);
 
 
 
-var serverDataTxt = "";
+var serverStateTxt = "";
+var serverPenaltiesTxt = "";
 
 async function getDataFromServer() {
     
-    var response = await fetch("/racetracking/state");
-    var data = await response.json();
+    var responseState = await fetch("/racetracking/state");
+    var responsePenalties = await fetch("/racetracking/penalties");
+    var dataState = await responseState.json();
+    var dataPenalties = await responsePenalties.json();
     
-    var oldServerDataTxt = serverDataTxt;
-    serverDataTxt = JSON.stringify(data);
+    var oldServerStateTxt = serverStateTxt;
+    serverStateTxt = JSON.stringify(dataState);
+    
+    var oldServerPenaltiesTxt = serverPenaltiesTxt;
+    serverPenaltiesTxt = JSON.stringify(dataPenalties);
     
     // only continue if server data changed:
-    if (oldServerDataTxt === serverDataTxt) {
+    if (oldServerStateTxt === serverStateTxt && oldServerPenaltiesTxt === serverPenaltiesTxt) {
         return;
     }
     
@@ -208,19 +214,20 @@ async function getDataFromServer() {
     console.log("Server update detected.");
     
     
-    let txt = data;
-
-    //console.log(txt);
+    
+    
+    
+    
+    
+    let txt = dataState;
 
     if (txt['waiting'] === null) {
         apiWaitingId = "";
-    //                console.log("Received from API no rider waiting");
     }
     else {
         var obj = JSON.stringify(txt);
         obj = JSON.parse(obj);
         apiWaitingId = obj['waiting']['Rider']['Id'];
-    //                console.log("Waiting rider received from API: " + apiWaitingId);
     }
 
     let onTrack = txt['onTrack'];
@@ -248,8 +255,10 @@ async function getDataFromServer() {
             var s = it[0].time;
             t = Math.floor((Date.now() - s)/1000);
         }
+        
+        var penalties = translatePenaltiesFromAPIdata(id, dataPenalties);
 
-        inField.push({nr: nr, id: id, name: name, time: t, p1: 0, p3: 0, dnf: false, dsq: false, startMillis: startMillis});
+        inField.push({nr: nr, id: id, name: name, time: t, p1: penalties.p1, p3: penalties.p3, dnf: false, dsq: penalties.dsq, startMillis: startMillis});
         
         inField = sortArrayWithObjects(inField, "startMillis", "desc");
 
@@ -291,6 +300,34 @@ setInterval(getDataFromServer, serverRequestInterval);
 
 
 
+
+
+function translatePenaltiesFromAPIdata(id, data) {
+    
+    var result = {
+        "p1": 0,            // 1s penalties
+        "p3": 0,            // 3s penalties
+        "dsq": false    // dsq flag
+    }
+    
+    var arr = data[id];
+    
+    if (arr.length === 0 ) {
+        // there are no penalties for this rider
+        return result;
+    }
+    
+    // count penalties
+    var pp1 = arr.filter(element => element.seconds === 1).length;
+    var pn1 = arr.filter(element => element.seconds === -1).length;
+    var pp3 = arr.filter(element => element.seconds === 3).length;
+    var pn3 = arr.filter(element => element.seconds === -3).length;
+
+    result.p1 = pp1 - pn1; // total of 1s penalties
+    result.p3 = pp3 - pn3; // total of 3s penalties
+    
+    return result;
+}
 
 
 
@@ -1167,7 +1204,7 @@ function minusBigPenalty(riderId, row) {
         RiderId: riderId,
         StaffName: "UI",
         Reason: "",
-        Seconds: 1
+        Seconds: -3
     };
     
     postAPI("/racetracking/penalty", data);
@@ -1210,7 +1247,8 @@ function flagDSQ(riderId) {
     
     var data = {
     "RiderId": riderId,
-    "StaffName": "UI"
+    "StaffName": "UI",
+    "Reason": ""
     }
     
     postAPI("/racetracking/dsq", data);
