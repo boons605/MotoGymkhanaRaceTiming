@@ -256,7 +256,7 @@ async function getDataFromServer() {
             t = Math.floor((Date.now() - s)/1000);
         }
         
-        var penalties = translatePenaltiesFromAPIdata(id, dataPenalties);
+        var penalties = translatePenaltiesFromAPIdata(dataPenalties, id);
 
         inField.push({nr: nr, id: id, name: name, time: t, p1: penalties.p1, p3: penalties.p3, dnf: false, dsq: penalties.dsq, startMillis: startMillis});
         
@@ -285,7 +285,11 @@ async function getDataFromServer() {
         }
 
         if (unmatchedEndTimes.length > 0) {
+            stopEventActive = true;
             stopEvent();
+        }
+        else if (unmatchedEndTimes.length === 0) {
+            stopEventActive = false;
         }
 
     }); 
@@ -302,7 +306,7 @@ setInterval(getDataFromServer, serverRequestInterval);
 
 
 
-function translatePenaltiesFromAPIdata(id, data) {
+function translatePenaltiesFromAPIdata(data, id = "") {
     
     var result = {
         "p1": 0,            // 1s penalties
@@ -310,7 +314,14 @@ function translatePenaltiesFromAPIdata(id, data) {
         "dsq": false    // dsq flag
     }
     
-    var arr = data[id];
+    var arr;
+    
+    if (id === "") {            // the data sent is an array containing only penalties from 1 id
+        arr = data;
+    }
+    else {
+        arr = data[id];         // the data sent is an object contining arrays of penalties from several id's
+    }
     
     if (arr.length === 0 ) {
         // there are no penalties for this rider
@@ -332,7 +343,7 @@ function translatePenaltiesFromAPIdata(id, data) {
 
 
 
-
+var results = [];
 var serverResultsTxt = "";
 var ridersWithResults = [];
 
@@ -357,6 +368,32 @@ async function getResultsFromServer() {
         }
     });
     
+    // create an object with all the date from finished riders
+    results = [];
+    data.forEach(element => results.push(constructRiderResult(element)));
+    
+    results = sortArrayWithObjects(results, "result", "asc");
+    
+    for (i=0; i < results.length; i++) {
+        results[i].position = i+1;
+    }
+    
+    
+    // correct for shared position (equal results)
+    var prevResult = 0;
+    var prevPosition = 0;
+    var i = 0;
+    results.forEach((result) => {
+        if (result.result === prevResult) {
+            results[i].position = prevPosition;
+        }
+        prevResult = result.result;
+        prevPosition = result.position;
+        i++;
+    });
+    
+    
+    showResults();
     showStartQue();
     
 }
@@ -527,7 +564,7 @@ function ignoreStopEvent() {
     }
     
     
-    stopEventActive = false;
+    //20231120 stopEventActive = false;
     clearInterval(flashingInterval);
     flashingInterval = null;
     
@@ -551,15 +588,19 @@ function showStartQue() {
     ridersDisplayedInStartQue = 0;
     startQue.forEach(addRowStartQue);   // Add all the riders row by row to the table.
     
+    console.log(startQue.length - results.length - inField.length);
+    if (startQue.length - results.length - inField.length < 5) {
+        return;
+    }
     
     // Create the "SHOW ALL" function
     if (!showAll) {
         el.innerHTML +=
-        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onClick="showCompleteStartQue()">&#8595; SHOW ALL</td></tr>';
+        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onpointerdown="showCompleteStartQue()">&#8595; SHOW ALL</td></tr>';
     }
     else {
         el.innerHTML +=
-        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onClick="makeStartQueSmaller()">&#8593; SHOW LESS</td></tr>';  
+        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onpointerdown="makeStartQueSmaller()">&#8593; SHOW LESS</td></tr>';  
     }
 }
 
@@ -632,8 +673,8 @@ function showStartPosition() {
                 '<td id="startBoxName' + index +'" class="tbCell riderName startBoxName">' +
                     riderInfo.name +
                 '</td>' +
-                '<td id="greenLight" class="tbCell turnLightGreen btn'+ hideGoButton() +'" colspan=3 onClick="turnOnGreenLight(\'' + riderInfo.id + '\')">GO!</td>' +
-                '<td id="cancelGreenLight" class="tbCell btn cancelGreenLight" colspan=3  onClick="cancelStart()">CANCEL</td>' +
+                '<td id="greenLight" class="tbCell turnLightGreen btn'+ hideGoButton() +'" colspan=3 onpointerdown="turnOnGreenLight(\'' + riderInfo.id + '\')">GO!</td>' +
+                '<td id="cancelGreenLight" class="tbCell btn cancelGreenLight" colspan=3  onpointerdown="cancelStart()">CANCEL</td>' +
                 '<td colspan=8></td>' +                
               '</tr>';
 }
@@ -729,7 +770,7 @@ function addRowStartQue(currentValue, index, arr) {
                     currentValue.name +
                 '</td>' +
 
-                '<td id="up' + row +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onClick="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="up' + row +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onpointerdown="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8743;' +
                 '</td>' +
                 
@@ -737,7 +778,7 @@ function addRowStartQue(currentValue, index, arr) {
                     
                 '</td>' +
 
-                '<td id="down' + row +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onClick="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="down' + row +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onpointerdown="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8744;' +
                 '</td>' +
                 
@@ -746,7 +787,7 @@ function addRowStartQue(currentValue, index, arr) {
                 '</td>' +
                
 
-                '<td id="startQueStart' + row +'" class="tbCell btn1 startButton' + hideGoButton() + '" onClick="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="startQueStart' + row +'" class="tbCell btn1 startButton' + hideGoButton() + '" onpointerdown="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
                     'START' +
                 '</td>' +
                 
@@ -1288,7 +1329,6 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
        fetch(url)
                .then((response) => {
                    console.log("Sent stopped rider id to server.");
-                    stopEventActive = false;
                     armStop = false;
                     showInField();
                 })
@@ -1431,7 +1471,7 @@ function stopEvent() {
     clearTimeout(ignoreStopEventTimeout);
     ignoreStopEventTimeout = null;
     console.log("A stop event was detected.");
-    stopEventActive = true;
+    //20231120  stopEventActive = true;
     //231101 showInField();
 }
 
@@ -1666,14 +1706,24 @@ function orderToServer (riderId, direction) {
 
 
 function sortArrayWithObjects(arr, key, ascDsc = "asc") {
-    let i = 0;
+    let i = 0;      // start at the beginning of the array
     let size = arr.length;
     let compare;
     
     while (i < size-1) {
-        i++;
+        i++;    // keep going towards the end of the array until every item is in order.
         
-        if (arr[i-1][key] > arr[i][key]) {
+        var obj0 = arr[i-1][key];
+        var obj1 = arr[i][key];
+        
+        
+        // compare = true means the two objects are in the wrong order.
+        // compare = false means the objects are placed correctly regarding each other and they don't have to be moved.
+        
+        if (obj0 === obj1) {
+            compare = false;
+        }
+        else if (obj0 > obj1) {
             if (ascDsc === "asc") {
                 compare = true;
             }
@@ -1690,14 +1740,12 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
             }
         }
         
+        
         if (compare) {
             const obj = arr[i-1];
-            if (arr[i-1][key] !== arr[i][key])
-            {
-                i = 0;
-            }
-            arr = arr.filter(element => element != obj);
-            arr.push(obj);
+            arr = arr.filter(element => element !== obj); // remove the object from the array
+            arr.push(obj); // place the object thats in the wrong position at the end of the array
+            i = 0;  // Back to the start of the array
         }
     }
     
@@ -1738,4 +1786,161 @@ function hideDNFbutton(riderId) {
     else {
         return "";
     }
+}
+
+
+
+
+function showResults() {
+    
+    if (results.length === 0) {
+        return;
+    }
+    
+    var txt = "";
+    
+    txt += "<tr><th colspan=11>Order by: <div class=\"btn order\" onpointerdown=\"orderByFinishedTime()\">Last Finish</div> <div class=\"btn order\" onpointerdown=\"orderByResult()\">Result</div></th></tr><tr>"
+         + "<th>#</th>"
+        + "<th>rider</th>"
+        + "<th>lap time</th>"
+        + "<th>1s</th>"
+        + "<th>3s</th>"
+        + "<th>penalty</th>"
+        + "<th>DNS</th>"
+        + "<th>DNF</th>"
+        + "<th>DSQ</th>"
+        + "<th>result</th>"
+        + "<th>pos</th>"
+         + "</tr>";
+    
+    var order = "asc";
+    if (orderResultsBy === "timestamp") {
+        order = "dsc";
+    }
+    results = sortArrayWithObjects(results, orderResultsBy, order);
+    
+    results.forEach((result) => {
+        var dns;
+        var dnf;
+        var dsq;
+        var p1 = result.p1;
+        var p3 = result.p3;
+        var penaltyTime = result.penaltyTime;
+        
+        dns = "-";
+        
+        if (result.dnf === true) {
+            dnf = "DNF";
+        }
+        else {
+            dnf = "-";
+        }
+        
+        if (result.dsq === true) {
+            dsq = "DSQ";
+        }
+        else {
+            dsq = "-";
+        }
+        
+        if (p1 === 0) {
+            p1 = "-";
+        }
+        
+        if (p3 === 0) {
+            p3 = "-";
+        }
+        
+        if (penaltyTime === 0) {
+            penaltyTime = "";
+        }
+        else {
+            penaltyTime = "+" + penaltyTime + "s";
+        }
+        
+        txt += "<tr><td>";
+        txt += result.nr + "</td><td>";
+        txt += result.name + "</td><td>";
+        txt += displayTime(result.lapTime, "ms") + "</td><td>";
+        txt += p1 + "</td><td>";
+        txt += p3 + "</td><td>";
+        txt += penaltyTime + "</td><td>";
+        txt += dns + "</td><td>";
+        txt += dnf + "</td><td>";
+        txt += dsq + "</td><td>";
+        txt += displayTime(result.result, "ms") + "</td><td>";
+        txt += result.position + "</td>";
+        txt += "</tr>";
+    });
+    
+    document.getElementById('results').innerHTML = txt;
+}
+
+
+function constructRiderResult(data) {
+    var riderResult = {
+        "id": "",
+        "name": "",
+        "nr": 0,
+        "lapTime": 0,
+        "p1": 0,
+        "p3": 0,
+        "penaltyTime": 0,
+        "dnf": false,
+        "dsq": false,
+        "result": 0,
+        "timestamp": "",
+        "position": 0
+    };
+    
+//    console.log(data);
+    
+    var maxValue = 100*60000 - 1; // 100 minutes minus a millisecond
+    
+    riderResult.dsq = data.disqualified;
+    var penalties = translatePenaltiesFromAPIdata(data.penalties);
+    riderResult.p1 = penalties.p1;
+    riderResult.p3 = penalties.p3;
+    riderResult.penaltyTime = riderResult.p1 + 3 * riderResult.p3;  // value in seconds
+    riderResult.name = data.rider.id;
+    riderResult.name = data.rider.name;
+    let index = contesters.indexOf(riderResult.name);
+    let nr = riderNumbers[index];
+    riderResult.nr = nr;
+    riderResult.timestamp = data.end.time;
+    if (data.end.type === "ManualDNFEvent") {
+        riderResult.dnf = true;
+        riderResult.lapTime = maxValue;
+    }
+    else {
+        riderResult.lapTime = Math.floor(data.end.lapTime/1000);
+    }
+    if (riderResult.lapTime > maxValue) {
+        riderResult.lapTime = maxValue;
+    }
+    riderResult.result = riderResult.lapTime + riderResult.penaltyTime * 1000;
+    if (riderResult.dsq === true || riderResult.dnf === true) {
+        riderResult.result = maxValue;
+    }
+    if (riderResult.result > maxValue) {
+        riderResult.result = maxValue;
+    }
+
+
+    return riderResult;
+}
+
+
+var orderResultsBy = "timestamp";
+
+function orderByFinishedTime() {
+    console.log("Order by finished time");
+    orderResultsBy = "timestamp";
+    showResults();
+}
+
+function orderByResult() {
+    console.log("Order by result");
+    orderResultsBy = "position";
+    showResults();
 }
