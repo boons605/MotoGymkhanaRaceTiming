@@ -22,6 +22,7 @@ var serverRequestInterval = 100;
 var startTimes = [];
 var apiWaitingId = "";
 var unmatchedEndTimes = [];
+var maxTimeValue = 10*60000 - 1; // 10 minutes minus a millisecond
 
 
 
@@ -510,36 +511,36 @@ function showInField() {
     inField.forEach(addRowInField);     // Add all the riders row by row to the HTML table  who are now riding (in the field)
     
     
-        
-    return;    
-        
-        
-    // At the bottom of inField table, show the stopped riders and riders with a DNF flag:
-    
-    // Combine info from dnfRiders and stoppedRiders:
-    let vanishingRiders = [];
-    armedDNF.forEach(       element => vanishingRiders.push({id: element.id, time: element.time,                type: "dnf"}) );
-    //stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
-    
-    // Sort the array to display all the riders in order of time:
-    vanishingRiders = sortArrayWithObjects(vanishingRiders, "time", "dsc");
-    
-    // Now display:
-    vanishingRiders.forEach(vanishingElement => 
-        {
-            if (vanishingElement.type === "stopped") {
-                let filtered = stoppedRiders.filter(stoppedRidersElement => stoppedRidersElement.id === vanishingElement.id);
-                addRowInField(filtered[0]);
-            }
-            else if (vanishingElement.type === "dnf") {
-                // DNF riders are still 'in the field'. Therefore, their info must be retreived from 'inField'.
-                let filtered = inField.filter(inFieldElement => inFieldElement.id === vanishingElement.id);
-                ignoreDNFrule = true;   // Otherwise the DNF rider cannot be displayed (see addRowInField()).
-                addRowInField(filtered[0]);
-                ignoreDNFrule = false;  // Reset variable.
-            }
-        }
-    );
+//        
+//    return;    
+//        
+//        
+//    // At the bottom of inField table, show the stopped riders and riders with a DNF flag:
+//    
+//    // Combine info from dnfRiders and stoppedRiders:
+//    let vanishingRiders = [];
+//    armedDNF.forEach(       element => vanishingRiders.push({id: element.id, time: element.time,                type: "dnf"}) );
+//    //stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
+//    
+//    // Sort the array to display all the riders in order of time:
+//    vanishingRiders = sortArrayWithObjects(vanishingRiders, "time", "dsc");
+//    
+//    // Now display:
+//    vanishingRiders.forEach(vanishingElement => 
+//        {
+//            if (vanishingElement.type === "stopped") {
+//                let filtered = stoppedRiders.filter(stoppedRidersElement => stoppedRidersElement.id === vanishingElement.id);
+//                addRowInField(filtered[0]);
+//            }
+//            else if (vanishingElement.type === "dnf") {
+//                // DNF riders are still 'in the field'. Therefore, their info must be retreived from 'inField'.
+//                let filtered = inField.filter(inFieldElement => inFieldElement.id === vanishingElement.id);
+//                ignoreDNFrule = true;   // Otherwise the DNF rider cannot be displayed (see addRowInField()).
+//                addRowInField(filtered[0]);
+//                ignoreDNFrule = false;  // Reset variable.
+//            }
+//        }
+//    );
     
     
    
@@ -1412,6 +1413,10 @@ function forceMatch() {
 function displayTime(ms, format = "s") {
     // Outputs correct time format
     
+    if (ms > maxTimeValue) {    // limits the value of time
+        ms = maxTimeValue;
+    }
+    
     var seconds = Math.floor(ms/1000);
     ms -= seconds * 1000;
     
@@ -1428,9 +1433,6 @@ function displayTime(ms, format = "s") {
     var m = (seconds - s) / 60;
     if (s < 10) {
         s = "0" + s;
-    }
-    if (m < 10) {
-        m = "0" + m;
     }
     var txt = m + ":" + s;
     
@@ -1759,7 +1761,7 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
 
 
 function hideIgnoreButton() {
-    if (stopEventActive || ignoredStopEvent) {
+    if (stopEventActive && !armStop) {
         return "";
     }
     else {
@@ -1799,16 +1801,14 @@ function showResults() {
     
     var txt = "";
     
-    txt += "<tr><th colspan=11>Order by: <div class=\"btn order\" onpointerdown=\"orderByFinishedTime()\">Last Finish</div> <div class=\"btn order\" onpointerdown=\"orderByResult()\">Result</div></th></tr><tr>"
+    txt += "<tr><th colspan=11>Order by: <div class=\"btn order\" onpointerdown=\"orderByFinishedTime()\">Recent Finish</div> <div class=\"btn order\" onpointerdown=\"orderByResult()\">Result</div></th></tr><tr>"
          + "<th>#</th>"
         + "<th>rider</th>"
         + "<th>lap time</th>"
         + "<th>1s</th>"
         + "<th>3s</th>"
-        + "<th>penalty</th>"
-        + "<th>DNS</th>"
-        + "<th>DNF</th>"
-        + "<th>DSQ</th>"
+        + "<th>pen</th>"
+        + "<th>XXX</th>"
         + "<th>result</th>"
         + "<th>pos</th>"
          + "</tr>";
@@ -1820,27 +1820,21 @@ function showResults() {
     results = sortArrayWithObjects(results, orderResultsBy, order);
     
     results.forEach((result) => {
-        var dns;
-        var dnf;
-        var dsq;
+        var flag;
         var p1 = result.p1;
         var p3 = result.p3;
         var penaltyTime = result.penaltyTime;
         
-        dns = "-";
+        flag = "-";
         
-        if (result.dnf === true) {
-            dnf = "DNF";
+        if (result.dns === true) {
+            flag = "DNS";
         }
-        else {
-            dnf = "-";
+        else if (result.dnf === true) {
+            flag = "DNF";
         }
-        
-        if (result.dsq === true) {
-            dsq = "DSQ";
-        }
-        else {
-            dsq = "-";
+        else if (result.dsq === true) {
+            flag = "DSQ";
         }
         
         if (p1 === 0) {
@@ -1865,9 +1859,7 @@ function showResults() {
         txt += p1 + "</td><td>";
         txt += p3 + "</td><td>";
         txt += penaltyTime + "</td><td>";
-        txt += dns + "</td><td>";
-        txt += dnf + "</td><td>";
-        txt += dsq + "</td><td>";
+        txt += flag + "</td><td>";
         txt += displayTime(result.result, "ms") + "</td><td>";
         txt += result.position + "</td>";
         txt += "</tr>";
@@ -1895,8 +1887,6 @@ function constructRiderResult(data) {
     
 //    console.log(data);
     
-    var maxValue = 100*60000 - 1; // 100 minutes minus a millisecond
-    
     riderResult.dsq = data.disqualified;
     var penalties = translatePenaltiesFromAPIdata(data.penalties);
     riderResult.p1 = penalties.p1;
@@ -1910,20 +1900,20 @@ function constructRiderResult(data) {
     riderResult.timestamp = data.end.time;
     if (data.end.type === "ManualDNFEvent") {
         riderResult.dnf = true;
-        riderResult.lapTime = maxValue;
+        riderResult.lapTime = maxTimeValue;
     }
     else {
         riderResult.lapTime = Math.floor(data.end.lapTime/1000);
     }
-    if (riderResult.lapTime > maxValue) {
-        riderResult.lapTime = maxValue;
+    if (riderResult.lapTime > maxTimeValue) {
+        riderResult.lapTime = maxTimeValue;
     }
     riderResult.result = riderResult.lapTime + riderResult.penaltyTime * 1000;
     if (riderResult.dsq === true || riderResult.dnf === true) {
-        riderResult.result = maxValue;
+        riderResult.result = maxTimeValue;
     }
-    if (riderResult.result > maxValue) {
-        riderResult.result = maxValue;
+    if (riderResult.result > maxTimeValue) {
+        riderResult.result = maxTimeValue;
     }
 
 
