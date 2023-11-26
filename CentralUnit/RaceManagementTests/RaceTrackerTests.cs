@@ -124,6 +124,34 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnTimer_ForEnd_WithoutRiderLeft_ShouldSaveEvent()
         {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 200);
+
+            DateTime endTime = DateTime.Now;
+            timer.EmitTriggerEvent(200, "Timer", 1, endTime);
+
+            source.Cancel();
+
+            RaceSummary summary = race.Result;
+            var state = subject.GetState;
+
+            // since the user has to manually match an end timing event for a rider the timing event will always come in first and have to be saved
+            Assert.AreEqual(3, summary.Events.Count);
+
+            //the state should match the summary
+            TimingEvent end = summary.Events[2] as TimingEvent;
+            Assert.AreEqual(state.unmatchedTimes[0], end);
+
+            Assert.AreEqual(null, end.Rider); //a lone timer event cannot have a rider
+            Assert.AreEqual(200, end.Microseconds);
+            Assert.AreEqual(endTime, end.Time);
+        }
+
+        [TestMethod]
+        public void OnTimer_ForEnd_WithoutRiderOnTRack_ShouldIgnoreEvent()
+        {
             //1 is the end gate
             timer.EmitTriggerEvent(100, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
 
@@ -133,15 +161,8 @@ namespace RaceManagementTests
             var state = subject.GetState;
 
             // since the user has to manually match an end timing event for a rider the timing event will always come in first and have to be saved
-            Assert.AreEqual(1, summary.Events.Count);
-
-            //the state should match the summary
-            TimingEvent end = summary.Events[0] as TimingEvent;
-            Assert.AreEqual(state.unmatchedTimes[0], end);
-
-            Assert.AreEqual(null, end.Rider); //a lone timer event cannot have a rider
-            Assert.AreEqual(100L, end.Microseconds);
-            Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), end.Time);
+            Assert.AreEqual(0, summary.Events.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
         }
 
         [TestMethod]

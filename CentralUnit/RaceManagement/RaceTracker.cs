@@ -384,14 +384,21 @@ namespace RaceManagement
             }
             else if (args.GateId == config.EndTimingGateId)
             {
-                //when a rider triggers the end timing unit, that must be matched to an end id unit event
-                //if there is such a match, then it must be matched to an on track rider
+                if (onTrackRiders.Count > 0)
+                {
+                    //when a rider triggers the end timing unit, that must be matched to an end id unit event
+                    //if there is such a match, then it must be matched to an on track rider
 
-                //we dont know the rider yet
-                TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
+                    //we dont know the rider yet
+                    TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
 
-                raceState.Enqueue(newEvent);
-                endTimes.Add(newEvent.EventId, newEvent);
+                    raceState.Enqueue(newEvent);
+                    endTimes.Add(newEvent.EventId, newEvent);
+                }
+                else
+                {
+                    Log.Info($"Discarding timestamp from gate {args.GateId} at {args.Microseconds} us, no riders on track");
+                }
             }
             else
             {
