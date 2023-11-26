@@ -152,13 +152,27 @@ namespace RaceManagement
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Dictionary<Guid, List<PenaltyEvent>> PendingPenalties
+        public Dictionary<Guid, List<ManualEvent>> PendingPenalties
         {
             get
             {
                 lock(StateLock)
                 {
-                    return new Dictionary<Guid, List<PenaltyEvent>>(pendingPenalties);
+                    Dictionary<Guid, List<ManualEvent>> result = new Dictionary<Guid, List<ManualEvent>>();
+
+                    foreach(KeyValuePair<Guid, List<PenaltyEvent>> penalties in pendingPenalties)
+                    {
+                        Guid riderId = penalties.Key;
+                        result.Add(riderId, penalties.Value.Select(x => x as ManualEvent).ToList());
+                        
+                        if (pendingDisqualifications.ContainsKey(riderId))
+                        {
+                            result[riderId].Add(pendingDisqualifications[penalties.Key]);
+                        }
+                        
+                    }
+
+                    return result;
                 }
             }
         }
@@ -438,7 +452,14 @@ namespace RaceManagement
 
                 if (onTrackRiders.ContainsKey(rider.Id))
                 {
-                    pendingDisqualifications.Add(rider.Id, dsq);
+                    if (pendingDisqualifications.ContainsKey(rider.Id))
+                    {
+                        Log.Warn($"Received duplicate DSQ event for rider {rider.Id}. Event will be ignored");
+                    }
+                    else
+                    {
+                        pendingDisqualifications.Add(rider.Id, dsq);
+                    }
                 }
                 else
                 {

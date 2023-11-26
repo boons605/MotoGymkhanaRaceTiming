@@ -15,7 +15,7 @@ namespace RaceManagementTests.TestHelpers
         public List<Lap> Laps => new List<Lap>();
         public List<Rider> Riders => new List<Rider>();
 
-        public Dictionary<Guid, List<PenaltyEvent>> PendingPenalties => new Dictionary<Guid, List<PenaltyEvent>>();
+        public Dictionary<Guid, List<ManualEvent>> PendingPenalties => new Dictionary<Guid, List<ManualEvent>>();
 
         public event EventHandler<LapCompletedEventArgs> OnRiderDNF;
         public event EventHandler<LapCompletedEventArgs> OnRiderMatched;

@@ -258,7 +258,7 @@ namespace RaceManagement
             return tracker.Riders;
         }
 
-        public Dictionary<Guid, List<PenaltyEvent>> GetPendingPenalties()
+        public Dictionary<Guid, List<ManualEvent>> GetPendingPenalties()
         {
             return tracker.PendingPenalties;
         }

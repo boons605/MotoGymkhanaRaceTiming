@@ -503,6 +503,12 @@ namespace RaceManagementTests
 
             //finish the lap
             timer.EmitTriggerEvent(200, "Timer", 1, new DateTime(2000, 1, 1, 1, 2, 1));
+
+            while (subject.GetState.unmatchedTimes.Count == 0)
+            {
+                Thread.Yield();
+            }
+
             Guid timingId = subject.GetState.unmatchedTimes[0].EventId;
             subject.AddEvent(new RiderFinishedEventArgs(new DateTime(2000, 1, 1, 1, 1, 1), martijn.Id, "staff", timingId));
 
@@ -654,11 +660,15 @@ namespace RaceManagementTests
             //Martijn triggers timing gate
             timer.EmitTriggerEvent(100, "Timer", 0, new DateTime(2000, 1, 1, 1, 2, 1));
 
+            //these should be pending
             subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 1));
             subject.AddEvent(new PenaltyEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent", 2));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "testDSQ"));
 
+            //these should be ignored since bert is not on tack
+            subject.AddEvent(new PenaltyEventArgs(DateTime.Now, bert.Id, "staff", "testEvent", 1));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, bert.Id, "staff", "testDSQ"));
 
-            //do another lap, this one should not have any penalties
             MakeStartEvents(bert, DateTime.Now, timer, subject);
 
             source.Cancel();
@@ -666,12 +676,13 @@ namespace RaceManagementTests
 
             Assert.AreEqual(0, subject.Laps.Count);
 
-            Dictionary<Guid, List<PenaltyEvent>> penalties = subject.PendingPenalties;
+            Dictionary<Guid, List<ManualEvent>> penalties = subject.PendingPenalties;
 
             Assert.AreEqual(2, penalties.Count);
-            Assert.AreEqual(2, penalties[martijn.Id].Count);
-            Assert.AreEqual(1, penalties[martijn.Id][0].Seconds, 1);
-            Assert.AreEqual(1, penalties[martijn.Id][0].Seconds, 2);
+            Assert.AreEqual(3, penalties[martijn.Id].Count);
+            Assert.AreEqual(1, (penalties[martijn.Id][0] as PenaltyEvent).Seconds);
+            Assert.AreEqual(2, (penalties[martijn.Id][1] as PenaltyEvent).Seconds);
+            Assert.IsTrue(penalties[martijn.Id][2] is DSQEvent);
 
             Assert.AreEqual(0, penalties[bert.Id].Count);
         }
@@ -826,6 +837,35 @@ namespace RaceManagementTests
 
             Assert.IsTrue(subject.Laps[1].Disqualified);
             Assert.AreEqual(martijn, subject.Laps[1].Dsq.Rider);
+        }
+
+        [TestMethod]
+        public void DSQ_WithPendingDSQ_ShouldbeIgnored()
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, new DateTime(2000, 1, 1), timer, subject, 100);
+
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent"));
+            subject.AddEvent(new DSQEventArgs(DateTime.Now, martijn.Id, "staff", "testEvent"));
+
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
+
+            // drive on more lap, make sure the extra dsq does not get aplied
+            MakeStartEvents(martijn, DateTime.Now, timer, subject);
+            MakeEndEvents(martijn, DateTime.Now, timer, subject);
+
+            source.Cancel();
+            race.Wait();
+
+            Assert.AreEqual(2, subject.Laps.Count);
+
+            //Martijn has 2 laps, DSQ was sent while he was on track for the second
+            Assert.IsTrue(subject.Laps[0].Disqualified);
+            Assert.AreEqual(martijn, subject.Laps[0].Dsq.Rider);
+
+            Assert.IsFalse(subject.Laps[1].Disqualified);
         }
 
         /// <summary>
