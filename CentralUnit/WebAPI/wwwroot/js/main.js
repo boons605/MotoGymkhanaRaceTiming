@@ -334,9 +334,14 @@ function translatePenaltiesFromAPIdata(data, id = "") {
     var pn1 = arr.filter(element => element.seconds === -1).length;
     var pp3 = arr.filter(element => element.seconds === 3).length;
     var pn3 = arr.filter(element => element.seconds === -3).length;
+    var dsq = false;
+    if (arr.filter(element => element.type === "DSQEvent").length >= 1) {
+        dsq = true;
+    }
 
     result.p1 = pp1 - pn1; // total of 1s penalties
     result.p3 = pp3 - pn3; // total of 3s penalties
+    result.dsq = dsq;
     
     return result;
 }
