@@ -78,7 +78,7 @@ namespace WebAPI.Controllers
         {
             return WrapWithManagerCheck(() =>
             {
-                DeleteTimeEventArgs args = new DeleteTimeEventArgs(DateTime.Now, Guid.Empty, "staff", eventId);
+                DeleteTimeEventArgs args = new DeleteTimeEventArgs(DateTime.Now, "staff", eventId);
 
                 manager.AddEvent(args);
 
