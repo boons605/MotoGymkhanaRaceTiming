@@ -236,6 +236,9 @@ namespace RaceManagement
                                     case ClearReadyEventArgs clear:
                                         OnClearReady(clear);
                                         break;
+                                    case DeleteTimeEventArgs delete:
+                                        OnDeleteTime(delete);
+                                        break;
                                     default:
                                         throw new ArgumentException($"Unknown event type: {e.GetType()}");
                                 }
@@ -531,6 +534,22 @@ namespace RaceManagement
         }
 
         /// <summary>
+        /// Removes a timing gate event from the unmatched end times. This way the list does not fill up over time.
+        /// Also makes life easier for api users since they won't have to wade through an ever growing list
+        /// </summary>
+        /// <param name="args"></param>
+        private void OnDeleteTime(DeleteTimeEventArgs args)
+        {
+            DeleteTimeEvent delete = new DeleteTimeEvent(args.Received, args.TargetEventId, args.StaffName);
+            raceState.Enqueue(delete);
+
+            if(endTimes.ContainsKey(args.TargetEventId))
+            {
+                endTimes.Remove(args.TargetEventId);
+            }
+        }
+
+        /// <summary>
         /// Applies any panding DSQ and Penalty events to a completed lap
         /// </summary>
         /// <param name="lap"></param>
@@ -546,6 +565,10 @@ namespace RaceManagement
             pendingPenalties[lap.Rider.Id].Clear();
         }
 
+        /// <summary>
+        /// Adds a new rider to the startingh list so they are allowed to start
+        /// </summary>
+        /// <param name="rider"></param>
         public void AddRider(Rider rider)
         {
             lock (StateLock)

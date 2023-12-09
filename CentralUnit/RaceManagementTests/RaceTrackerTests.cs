@@ -308,7 +308,35 @@ namespace RaceManagementTests
         }
 
         [TestMethod]
-        public void OnRiderRead_WithWaitingRider_ShouldbeIgnored()
+        public void OnDeleteTime_WithoutPendingTimes_ShouldBeIgnored()
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 200);
+
+            // there are no pending times so this should have no effect
+            Guid targetId = Guid.NewGuid();
+            DateTime eventTime = DateTime.Now;
+            subject.AddEvent(new DeleteTimeEventArgs(eventTime, "staff", targetId));
+
+            source.Cancel();
+            DeleteTimeEvent delete = race.Result.Events.Last() as DeleteTimeEvent;
+
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) state = subject.GetState;
+
+
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
+            Assert.IsNull(state.waiting);
+            Assert.AreEqual(1, state.onTrack.Count);
+
+            Assert.AreEqual(targetId, delete.TargetEventId);
+            Assert.IsNull(delete.Rider);
+            Assert.AreNotEqual(Guid.Empty, delete.EventId);
+        }
+
+        [TestMethod]
+        public void OnRiderReady_WithWaitingRider_ShouldbeIgnored()
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);

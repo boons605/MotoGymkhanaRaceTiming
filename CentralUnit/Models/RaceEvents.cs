@@ -68,6 +68,7 @@ namespace Models
                 { typeof(DSQEvent), RaceEventType.DSQEvent },
                 { typeof(PenaltyEvent), RaceEventType.PenaltyEvent },
                 { typeof(ClearReadyEvent), RaceEventType.ClearReadyEvent },
+                { typeof(DeleteTimeEvent), RaceEventType.DeleteTimeEvent },
 
             };
             EventToType = TypeToEvent.ToDictionary(pair => pair.Value, pair => pair.Key);
@@ -298,6 +299,25 @@ namespace Models
         }
     }
 
+    public class DeleteTimeEvent : ManualEvent
+    {
+        /// <summary>
+        /// Which time event should be deleted
+        /// </summary>
+        [JsonProperty]
+        public readonly Guid TargetEventId;
+
+        public DeleteTimeEvent(DateTime time, Guid targetId, string staffName, Guid eventId = new Guid()) 
+            : base(time, null, eventId == Guid.Empty ? Guid.NewGuid() : eventId, staffName)
+        {
+            TargetEventId = targetId;
+        }
+
+        protected DeleteTimeEvent()
+        {
+        }
+    }
+
     public class EventJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
@@ -344,6 +364,7 @@ namespace Models
         ManualDNFEvent,
         DSQEvent,
         PenaltyEvent,
-        ClearReadyEvent
+        ClearReadyEvent,
+        DeleteTimeEvent
     }
 }

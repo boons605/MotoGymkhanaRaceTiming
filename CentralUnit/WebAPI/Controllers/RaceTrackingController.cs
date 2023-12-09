@@ -72,6 +72,20 @@ namespace WebAPI.Controllers
             });
         }
 
+        [HttpDelete]
+        [Route("[controller]/PendingTime")]
+        public ActionResult DeletePendingTime([FromQuery] Guid eventId)
+        {
+            return WrapWithManagerCheck(() =>
+            {
+                DeleteTimeEventArgs args = new DeleteTimeEventArgs(DateTime.Now, Guid.Empty, "staff", eventId);
+
+                manager.AddEvent(args);
+
+                return Ok();
+            });
+        }
+
         /// <summary>
         /// Returns all driven laps since the provided start
         /// </summary>
