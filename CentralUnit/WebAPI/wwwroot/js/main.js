@@ -263,37 +263,46 @@ async function getDataFromServer() {
         
         inField = sortArrayWithObjects(inField, "startMillis", "desc");
 
-
-        unmatchedEndTimes = [];
-
-        var obj = JSON.stringify(txt);
-        obj = JSON.parse(obj);                
-        arr = obj['unmatchedEndTimes'];
-
-        arr.forEach(
-                (element) => {
-                    var ms = element.Microseconds;
-                    var tid = element.EventId;
-                    unmatchedEndTimes.push({time: ms, id: tid});
-                }
-            );
-
-        unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
-        
-        if (unmatchedEndTimes.length > 1) {
-            console.log("First stopEvent not confirmed. Second stopEvent detected. Force match with unmatchedEndTime.");
-            forceMatch();
-        }
-
-        if (unmatchedEndTimes.length > 0) {
-            stopEventActive = true;
-            stopEvent();
-        }
-        else if (unmatchedEndTimes.length === 0) {
-            stopEventActive = false;
-        }
-
     }); 
+    
+   
+
+
+    unmatchedEndTimes = [];
+
+    var obj = JSON.stringify(txt);
+    obj = JSON.parse(obj);                
+    arr = obj['unmatchedEndTimes'];
+
+    arr.forEach(
+            (element) => {
+                var ms = element.Microseconds;
+                var tid = element.EventId;
+                unmatchedEndTimes.push({time: ms, id: tid});
+            }
+        );
+
+    unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
+
+    if (unmatchedEndTimes.length > 1) {
+        console.log("First stopEvent not confirmed. Second stopEvent detected. Force match with unmatchedEndTime.");
+        forceMatch();
+    }
+
+
+    if (unmatchedEndTimes.length > 0) {
+        console.log("There are unmatchedEndTimes.");
+        stopEventActive = true;
+        stopEvent();
+    }
+    else if (unmatchedEndTimes.length === 0) {
+        console.log("NO unmatchedEndTimes.");
+        stopEventActive = false;
+    }
+    
+    
+    
+    
     
     updateStartBox();
     showInField();
@@ -1344,13 +1353,34 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
 }
 
 
+function waitingStopConfirm() {
+    arr = unmatchedEndTimes;
+    stoppedRiders.forEach(
+            (stopped) =>
+            {
+                arr = arr.filter(element => element.id !== stopped.id);
+            });
+            
+    console.log("Waiting Stop Confirm: " + arr.length);
+    console.log(arr);
+    console.log(unmatchedEndTimes);
+    console.log(stoppedRiders);
+            
+    if (arr.length > 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+
 var deleteMatch = [];
 var armStop = false;
 var results = [];
 
 function confirmStop(riderId) {   
     console.log("confirm stop");
-    // After a stop event, this function sends the correct id of the rider which passed the stop sensor to API.
+
     let index = getInFieldIndex(riderId);
     
     
@@ -1382,7 +1412,7 @@ function confirmStop(riderId) {
     
     results[riderId] = ms;
 
-    console.log("Last STOP event was from rider: " + riderId + ". Ride time: " + ms + "ms."); // Send id to API
+    console.log("Last STOP event was from rider: " + riderId + ". Ride time: " + ms + "ms.");
     
     stopTimeId = unmatchedEndTimes[0]['id'];
         
@@ -1655,6 +1685,13 @@ function hideDNSbutton(id) {
 document.onkeydown = async function (e) {
  //  Send a manual event trigger to server by pressing a key.
  
+    if (e.key === "f" || e.key === "F") {
+          console.log('refresh inField manually');
+
+          showInField();
+          
+          return;
+    }
  
     let formData = new FormData();
   
@@ -1667,10 +1704,10 @@ document.onkeydown = async function (e) {
           console.log('Manual Start Event');
 
            formData.set('gateId', 0);
-      }
-      else {
-          return;
-      }
+    }
+    else {
+        return;
+    }
 
     let response = await fetch('/debug/triggertiminggate', {
         method: 'POST',
@@ -1766,7 +1803,7 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
 
 
 function hideIgnoreButton() {
-    if (stopEventActive && !armStop) {
+    if (stopEventActive) {
         return "";
     }
     else {
