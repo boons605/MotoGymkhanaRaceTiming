@@ -24,7 +24,7 @@ namespace RaceManagement
 
         Task<RaceSummary> Run(CancellationToken token);
         void AddRider(Rider rider);
-        void RemoveRider(Guid Id);
+        void RemoveRider(Guid id);
         Rider GetRiderById(Guid id);
         void ChangePosition(Guid id, int targetPosition);
 

@@ -24,6 +24,7 @@ namespace ModelsTests
             DSQEvent dsq = new DSQEvent(new DateTime(2000, 1, 1), bert, "staff", "reason");
             PenaltyEvent penalty = new PenaltyEvent(new DateTime(2000, 1, 1), bert, "reason", 3, "staff");
             ClearReadyEvent clear = new ClearReadyEvent(new DateTime(2000, 1, 1), new Rider("Martijn", Guid.NewGuid()), Guid.NewGuid(), "staff");
+            DeleteTimeEvent delete = new DeleteTimeEvent(new DateTime(2000, 1, 1), Guid.NewGuid(), "staff");
 
             TrackerConfig config = new TrackerConfig
             {

@@ -124,6 +124,34 @@ namespace RaceManagementTests
         [TestMethod]
         public void OnTimer_ForEnd_WithoutRiderLeft_ShouldSaveEvent()
         {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 200);
+
+            DateTime endTime = DateTime.Now;
+            timer.EmitTriggerEvent(200, "Timer", 1, endTime);
+
+            source.Cancel();
+
+            RaceSummary summary = race.Result;
+            var state = subject.GetState;
+
+            // since the user has to manually match an end timing event for a rider the timing event will always come in first and have to be saved
+            Assert.AreEqual(3, summary.Events.Count);
+
+            //the state should match the summary
+            TimingEvent end = summary.Events[2] as TimingEvent;
+            Assert.AreEqual(state.unmatchedTimes[0], end);
+
+            Assert.AreEqual(null, end.Rider); //a lone timer event cannot have a rider
+            Assert.AreEqual(200, end.Microseconds);
+            Assert.AreEqual(endTime, end.Time);
+        }
+
+        [TestMethod]
+        public void OnTimer_ForEnd_WithoutRiderOnTRack_ShouldIgnoreEvent()
+        {
             //1 is the end gate
             timer.EmitTriggerEvent(100, "Timer", 1, new DateTime(2000, 1, 1, 1, 1, 1));
 
@@ -133,15 +161,8 @@ namespace RaceManagementTests
             var state = subject.GetState;
 
             // since the user has to manually match an end timing event for a rider the timing event will always come in first and have to be saved
-            Assert.AreEqual(1, summary.Events.Count);
-
-            //the state should match the summary
-            TimingEvent end = summary.Events[0] as TimingEvent;
-            Assert.AreEqual(state.unmatchedTimes[0], end);
-
-            Assert.AreEqual(null, end.Rider); //a lone timer event cannot have a rider
-            Assert.AreEqual(100L, end.Microseconds);
-            Assert.AreEqual(new DateTime(2000, 1, 1, 1, 1, 1), end.Time);
+            Assert.AreEqual(0, summary.Events.Count);
+            Assert.AreEqual(0, state.unmatchedTimes.Count);
         }
 
         [TestMethod]
@@ -287,7 +308,126 @@ namespace RaceManagementTests
         }
 
         [TestMethod]
-        public void OnRiderRead_WithWaitingRider_ShouldbeIgnored()
+        public void OnDeleteTime_WithoutPendingTimes_ShouldBeIgnored()
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 200);
+
+            // there are no pending times so this should have no effect
+            Guid targetId = Guid.NewGuid();
+            DateTime eventTime = DateTime.Now;
+            subject.AddEvent(new DeleteTimeEventArgs(eventTime, "staff", targetId));
+
+            source.Cancel();
+            DeleteTimeEvent delete = race.Result.Events.Last() as DeleteTimeEvent;
+
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
+
+
+            Assert.AreEqual(0, unmatchedTimes.Count);
+            Assert.IsNull(waiting);
+            Assert.AreEqual(1, onTrack.Count);
+
+            Assert.AreEqual(targetId, delete.TargetEventId);
+            Assert.IsNull(delete.Rider);
+            Assert.AreNotEqual(Guid.Empty, delete.EventId);
+        }
+
+        [TestMethod]
+        public void OnDeleteTime_WithWrongId_ShouldBeIgnored()
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 200);
+            timer.EmitTriggerEvent(201, "Timer", 1, DateTime.Now);
+
+            // wait for tracker to process events
+            while (subject.GetState.unmatchedTimes.Count != 1)
+            {
+                Thread.Yield();
+            }
+
+            Guid timeId = subject.GetState.unmatchedTimes[0].EventId;
+            Guid wrongId = Guid.NewGuid();
+
+            // astronomically unlikely we have the same guid twice but lets be safe
+            while (timeId == wrongId)
+            {
+                wrongId = Guid.NewGuid();
+            }
+
+            DateTime eventTime = DateTime.Now;
+            subject.AddEvent(new DeleteTimeEventArgs(eventTime, "staff", wrongId));
+
+            source.Cancel();
+            DeleteTimeEvent delete = race.Result.Events.Last() as DeleteTimeEvent;
+
+            (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) = subject.GetState;
+
+            Assert.AreEqual(1, unmatchedTimes.Count);
+            Assert.IsNull(waiting);
+            Assert.AreEqual(1, onTrack.Count);
+
+            Assert.AreEqual(wrongId, delete.TargetEventId);
+            Assert.IsNull(delete.Rider);
+            Assert.AreNotEqual(Guid.Empty, delete.EventId);
+        }
+
+        [TestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        public void OnDeleteTime_WithCorrectId_ShouldDeleteEvent(int eventIndex)
+        {
+            Rider martijn = new Rider("Martijn", Guid.NewGuid());
+            subject.AddRider(martijn);
+
+            MakeStartEvents(martijn, DateTime.Now, timer, subject, 0);
+            timer.EmitTriggerEvent(0, "Timer", 1, DateTime.Now);
+            timer.EmitTriggerEvent(1, "Timer", 1, DateTime.Now);
+
+            // wait for tracker to process events
+            while (subject.GetState.unmatchedTimes.Count != 2)
+            {
+                Thread.Yield();
+            }
+
+            Guid targetId = subject.GetState.unmatchedTimes.First(e => e.Microseconds == eventIndex).EventId;
+
+            subject.AddEvent(new DeleteTimeEventArgs(DateTime.Now, "staff", targetId));
+
+            while (subject.GetState.unmatchedTimes.Count != 1)
+            {
+                Thread.Yield();
+            }
+
+            // make sure the right event got deleted
+            Assert.AreNotEqual(eventIndex, subject.GetState.unmatchedTimes[0].Microseconds);
+
+            MakeEndEvents(martijn, DateTime.Now, timer, subject, 2);
+
+            // wait for rider to finish
+            while (subject.GetState.onTrack.Count != 0)
+            {
+                Thread.Yield();
+            }
+
+            // make sure the remaining time event is the one we did not delete
+            Assert.AreNotEqual(eventIndex, subject.GetState.unmatchedTimes[0].Microseconds);
+
+            //also delete that one
+            Guid lastTarget = subject.GetState.unmatchedTimes[0].EventId;
+            subject.AddEvent(new DeleteTimeEventArgs(DateTime.Now, "staff", lastTarget));
+
+            source.Cancel();
+            Assert.AreEqual(2, race.Result.Events.Where(e => e is DeleteTimeEvent).Count());
+            Assert.AreEqual(0, subject.GetState.unmatchedTimes.Count);
+        }
+
+        [TestMethod]
+        public void OnRiderReady_WithWaitingRider_ShouldbeIgnored()
         {
             Rider martijn = new Rider("Martijn", Guid.NewGuid());
             subject.AddRider(martijn);
@@ -928,19 +1068,19 @@ namespace RaceManagementTests
         ///<param name="microseconds">microseconds from timer at end of lap</param>
         private void MakeEndEvents(Rider rider, DateTime end, MockTimingUnit time, RaceTracker tracker, long microseconds = 100)
         {
-            int previousUnmacthedTimes = tracker.GetState.unmatchedTimes.Count;
+            List<Guid> previousUnmacthedTimes = tracker.GetState.unmatchedTimes.Select(e => e.EventId).ToList();
 
             // rider triggers end timing gate
             time.EmitTriggerEvent(microseconds, "Timer", 1, end);
 
             // wait for tracker to process events
-            while (tracker.GetState.unmatchedTimes.Count == previousUnmacthedTimes)
+            while (tracker.GetState.unmatchedTimes.Count == previousUnmacthedTimes.Count)
             {
                 Thread.Yield();
             }
 
             //we need to know the id of the end timing event
-            Guid timingId = tracker.GetState.unmatchedTimes.Last().EventId;
+            Guid timingId = tracker.GetState.unmatchedTimes.Select(e => e.EventId).Except(previousUnmacthedTimes).First();
 
             tracker.AddEvent(new RiderFinishedEventArgs(end.AddSeconds(1), rider.Id, "staff", timingId));
         }
