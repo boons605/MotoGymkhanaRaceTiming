@@ -15,7 +15,6 @@ var ignoreDNFrule = false;
 var row;
 var probablyStopped;
 var lastStoppedRider;
-var ignoredStopEvent = false;
 var delayTime = 5000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
 var serverRequestInterval = 100;
@@ -23,6 +22,7 @@ var startTimes = [];
 var apiWaitingId = "";
 var unmatchedEndTimes = [];
 var maxTimeValue = 10*60000 - 1; // 10 minutes minus a millisecond
+var armIgnoreStop = false;
 
 
 
@@ -301,6 +301,11 @@ async function getDataFromServer() {
     }
     
     
+    if (unmatchedEndTimes.length > 0 && onTrack.length === 0) {
+        deleteStopEvent(unmatchedEndTimes[0].id);
+    }
+    
+    
     
     
     
@@ -570,24 +575,21 @@ function ignoreStopEvent() {
     // The last stop event was not a valid stop event and should be ignored.
     
     
-    // If 'ignoredStopEvent' is true, than we should cancel last action.
-    if (ignoredStopEvent) {
-        stopEvent();
-        console.log("Last stop event should no longer be ignored.");
-        //231101 showInField();
+    if (armIgnoreStop) {
+        
+        clearTimeout(ignoreStopEventTimeout);
+        ignoreStopEventTimeout = null;
+        armIgnoreStop = false;
+        showInField();
+        
         return;
     }
     
+    stopEventId = unmatchedEndTimes[0].id;
+    armIgnoreStop = true;
+    ignoreStopEventTimeout = setTimeout(deleteStopEvent, delayTime, stopEventId);
     
-    //20231120 stopEventActive = false;
-    clearInterval(flashingInterval);
-    flashingInterval = null;
-    
-    ignoredStopEvent = true;
-    ignoreStopEventTimeout = setTimeout(() => ignoredStopEvent = false, delayTime);
-    
-    console.log("Ignore Stop Event.");
-    //231101 showInField();
+    showInField();
 }
 
 function showStartQue() {
@@ -619,6 +621,13 @@ function showStartQue() {
     }
 }
 
+
+function deleteStopEvent(stopEventId) {
+    armIgnoreStop = false;
+    url = "/racetracking/pendingtime?eventId=" + stopEventId;
+    fetchData = {method: "DELETE"};
+    fetch(url, fetchData);
+}
 
 
 function stopwatch () {
@@ -1110,6 +1119,9 @@ function checkStopEvent(riderId) {
     else if (riderIsDNF) {
         return " hideThis";
     }
+    else if (armIgnoreStop) {
+        return " hideThis";
+    }
     else if (armStop && !riderIsStopped) {
         return " hideThis";
     }
@@ -1527,6 +1539,11 @@ function flashStopButton() {
         return;
     }
     
+    if (armIgnoreStop) {
+        // this means the stopEvent was ignored  by user, so no need to flash
+        return;
+    }
+    
     var html = document.getElementById('inFieldStop' + row);
     html.classList.toggle("stop");
     html.classList.toggle("stopFlash");
@@ -1813,7 +1830,7 @@ function hideIgnoreButton() {
 
 
 function ignoreButtonText() {
-    if (ignoredStopEvent) {
+    if (armIgnoreStop) {
         return "cncl";
     }
     return "IGNORE";
