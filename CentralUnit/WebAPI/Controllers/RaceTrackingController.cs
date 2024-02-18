@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using log4net;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Models;
 using Models.Config;
@@ -16,12 +17,11 @@ namespace WebAPI.Controllers
     [ApiController]
     public class RaceTrackingController : ControllerBase
     {
-        private readonly ILogger<RaceTrackingController> logger;
+        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         private readonly RaceManager manager;
 
         public RaceTrackingController(ILogger<RaceTrackingController> logger, RaceManager tracker)
         {
-            this.logger = logger;
             this.manager = tracker;
         }
 
@@ -187,7 +187,8 @@ namespace WebAPI.Controllers
         public ActionResult AddRider([FromBody] Rider rider)
         {
             return WrapWithManagerCheck(() => 
-            { 
+            {
+                Log.Info($"addin rider {rider.Name}, {rider.Id}");
                 manager.AddRider(rider); 
                 return new StatusCodeResult(200); 
             });
@@ -246,6 +247,7 @@ namespace WebAPI.Controllers
         {
             return WrapWithManagerCheck(() =>
             {
+                Log.Info($"/RiderReady for {riderId}");
                 (RiderReadyEvent waiting, List<(RiderReadyEvent rider, TimingEvent timer)> onTrack, List<TimingEvent> unmatchedTimes) state = manager.GetState;
 
                 JObject errorBody;
@@ -257,6 +259,8 @@ namespace WebAPI.Controllers
                     if (!state.onTrack.Any(tuple => tuple.rider.Rider.Id == riderId))
                     {
                         Rider rider = manager.GetRiderById(riderId);
+
+                        Log.Info($"Found rider on track {rider.Name}");
 
                         // if the given id corresponds to a known rider
                         if (rider is not null)
@@ -306,6 +310,7 @@ namespace WebAPI.Controllers
         [Route("[controller]/ClearStartBox")]
         public ActionResult ClearStartBox()
         {
+            Log.Info($"/ClearStartBox");
             return WrapWithManagerCheck(() =>
             {
                 manager.AddEvent(new ClearReadyEventArgs(DateTime.Now, Guid.Empty, "staff"));

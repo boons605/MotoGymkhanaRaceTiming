@@ -313,11 +313,18 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnClearReady(ClearReadyEventArgs args)
         {
-            Rider forEvent = waitingRider.Rider;
-            waitingRider = null;
-            OnStartEmpty?.Invoke(this, EventArgs.Empty);
+            if (!(waitingRider is null))
+            {
+                Rider forEvent = waitingRider.Rider;
+                waitingRider = null;
+                OnStartEmpty?.Invoke(this, EventArgs.Empty);
 
-            raceState.Enqueue(new ClearReadyEvent(args.Received, forEvent, Guid.NewGuid(), args.StaffName));
+                raceState.Enqueue(new ClearReadyEvent(args.Received, forEvent, Guid.NewGuid(), args.StaffName));
+            }
+            else
+            {
+                Log.Warn($"Ignoring clear startbox event, no rider is waiting");
+            }
         }
 
         /// <summary>

@@ -99,7 +99,9 @@ namespace SensorUnits.TimingUnit
                     TimingTriggeredEventArgs timingEvent;
                     while (this.timingEvents.TryDequeue(out timingEvent))
                     {
+                        Log.Info($"Triggering timing event for {unitId}");
                         this.OnTrigger?.Invoke(this, timingEvent);
+                        Log.Info($"Triggered timing event for {unitId}");
                     }
 
                     while (this.protocolHandler.ReadyToSend() &&
@@ -222,7 +224,7 @@ namespace SensorUnits.TimingUnit
 
                     if ((int)gateId != StartId && gateId != EndId)
                     {
-                        throw new ArgumentException($"Timing sensor reorted gate id: {gateId}, expeted either {StartId} or {EndId}");
+                        throw new ArgumentException($"Timing sensor reported gate id: {gateId}, expeted either {StartId} or {EndId}");
                     }
 
                     this.timingEvents.Enqueue(new TimingTriggeredEventArgs(micros, gateId));
