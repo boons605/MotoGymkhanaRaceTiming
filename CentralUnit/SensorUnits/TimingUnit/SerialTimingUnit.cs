@@ -89,7 +89,8 @@ namespace SensorUnits.TimingUnit
             byte[] commandData = BitConverter.GetBytes(milliSeconds);
             if (milliSeconds == 0)
             {
-                commandData = new byte[] { 0xFF, 0x00, 0x00, 0x00 };
+                //Display can handle max 9:59.999, so 10:00.000 should overflow into .000 to clear the display
+                commandData = BitConverter.GetBytes(600000);
             }
             this.commandQueue.Enqueue(new CommandData((ushort)SerialTimerCommands.UpdateDisplayedTime, 0, commandData));
         }
