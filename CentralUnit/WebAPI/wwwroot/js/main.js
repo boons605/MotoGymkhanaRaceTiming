@@ -15,13 +15,14 @@ var ignoreDNFrule = false;
 var row;
 var probablyStopped;
 var lastStoppedRider;
-var ignoredStopEvent = false;
-var delayTime = 40000;  // For testing set to low value. Live should be a larger value (around 20000).
+var delayTime = 5000;  // For testing set to low value. Live should be a larger value (around 20000).
 var url = "https://localhost:53742";
 var serverRequestInterval = 100;
 var startTimes = [];
 var apiWaitingId = "";
 var unmatchedEndTimes = [];
+var maxTimeValue = 10*60000 - 1; // 10 minutes minus a millisecond
+var armIgnoreStop = false;
 
 
 
@@ -189,18 +190,24 @@ setInterval(updateRiderList, serverRequestInterval);
 
 
 
-var serverDataTxt = "";
+var serverStateTxt = "";
+var serverPenaltiesTxt = "";
 
 async function getDataFromServer() {
     
-    var response = await fetch("/racetracking/state");
-    var data = await response.json();
+    var responseState = await fetch("/racetracking/state");
+    var responsePenalties = await fetch("/racetracking/penalties");
+    var dataState = await responseState.json();
+    var dataPenalties = await responsePenalties.json();
     
-    var oldServerDataTxt = serverDataTxt;
-    serverDataTxt = JSON.stringify(data);
+    var oldServerStateTxt = serverStateTxt;
+    serverStateTxt = JSON.stringify(dataState);
+    
+    var oldServerPenaltiesTxt = serverPenaltiesTxt;
+    serverPenaltiesTxt = JSON.stringify(dataPenalties);
     
     // only continue if server data changed:
-    if (oldServerDataTxt === serverDataTxt) {
+    if (oldServerStateTxt === serverStateTxt && oldServerPenaltiesTxt === serverPenaltiesTxt) {
         return;
     }
     
@@ -208,19 +215,20 @@ async function getDataFromServer() {
     console.log("Server update detected.");
     
     
-    let txt = data;
-
-    //console.log(txt);
+    
+    
+    
+    
+    
+    let txt = dataState;
 
     if (txt['waiting'] === null) {
         apiWaitingId = "";
-    //                console.log("Received from API no rider waiting");
     }
     else {
         var obj = JSON.stringify(txt);
         obj = JSON.parse(obj);
         apiWaitingId = obj['waiting']['Rider']['Id'];
-    //                console.log("Waiting rider received from API: " + apiWaitingId);
     }
 
     let onTrack = txt['onTrack'];
@@ -248,38 +256,58 @@ async function getDataFromServer() {
             var s = it[0].time;
             t = Math.floor((Date.now() - s)/1000);
         }
+        
+        var penalties = translatePenaltiesFromAPIdata(dataPenalties, id);
 
-        inField.push({nr: nr, id: id, name: name, time: t, p1: 0, p3: 0, dnf: false, dsq: false, startMillis: startMillis});
+        inField.push({nr: nr, id: id, name: name, time: t, p1: penalties.p1, p3: penalties.p3, dnf: false, dsq: penalties.dsq, startMillis: startMillis});
         
         inField = sortArrayWithObjects(inField, "startMillis", "desc");
 
-
-        unmatchedEndTimes = [];
-
-        var obj = JSON.stringify(txt);
-        obj = JSON.parse(obj);                
-        arr = obj['unmatchedEndTimes'];
-
-        arr.forEach(
-                (element) => {
-                    var ms = element.Microseconds;
-                    var tid = element.EventId;
-                    unmatchedEndTimes.push({time: ms, id: tid});
-                }
-            );
-
-        unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
-        
-        if (unmatchedEndTimes.length > 1) {
-            console.log("First stopEvent not confirmed. Second stopEvent detected. Force match with unmatchedEndTime.");
-            forceMatch();
-        }
-
-        if (unmatchedEndTimes.length > 0) {
-            stopEvent();
-        }
-
     }); 
+    
+   
+
+
+    unmatchedEndTimes = [];
+
+    var obj = JSON.stringify(txt);
+    obj = JSON.parse(obj);                
+    arr = obj['unmatchedEndTimes'];
+
+    arr.forEach(
+            (element) => {
+                var ms = element.Microseconds;
+                var tid = element.EventId;
+                unmatchedEndTimes.push({time: ms, id: tid});
+            }
+        );
+
+    unmatchedEndTimes = sortArrayWithObjects(unmatchedEndTimes, "time");
+
+    if (unmatchedEndTimes.length > 1) {
+        console.log("First stopEvent not confirmed. Second stopEvent detected. Force match with unmatchedEndTime.");
+        forceMatch();
+    }
+
+
+    if (unmatchedEndTimes.length > 0) {
+        console.log("There are unmatchedEndTimes.");
+        stopEventActive = true;
+        stopEvent();
+    }
+    else if (unmatchedEndTimes.length === 0) {
+        console.log("NO unmatchedEndTimes.");
+        stopEventActive = false;
+    }
+    
+    
+    if (unmatchedEndTimes.length > 0 && onTrack.length === 0) {
+        deleteStopEvent(unmatchedEndTimes[0].id);
+    }
+    
+    
+    
+    
     
     updateStartBox();
     showInField();
@@ -293,9 +321,49 @@ setInterval(getDataFromServer, serverRequestInterval);
 
 
 
+function translatePenaltiesFromAPIdata(data, id = "") {
+    
+    var result = {
+        "p1": 0,            // 1s penalties
+        "p3": 0,            // 3s penalties
+        "dsq": false    // dsq flag
+    }
+    
+    var arr;
+    
+    if (id === "") {            // the data sent is an array containing only penalties from 1 id
+        arr = data;
+    }
+    else {
+        arr = data[id];         // the data sent is an object contining arrays of penalties from several id's
+    }
+    
+    if (arr.length === 0 ) {
+        // there are no penalties for this rider
+        return result;
+    }
+    
+    // count penalties
+    var pp1 = arr.filter(element => element.seconds === 1).length;
+    var pn1 = arr.filter(element => element.seconds === -1).length;
+    var pp3 = arr.filter(element => element.seconds === 3).length;
+    var pn3 = arr.filter(element => element.seconds === -3).length;
+    var dsq = false;
+    if (arr.filter(element => element.type === "DSQEvent").length >= 1) {
+        dsq = true;
+    }
+
+    result.p1 = pp1 - pn1; // total of 1s penalties
+    result.p3 = pp3 - pn3; // total of 3s penalties
+    result.dsq = dsq;
+    
+    return result;
+}
 
 
 
+
+var results = [];
 var serverResultsTxt = "";
 var ridersWithResults = [];
 
@@ -320,6 +388,32 @@ async function getResultsFromServer() {
         }
     });
     
+    // create an object with all the date from finished riders
+    results = [];
+    data.forEach(element => results.push(constructRiderResult(element)));
+    
+    results = sortArrayWithObjects(results, "result", "asc");
+    
+    for (i=0; i < results.length; i++) {
+        results[i].position = i+1;
+    }
+    
+    
+    // correct for shared position (equal results)
+    var prevResult = 0;
+    var prevPosition = 0;
+    var i = 0;
+    results.forEach((result) => {
+        if (result.result === prevResult) {
+            results[i].position = prevPosition;
+        }
+        prevResult = result.result;
+        prevPosition = result.position;
+        i++;
+    });
+    
+    
+    showResults();
     showStartQue();
     
 }
@@ -419,7 +513,7 @@ setInterval(dnfCheck, 500);
 
 
 function stoppedCheck() {
-    stoppedRiders = stoppedRiders.filter(element => element.stopTime > Date.now() - delayTime);   // Set to 5000 for TESTING purposes. Should be longer.
+    stoppedRiders = stoppedRiders.filter(element => element.stopTime > Date.now() - (delayTime + 10000));   // Set to 5000 for TESTING purposes. Should be longer.
     //231101 showInField();
 }
 
@@ -436,36 +530,36 @@ function showInField() {
     inField.forEach(addRowInField);     // Add all the riders row by row to the HTML table  who are now riding (in the field)
     
     
-        
-    return;    
-        
-        
-    // At the bottom of inField table, show the stopped riders and riders with a DNF flag:
-    
-    // Combine info from dnfRiders and stoppedRiders:
-    let vanishingRiders = [];
-    armedDNF.forEach(       element => vanishingRiders.push({id: element.id, time: element.time,                type: "dnf"}) );
-    //stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
-    
-    // Sort the array to display all the riders in order of time:
-    vanishingRiders = sortArrayWithObjects(vanishingRiders, "time", "dsc");
-    
-    // Now display:
-    vanishingRiders.forEach(vanishingElement => 
-        {
-            if (vanishingElement.type === "stopped") {
-                let filtered = stoppedRiders.filter(stoppedRidersElement => stoppedRidersElement.id === vanishingElement.id);
-                addRowInField(filtered[0]);
-            }
-            else if (vanishingElement.type === "dnf") {
-                // DNF riders are still 'in the field'. Therefore, their info must be retreived from 'inField'.
-                let filtered = inField.filter(inFieldElement => inFieldElement.id === vanishingElement.id);
-                ignoreDNFrule = true;   // Otherwise the DNF rider cannot be displayed (see addRowInField()).
-                addRowInField(filtered[0]);
-                ignoreDNFrule = false;  // Reset variable.
-            }
-        }
-    );
+//        
+//    return;    
+//        
+//        
+//    // At the bottom of inField table, show the stopped riders and riders with a DNF flag:
+//    
+//    // Combine info from dnfRiders and stoppedRiders:
+//    let vanishingRiders = [];
+//    armedDNF.forEach(       element => vanishingRiders.push({id: element.id, time: element.time,                type: "dnf"}) );
+//    //stoppedRiders.forEach( element => vanishingRiders.push({id: element.id, time: element.stopTime,    type: "stopped"}) );
+//    
+//    // Sort the array to display all the riders in order of time:
+//    vanishingRiders = sortArrayWithObjects(vanishingRiders, "time", "dsc");
+//    
+//    // Now display:
+//    vanishingRiders.forEach(vanishingElement => 
+//        {
+//            if (vanishingElement.type === "stopped") {
+//                let filtered = stoppedRiders.filter(stoppedRidersElement => stoppedRidersElement.id === vanishingElement.id);
+//                addRowInField(filtered[0]);
+//            }
+//            else if (vanishingElement.type === "dnf") {
+//                // DNF riders are still 'in the field'. Therefore, their info must be retreived from 'inField'.
+//                let filtered = inField.filter(inFieldElement => inFieldElement.id === vanishingElement.id);
+//                ignoreDNFrule = true;   // Otherwise the DNF rider cannot be displayed (see addRowInField()).
+//                addRowInField(filtered[0]);
+//                ignoreDNFrule = false;  // Reset variable.
+//            }
+//        }
+//    );
     
     
    
@@ -481,24 +575,21 @@ function ignoreStopEvent() {
     // The last stop event was not a valid stop event and should be ignored.
     
     
-    // If 'ignoredStopEvent' is true, than we should cancel last action.
-    if (ignoredStopEvent) {
-        stopEvent();
-        console.log("Last stop event should no longer be ignored.");
-        //231101 showInField();
+    if (armIgnoreStop) {
+        
+        clearTimeout(ignoreStopEventTimeout);
+        ignoreStopEventTimeout = null;
+        armIgnoreStop = false;
+        showInField();
+        
         return;
     }
     
+    stopEventId = unmatchedEndTimes[0].id;
+    armIgnoreStop = true;
+    ignoreStopEventTimeout = setTimeout(deleteStopEvent, delayTime, stopEventId);
     
-    stopEventActive = false;
-    clearInterval(flashingInterval);
-    flashingInterval = null;
-    
-    ignoredStopEvent = true;
-    ignoreStopEventTimeout = setTimeout(() => ignoredStopEvent = false, delayTime);
-    
-    console.log("Ignore Stop Event.");
-    //231101 showInField();
+    showInField();
 }
 
 function showStartQue() {
@@ -514,18 +605,29 @@ function showStartQue() {
     ridersDisplayedInStartQue = 0;
     startQue.forEach(addRowStartQue);   // Add all the riders row by row to the table.
     
+    console.log(startQue.length - results.length - inField.length);
+    if (startQue.length - results.length - inField.length < 5) {
+        return;
+    }
     
     // Create the "SHOW ALL" function
     if (!showAll) {
         el.innerHTML +=
-        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onClick="showCompleteStartQue()">&#8595; SHOW ALL</td></tr>';
+        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onpointerdown="showCompleteStartQue()">&#8595; SHOW ALL</td></tr>';
     }
     else {
         el.innerHTML +=
-        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onClick="makeStartQueSmaller()">&#8593; SHOW LESS</td></tr>';  
+        '<tr><td colspan="2"></td><td colspan="7" class="btn1 showAll" onpointerdown="makeStartQueSmaller()">&#8593; SHOW LESS</td></tr>';  
     }
 }
 
+
+function deleteStopEvent(stopEventId) {
+    armIgnoreStop = false;
+    url = "/racetracking/pendingtime?eventId=" + stopEventId;
+    fetchData = {method: "DELETE"};
+    fetch(url, fetchData);
+}
 
 
 function stopwatch () {
@@ -595,8 +697,8 @@ function showStartPosition() {
                 '<td id="startBoxName' + index +'" class="tbCell riderName startBoxName">' +
                     riderInfo.name +
                 '</td>' +
-                '<td id="greenLight" class="tbCell turnLightGreen btn'+ hideGoButton() +'" colspan=3 onClick="turnOnGreenLight(\'' + riderInfo.id + '\')">GO!</td>' +
-                '<td id="cancelGreenLight" class="tbCell btn cancelGreenLight" colspan=3  onClick="cancelStart()">CANCEL</td>' +
+                '<td id="greenLight" class="tbCell turnLightGreen btn'+ hideGoButton() +'" colspan=3 onpointerdown="turnOnGreenLight(\'' + riderInfo.id + '\')">GO!</td>' +
+                '<td id="cancelGreenLight" class="tbCell btn cancelGreenLight" colspan=3  onpointerdown="cancelStart()">CANCEL</td>' +
                 '<td colspan=8></td>' +                
               '</tr>';
 }
@@ -692,7 +794,7 @@ function addRowStartQue(currentValue, index, arr) {
                     currentValue.name +
                 '</td>' +
 
-                '<td id="up' + row +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onClick="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="up' + row +'" class="tbCell btn1 positionChange' + hideFirstUpButton(index) + '" onpointerdown="moveUpOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8743;' +
                 '</td>' +
                 
@@ -700,7 +802,7 @@ function addRowStartQue(currentValue, index, arr) {
                     
                 '</td>' +
 
-                '<td id="down' + row +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onClick="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="down' + row +'" class="tbCell btn1 positionChange' + hideLastDownButton(index) + '" onpointerdown="moveDownOrder(\'' + currentValue.id + '\', ' + row + ')")">' +
                     '&#8744;' +
                 '</td>' +
                 
@@ -709,7 +811,7 @@ function addRowStartQue(currentValue, index, arr) {
                 '</td>' +
                
 
-                '<td id="startQueStart' + row +'" class="tbCell btn1 startButton' + hideGoButton() + '" onClick="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
+                '<td id="startQueStart' + row +'" class="tbCell btn1 startButton' + hideGoButton() + '" onpointerdown="sendRiderToStart(\'' + currentValue.id + '\', ' + row + ')")">' +
                     'START' +
                 '</td>' +
                 
@@ -1017,6 +1119,9 @@ function checkStopEvent(riderId) {
     else if (riderIsDNF) {
         return " hideThis";
     }
+    else if (armIgnoreStop) {
+        return " hideThis";
+    }
     else if (armStop && !riderIsStopped) {
         return " hideThis";
     }
@@ -1167,7 +1272,7 @@ function minusBigPenalty(riderId, row) {
         RiderId: riderId,
         StaffName: "UI",
         Reason: "",
-        Seconds: 1
+        Seconds: -3
     };
     
     postAPI("/racetracking/penalty", data);
@@ -1210,7 +1315,8 @@ function flagDSQ(riderId) {
     
     var data = {
     "RiderId": riderId,
-    "StaffName": "UI"
+    "StaffName": "UI",
+    "Reason": ""
     }
     
     postAPI("/racetracking/dsq", data);
@@ -1250,7 +1356,6 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
        fetch(url)
                .then((response) => {
                    console.log("Sent stopped rider id to server.");
-                    stopEventActive = false;
                     armStop = false;
                     showInField();
                 })
@@ -1260,13 +1365,34 @@ async function matchEndTimeToServer(riderId, stopTimeId) {
 }
 
 
+function waitingStopConfirm() {
+    arr = unmatchedEndTimes;
+    stoppedRiders.forEach(
+            (stopped) =>
+            {
+                arr = arr.filter(element => element.id !== stopped.id);
+            });
+            
+    console.log("Waiting Stop Confirm: " + arr.length);
+    console.log(arr);
+    console.log(unmatchedEndTimes);
+    console.log(stoppedRiders);
+            
+    if (arr.length > 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+
 var deleteMatch = [];
 var armStop = false;
 var results = [];
 
 function confirmStop(riderId) {   
     console.log("confirm stop");
-    // After a stop event, this function sends the correct id of the rider which passed the stop sensor to API.
+
     let index = getInFieldIndex(riderId);
     
     
@@ -1291,13 +1417,14 @@ function confirmStop(riderId) {
     
     stoppedRiders.push(details);
 
-    var millisStart = details.startMillis;
-    var millisEnd = unmatchedEndTimes[0]['time'];
-    var ms = millisEnd - millisStart;
+    var usStart = details.startMillis;
+    var usEnd = unmatchedEndTimes[0]['time'];
+    var us = usEnd - usStart;
+    var ms = Math.floor(us/1000);
     
     results[riderId] = ms;
 
-    console.log("Last STOP event was from rider: " + riderId + ". Ride time: " + ms + "ms."); // Send id to API
+    console.log("Last STOP event was from rider: " + riderId + ". Ride time: " + ms + "ms.");
     
     stopTimeId = unmatchedEndTimes[0]['id'];
         
@@ -1333,6 +1460,10 @@ function forceMatch() {
 function displayTime(ms, format = "s") {
     // Outputs correct time format
     
+    if (ms > maxTimeValue) {    // limits the value of time
+        ms = maxTimeValue;
+    }
+    
     var seconds = Math.floor(ms/1000);
     ms -= seconds * 1000;
     
@@ -1349,9 +1480,6 @@ function displayTime(ms, format = "s") {
     var m = (seconds - s) / 60;
     if (s < 10) {
         s = "0" + s;
-    }
-    if (m < 10) {
-        m = "0" + m;
     }
     var txt = m + ":" + s;
     
@@ -1392,7 +1520,7 @@ function stopEvent() {
     clearTimeout(ignoreStopEventTimeout);
     ignoreStopEventTimeout = null;
     console.log("A stop event was detected.");
-    stopEventActive = true;
+    //20231120  stopEventActive = true;
     //231101 showInField();
 }
 
@@ -1408,6 +1536,11 @@ function flashStopButton() {
     
     if (armStop) {
         // this means the stopEvent was confirmed by user, so no need to flash
+        return;
+    }
+    
+    if (armIgnoreStop) {
+        // this means the stopEvent was ignored  by user, so no need to flash
         return;
     }
     
@@ -1566,14 +1699,39 @@ function hideDNSbutton(id) {
 
 // For testing only:
 
-//document.onkeydown = function (e) {
-//  // Simulate a stop event by pressing "s" button.
-//  
-//  if (e.key === "s" || e.key === "S") {
-//      stopEvent();
-//      //231101 showInField();
-//  }
-//};
+document.onkeydown = async function (e) {
+ //  Send a manual event trigger to server by pressing a key.
+ 
+    if (e.key === "f" || e.key === "F") {
+          console.log('refresh inField manually');
+
+          showInField();
+          
+          return;
+    }
+ 
+    let formData = new FormData();
+  
+    if (e.key === "o" || e.key === "O") {
+        console.log('Manual Stop Event');
+
+        formData.set('gateId', 1);
+    }
+    else if (e.key === "a" || e.key === "A") {
+          console.log('Manual Start Event');
+
+           formData.set('gateId', 0);
+    }
+    else {
+        return;
+    }
+
+    let response = await fetch('/debug/triggertiminggate', {
+        method: 'POST',
+        body: formData
+    });
+     
+};
 
 
 function moveDownOrder(riderId) {
@@ -1609,14 +1767,24 @@ function orderToServer (riderId, direction) {
 
 
 function sortArrayWithObjects(arr, key, ascDsc = "asc") {
-    let i = 0;
+    let i = 0;      // start at the beginning of the array
     let size = arr.length;
     let compare;
     
     while (i < size-1) {
-        i++;
+        i++;    // keep going towards the end of the array until every item is in order.
         
-        if (arr[i-1][key] > arr[i][key]) {
+        var obj0 = arr[i-1][key];
+        var obj1 = arr[i][key];
+        
+        
+        // compare = true means the two objects are in the wrong order.
+        // compare = false means the objects are placed correctly regarding each other and they don't have to be moved.
+        
+        if (obj0 === obj1) {
+            compare = false;
+        }
+        else if (obj0 > obj1) {
             if (ascDsc === "asc") {
                 compare = true;
             }
@@ -1633,14 +1801,12 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
             }
         }
         
+        
         if (compare) {
             const obj = arr[i-1];
-            if (arr[i-1][key] !== arr[i][key])
-            {
-                i = 0;
-            }
-            arr = arr.filter(element => element != obj);
-            arr.push(obj);
+            arr = arr.filter(element => element !== obj); // remove the object from the array
+            arr.push(obj); // place the object thats in the wrong position at the end of the array
+            i = 0;  // Back to the start of the array
         }
     }
     
@@ -1650,20 +1816,11 @@ function sortArrayWithObjects(arr, key, ascDsc = "asc") {
 
 
 
-//function stopClass(riderId) {
-//    if (riderId != probablyStopped || !stopButtonFlash || !stopEventActive) {
-//        return "stop";
-//    }
-//    // changes stopButton css class to make it flash.
-//    else {
-//        return "stopFlash";
-//    }
-//}
 
 
 
 function hideIgnoreButton() {
-    if (stopEventActive || ignoredStopEvent) {
+    if (stopEventActive) {
         return "";
     }
     else {
@@ -1673,7 +1830,7 @@ function hideIgnoreButton() {
 
 
 function ignoreButtonText() {
-    if (ignoredStopEvent) {
+    if (armIgnoreStop) {
         return "cncl";
     }
     return "IGNORE";
@@ -1690,4 +1847,149 @@ function hideDNFbutton(riderId) {
     else {
         return "";
     }
+}
+
+
+
+
+function showResults() {
+    
+    if (results.length === 0) {
+        return;
+    }
+    
+    var txt = "";
+    
+    txt += "<tr><th colspan=11>Order by: <div class=\"btn order\" onpointerdown=\"orderByFinishedTime()\">Recent Finish</div> <div class=\"btn order\" onpointerdown=\"orderByResult()\">Result</div></th></tr><tr>"
+         + "<th>#</th>"
+        + "<th>rider</th>"
+        + "<th>lap time</th>"
+        + "<th>1s</th>"
+        + "<th>3s</th>"
+        + "<th>pen</th>"
+        + "<th>XXX</th>"
+        + "<th>result</th>"
+        + "<th>pos</th>"
+         + "</tr>";
+    
+    var order = "asc";
+    if (orderResultsBy === "timestamp") {
+        order = "dsc";
+    }
+    results = sortArrayWithObjects(results, orderResultsBy, order);
+    
+    results.forEach((result) => {
+        var flag;
+        var p1 = result.p1;
+        var p3 = result.p3;
+        var penaltyTime = result.penaltyTime;
+        
+        flag = "-";
+        
+        if (result.dns === true) {
+            flag = "DNS";
+        }
+        else if (result.dnf === true) {
+            flag = "DNF";
+        }
+        else if (result.dsq === true) {
+            flag = "DSQ";
+        }
+        
+        if (p1 === 0) {
+            p1 = "-";
+        }
+        
+        if (p3 === 0) {
+            p3 = "-";
+        }
+        
+        if (penaltyTime === 0) {
+            penaltyTime = "";
+        }
+        else {
+            penaltyTime = "+" + penaltyTime + "s";
+        }
+        
+        txt += "<tr><td>";
+        txt += result.nr + "</td><td>";
+        txt += result.name + "</td><td>";
+        txt += displayTime(result.lapTime, "ms") + "</td><td>";
+        txt += p1 + "</td><td>";
+        txt += p3 + "</td><td>";
+        txt += penaltyTime + "</td><td>";
+        txt += flag + "</td><td>";
+        txt += displayTime(result.result, "ms") + "</td><td>";
+        txt += result.position + "</td>";
+        txt += "</tr>";
+    });
+    
+    document.getElementById('results').innerHTML = txt;
+}
+
+
+function constructRiderResult(data) {
+    var riderResult = {
+        "id": "",
+        "name": "",
+        "nr": 0,
+        "lapTime": 0,
+        "p1": 0,
+        "p3": 0,
+        "penaltyTime": 0,
+        "dnf": false,
+        "dsq": false,
+        "result": 0,
+        "timestamp": "",
+        "position": 0
+    };
+    
+//    console.log(data);
+    
+    riderResult.dsq = data.disqualified;
+    var penalties = translatePenaltiesFromAPIdata(data.penalties);
+    riderResult.p1 = penalties.p1;
+    riderResult.p3 = penalties.p3;
+    riderResult.penaltyTime = riderResult.p1 + 3 * riderResult.p3;  // value in seconds
+    riderResult.name = data.rider.id;
+    riderResult.name = data.rider.name;
+    let index = contesters.indexOf(riderResult.name);
+    let nr = riderNumbers[index];
+    riderResult.nr = nr;
+    riderResult.timestamp = data.end.time;
+    if (data.end.type === "ManualDNFEvent") {
+        riderResult.dnf = true;
+        riderResult.lapTime = maxTimeValue;
+    }
+    else {
+        riderResult.lapTime = Math.floor(data.end.lapTime/1000);
+    }
+    if (riderResult.lapTime > maxTimeValue) {
+        riderResult.lapTime = maxTimeValue;
+    }
+    riderResult.result = riderResult.lapTime + riderResult.penaltyTime * 1000;
+    if (riderResult.dsq === true || riderResult.dnf === true) {
+        riderResult.result = maxTimeValue;
+    }
+    if (riderResult.result > maxTimeValue) {
+        riderResult.result = maxTimeValue;
+    }
+
+
+    return riderResult;
+}
+
+
+var orderResultsBy = "timestamp";
+
+function orderByFinishedTime() {
+    console.log("Order by finished time");
+    orderResultsBy = "timestamp";
+    showResults();
+}
+
+function orderByResult() {
+    console.log("Order by result");
+    orderResultsBy = "position";
+    showResults();
 }

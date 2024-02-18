@@ -62,7 +62,6 @@ static void MoveAllLapsToResponsData(void)
 
 static void UpdateDisplayedTimeValue(uint32_t* data)
 {
-    timeUpdated = 1U;
     displayTime = (*data);
 }
 

@@ -27,10 +27,7 @@ namespace WebAPI
 
             services.AddSingleton<RaceManager>(manager);
 
-            services.AddMvc().AddNewtonsoftJson((MvcNewtonsoftJsonOptions opt) =>
-            {
-                opt.SerializerSettings.TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All;
-            });
+            services.AddMvc().AddNewtonsoftJson();
 
             services.AddRazorPages();
 

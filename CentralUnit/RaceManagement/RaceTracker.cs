@@ -146,6 +146,37 @@ namespace RaceManagement
             }
         }
 
+        /// <summary>
+        /// Gets all penalties that are pending for riders currently on track.
+        /// These penalties will be applied to their lap when they finish
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public Dictionary<Guid, List<ManualEvent>> PendingPenalties
+        {
+            get
+            {
+                lock(StateLock)
+                {
+                    Dictionary<Guid, List<ManualEvent>> result = new Dictionary<Guid, List<ManualEvent>>();
+
+                    foreach(KeyValuePair<Guid, List<PenaltyEvent>> penalties in pendingPenalties)
+                    {
+                        Guid riderId = penalties.Key;
+                        result.Add(riderId, penalties.Value.Select(x => x as ManualEvent).ToList());
+                        
+                        if (pendingDisqualifications.ContainsKey(riderId))
+                        {
+                            result[riderId].Add(pendingDisqualifications[penalties.Key]);
+                        }
+                        
+                    }
+
+                    return result;
+                }
+            }
+        }
+
         public Rider GetRiderById(Guid id)
         {
             lock (StateLock)
@@ -204,6 +235,9 @@ namespace RaceManagement
                                         break;
                                     case ClearReadyEventArgs clear:
                                         OnClearReady(clear);
+                                        break;
+                                    case DeleteTimeEventArgs delete:
+                                        OnDeleteTime(delete);
                                         break;
                                     default:
                                         throw new ArgumentException($"Unknown event type: {e.GetType()}");
@@ -279,11 +313,18 @@ namespace RaceManagement
         /// <param name="args"></param>
         private void OnClearReady(ClearReadyEventArgs args)
         {
-            Rider forEvent = waitingRider.Rider;
-            waitingRider = null;
-            OnStartEmpty?.Invoke(this, EventArgs.Empty);
+            if (!(waitingRider is null))
+            {
+                Rider forEvent = waitingRider.Rider;
+                waitingRider = null;
+                OnStartEmpty?.Invoke(this, EventArgs.Empty);
 
-            raceState.Enqueue(new ClearReadyEvent(args.Received, forEvent, Guid.NewGuid(), args.StaffName));
+                raceState.Enqueue(new ClearReadyEvent(args.Received, forEvent, Guid.NewGuid(), args.StaffName));
+            }
+            else
+            {
+                Log.Warn($"Ignoring clear startbox event, no rider is waiting");
+            }
         }
 
         /// <summary>
@@ -353,14 +394,21 @@ namespace RaceManagement
             }
             else if (args.GateId == config.EndTimingGateId)
             {
-                //when a rider triggers the end timing unit, that must be matched to an end id unit event
-                //if there is such a match, then it must be matched to an on track rider
+                if (onTrackRiders.Count > 0)
+                {
+                    //when a rider triggers the end timing unit, that must be matched to an end id unit event
+                    //if there is such a match, then it must be matched to an on track rider
 
-                //we dont know the rider yet
-                TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
+                    //we dont know the rider yet
+                    TimingEvent newEvent = new TimingEvent(args.Received, null, args.Microseconds, args.GateId);
 
-                raceState.Enqueue(newEvent);
-                endTimes.Add(newEvent.EventId, newEvent);
+                    raceState.Enqueue(newEvent);
+                    endTimes.Add(newEvent.EventId, newEvent);
+                }
+                else
+                {
+                    Log.Info($"Discarding timestamp from gate {args.GateId} at {args.Microseconds} us, no riders on track");
+                }
             }
             else
             {
@@ -421,7 +469,14 @@ namespace RaceManagement
 
                 if (onTrackRiders.ContainsKey(rider.Id))
                 {
-                    pendingDisqualifications.Add(rider.Id, dsq);
+                    if (pendingDisqualifications.ContainsKey(rider.Id))
+                    {
+                        Log.Warn($"Received duplicate DSQ event for rider {rider.Id}. Event will be ignored");
+                    }
+                    else
+                    {
+                        pendingDisqualifications.Add(rider.Id, dsq);
+                    }
                 }
                 else
                 {
@@ -433,6 +488,7 @@ namespace RaceManagement
                     }
                     else
                     {
+                        ApplyPendingEvents(lastLap);
                         lastLap.SetDsq(dsq);
                     }
                 }
@@ -485,6 +541,22 @@ namespace RaceManagement
         }
 
         /// <summary>
+        /// Removes a timing gate event from the unmatched end times. This way the list does not fill up over time.
+        /// Also makes life easier for api users since they won't have to wade through an ever growing list
+        /// </summary>
+        /// <param name="args"></param>
+        private void OnDeleteTime(DeleteTimeEventArgs args)
+        {
+            DeleteTimeEvent delete = new DeleteTimeEvent(args.Received, args.TargetEventId, args.StaffName);
+            raceState.Enqueue(delete);
+
+            if(endTimes.ContainsKey(args.TargetEventId))
+            {
+                endTimes.Remove(args.TargetEventId);
+            }
+        }
+
+        /// <summary>
         /// Applies any panding DSQ and Penalty events to a completed lap
         /// </summary>
         /// <param name="lap"></param>
@@ -500,6 +572,10 @@ namespace RaceManagement
             pendingPenalties[lap.Rider.Id].Clear();
         }
 
+        /// <summary>
+        /// Adds a new rider to the startingh list so they are allowed to start
+        /// </summary>
+        /// <param name="rider"></param>
         public void AddRider(Rider rider)
         {
             lock (StateLock)

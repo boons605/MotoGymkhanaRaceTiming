@@ -1,6 +1,7 @@
 {
   //Place this file in the output directory to start with a simulation
-  "Riders": [],
+  "Riders": [
+  ],
   "StartGateId": 0,
   "EndGateId": 1,
   "Events": [

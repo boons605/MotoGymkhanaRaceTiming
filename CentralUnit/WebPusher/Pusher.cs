@@ -59,7 +59,7 @@ namespace WebPusher
                     }
 
                     string lapsString = await (await http.GetAsync($"{baseUrl}/racetracking/Laps?start={lapIndex}")).Content.ReadAsStringAsync();
-                    List<Lap> laps = JsonConvert.DeserializeObject<List<Lap>>(lapsString, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+                    List<Lap> laps = JsonConvert.DeserializeObject<List<Lap>>(lapsString);
 
                     lapIndex += laps.Count;
 

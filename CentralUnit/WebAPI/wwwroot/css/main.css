@@ -115,6 +115,41 @@ body {
 }
 
 
+.turnLightGreen {
+    background-color: limegreen;
+}
+
+.cancelGreenLight {
+    background-color: orangered;
+}
+
+
+.startBoxName {
+    font-weight: bold;
+    font-size: 30px;
+}
+
+
+.resultsTable{
+    color: white;
+    width: 100%;
+    font-family: "Courier New";
+}
+
+
+th {
+    text-align: left;
+}
+
+.order {
+    background-color: lightgray;
+    width: 200px;
+    display: inline;
+}
+
+
+
+
 div.table {
           display: table;         
           width: auto;         
@@ -426,16 +461,3 @@ textarea {
 }
 
 
-.turnLightGreen {
-    background-color: limegreen;
-}
-
-.cancelGreenLight {
-    background-color: orangered;
-}
-
-
-.startBoxName {
-    font-weight: bold;
-    font-size: 30px;
-}

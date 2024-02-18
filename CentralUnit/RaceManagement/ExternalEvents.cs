@@ -92,4 +92,21 @@ namespace RaceManagement
         {
         }
     }
+
+    /// <summary>
+    /// Eventargs for when a user wants to signal that an end gate timing event will never be used and can be removed
+    /// </summary>
+    public class DeleteTimeEventArgs : ManualEventArgs
+    {
+        /// <summary>
+        /// The id of the end time event to delete
+        /// </summary>
+        public readonly Guid TargetEventId;
+
+        public DeleteTimeEventArgs(DateTime received, string staffName, Guid targetId) : base(received, Guid.Empty, staffName)
+        {
+            TargetEventId = targetId;
+        }
+    }
+
 }

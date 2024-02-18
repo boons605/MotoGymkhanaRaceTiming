@@ -155,9 +155,11 @@ namespace RaceManagement
             timing = timer;
             displays.Add(timer);
 
-            startLight = new BLEStartLightUnit(CommunicationManager.GetCommunicationDevice(config.StartLightUnitId), "lightUnit", source.Token);
-
-            startLight.SetStartLightColor(StartLightColor.YELLOW);
+            if (!string.IsNullOrEmpty(config.StartLightUnitId))
+            {
+                startLight = new BLEStartLightUnit(CommunicationManager.GetCommunicationDevice(config.StartLightUnitId), "lightUnit", source.Token);
+            }
+            startLight?.SetStartLightColor(StartLightColor.YELLOW);
 
             tracker = new RaceTracker(timing, config.ExtractTrackerConfig(), riders);
             HookEvents(tracker);
@@ -192,14 +194,38 @@ namespace RaceManagement
 
             tracker.OnRiderWaiting += (o, e) => startLight?.SetStartLightColor(StartLightColor.GREEN);
             tracker.OnStartEmpty += (o, e) => startLight?.SetStartLightColor(StartLightColor.YELLOW);
+
+            tracker.OnRiderWaiting += Tracker_OnRiderWaiting;
+        }
+
+        /// <summary>
+        /// Sets time on all connected display units.
+        /// </summary>
+        /// <param name="millis"></param>
+        private void SetTimeOnAllDisplayUnits(int millis)
+        {
+            foreach (var display in displays)
+            {
+                display.SetDisplayTime(millis);
+            }
+        }
+
+        /// <summary>
+        /// Clears the display when first rider enters start box.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Tracker_OnRiderWaiting(object sender, WaitingRiderEventArgs e)
+        {
+            if (tracker.Laps.Count == 0)
+            {
+                SetTimeOnAllDisplayUnits(0);
+            }
         }
 
         private void HandleFinish(object o, LapCompletedEventArgs e)
         {
-            foreach (var display in displays)
-            {
-                display.SetDisplayTime((int)(e.Lap.GetLapTime() / 1000));
-            }
+            SetTimeOnAllDisplayUnits((int)(e.Lap.GetLapTime() / 1000));
         }
 
         public RaceSummary Stop()
@@ -256,6 +282,11 @@ namespace RaceManagement
         public List<Rider> GetKnownRiders()
         {
             return tracker.Riders;
+        }
+
+        public Dictionary<Guid, List<ManualEvent>> GetPendingPenalties()
+        {
+            return tracker.PendingPenalties;
         }
 
         public void AddEvent<T>(T manualEvent) where T : EventArgs
