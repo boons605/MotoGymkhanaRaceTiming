@@ -86,7 +86,12 @@ namespace SensorUnits.TimingUnit
         /// <inheritdoc/>
         public void SetDisplayTime(int milliSeconds)
         {
-            this.commandQueue.Enqueue(new CommandData((ushort)SerialTimerCommands.UpdateDisplayedTime, 0, BitConverter.GetBytes(milliSeconds)));
+            byte[] commandData = BitConverter.GetBytes(milliSeconds);
+            if (milliSeconds == 0)
+            {
+                commandData = new byte[] { 0xFF, 0x00, 0x00, 0x00 };
+            }
+            this.commandQueue.Enqueue(new CommandData((ushort)SerialTimerCommands.UpdateDisplayedTime, 0, commandData));
         }
 
         /// <inheritdoc/>
