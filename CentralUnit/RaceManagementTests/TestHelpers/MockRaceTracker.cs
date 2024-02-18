@@ -17,10 +17,12 @@ namespace RaceManagementTests.TestHelpers
 
         public Dictionary<Guid, List<ManualEvent>> PendingPenalties => new Dictionary<Guid, List<ManualEvent>>();
 
+#pragma warning disable CS0067
         public event EventHandler<LapCompletedEventArgs> OnRiderDNF;
         public event EventHandler<LapCompletedEventArgs> OnRiderMatched;
         public event EventHandler<WaitingRiderEventArgs> OnRiderWaiting;
         public event EventHandler OnStartEmpty;
+#pragma warning restore CS0067
 
         public Task<RaceSummary> Run(CancellationToken token)
         {

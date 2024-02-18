@@ -44,7 +44,7 @@ namespace Models
         {
             if (obj != null)
             {
-                if(obj is Rider)
+                if (obj is Rider)
                 {
                     Rider other = (Rider)obj;
                     if (this.Name == other.Name)

@@ -2,13 +2,13 @@
 //     Copyright (c) Moto Gymkhana. All rights reserved.
 // </copyright>
 
-using Models.Config;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Models.Config;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Models
 {
@@ -22,6 +22,9 @@ namespace Models
         /// </summary>
         public List<RaceEvent> Events { get; private set; }
 
+        /// <summary>
+        /// The config used to run this race
+        /// </summary>
         public TrackerConfig Config { get; private set; }
 
         /// <summary>
@@ -34,19 +37,45 @@ namespace Models
                 .ToList();
 
         /// <summary>
-        /// For json (de)serialization.
+        /// Initializes a new instance of the <see cref="RaceSummary" /> class.
+        /// For JSON (de)serialization.
         /// </summary>
         public RaceSummary()
         {
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="RaceSummary" /> class.
         /// Constructor for general use. Riders will be collected from events
         /// </summary>
+        /// <param name="events">everything that happened during the race</param>
+        /// <param name="config">the config used to run the race</param>
         public RaceSummary(List<RaceEvent> events, TrackerConfig config)
         {
             Events = events;
             Config = config;
+        }
+
+        /// <summary>
+        /// Parses a summary in JSON format from a stream
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static RaceSummary ReadSummary(Stream input)
+        {
+            using (StreamReader reader = new StreamReader(input, System.Text.Encoding.UTF8, false, 1024, true))
+            {
+                JObject intermediate = JObject.Parse(reader.ReadToEnd());
+
+                List<Rider> riders = intermediate["Riders"].ToObject<List<Rider>>();
+
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new RiderConverter(riders));
+
+                List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
+
+                return new RaceSummary(events, intermediate["Config"].ToObject<TrackerConfig>());
+            }
         }
 
         /// <summary>
@@ -67,26 +96,10 @@ namespace Models
             composite.Add("Events", events);
             composite.Add("Config", JObject.FromObject(Config));
 
-            using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true))//we dont own the stream, so dont close it when the writer closes
+            // we dont own the stream, so dont close it when the writer closes
+            using (StreamWriter writer = new StreamWriter(output, System.Text.Encoding.UTF8, 1024, true)) 
             {
                 writer.WriteLine(JsonConvert.SerializeObject(composite));
-            }
-        }
-
-        public static RaceSummary ReadSummary(Stream input)
-        {
-            using (StreamReader reader = new StreamReader(input, System.Text.Encoding.UTF8, false, 1024, true))
-            {
-                JObject intermediate = JObject.Parse(reader.ReadToEnd());
-
-                List<Rider> riders = intermediate["Riders"].ToObject<List<Rider>>();
-
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new RiderConverter(riders));
-
-                List<RaceEvent> events = intermediate["Events"].ToObject<List<RaceEvent>>(serializer);
-
-                return new RaceSummary(events, intermediate["Config"].ToObject<TrackerConfig>());
             }
         }
 
@@ -96,12 +109,29 @@ namespace Models
         /// </summary>
         private class RiderConverter : JsonConverter<Rider>
         {
+            /// <summary>
+            /// Riders to be encoded and decoded
+            /// </summary>
             private readonly List<Rider> riders;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RiderConverter" /> class.
+            /// </summary>
+            /// <param name="riders"></param>
             public RiderConverter(List<Rider> riders)
             {
                 this.riders = riders;
             }
 
+            /// <summary>
+            /// Overrides that standard JSON read function to read the rider name and look up the full rider
+            /// </summary>
+            /// <param name="reader"></param>
+            /// <param name="objectType"></param>
+            /// <param name="existingValue"></param>
+            /// <param name="hasExistingValue"></param>
+            /// <param name="serializer"></param>
+            /// <returns>The full rider with the parsed name</returns>
             public override Rider ReadJson(JsonReader reader, Type objectType, Rider existingValue, bool hasExistingValue, JsonSerializer serializer)
             {
                 string name = (string)reader.Value;
@@ -111,19 +141,39 @@ namespace Models
                 return replacement;
             }
 
+            /// <summary>
+            /// Overrides that standard writing function to only write the rider name instead of the full object
+            /// </summary>
+            /// <param name="writer"></param>
+            /// <param name="value"></param>
+            /// <param name="serializer"></param>
             public override void WriteJson(JsonWriter writer, Rider value, JsonSerializer serializer)
             {
                 writer.WriteValue(value.Name);
             }
         }
 
+        /// <summary>
+        /// Compares rider names
+        /// </summary>
         private class RiderNameEquality : IEqualityComparer<Rider>
         {
+            /// <summary>
+            /// Runs standard string equality for rider names
+            /// </summary>
+            /// <param name="x"></param>
+            /// <param name="y"></param>
+            /// <returns></returns>
             public bool Equals(Rider x, Rider y)
             {
                 return x.Name == y.Name;
             }
 
+            /// <summary>
+            /// Returns GetHashCode of rider name
+            /// </summary>
+            /// <param name="obj"></param>
+            /// <returns></returns>
             public int GetHashCode(Rider obj)
             {
                 return obj.Name.GetHashCode();

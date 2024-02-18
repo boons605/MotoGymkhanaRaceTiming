@@ -14,12 +14,20 @@ using System.Text;
 
 namespace WebAPI.Controllers
 {
+    /// <summary>
+    /// This controller exposes all the endpoints necessary during an active race
+    /// </summary>
     [ApiController]
     public class RaceTrackingController : ControllerBase
     {
         private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         private readonly RaceManager manager;
 
+        /// <summary>
+        /// Standard constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="tracker"></param>
         public RaceTrackingController(ILogger<RaceTrackingController> logger, RaceManager tracker)
         {
             this.manager = tracker;
@@ -72,6 +80,11 @@ namespace WebAPI.Controllers
             });
         }
 
+        /// <summary>
+        /// Removes an end timing event from the system. Useful when something triggers the timing gate accidentally
+        /// </summary>
+        /// <param name="eventId"></param>
+        /// <returns></returns>
         [HttpDelete]
         [Route("[controller]/PendingTime")]
         public ActionResult DeletePendingTime([FromQuery] Guid eventId)
@@ -115,6 +128,10 @@ namespace WebAPI.Controllers
             });
         }
 
+        /// <summary>
+        /// Returns all penalties that apply to the riders that are currently on track
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("[controller]/Penalties")]
         public ActionResult GetPendingPenalties()
@@ -140,7 +157,7 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Starts the race manager to replay the given events
+        /// Starts the race manager from a file containing all events that happened during a race and replays those events
         /// </summary>
         /// <param name="summary"></param>
         /// <returns></returns>
@@ -158,6 +175,13 @@ namespace WebAPI.Controllers
             return new StatusCodeResult(200);
         }
 
+        /// <summary>
+        /// Starts the race manager from a file containing timing gate events and replays those events at the given time
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="delayMilliseconds"></param>
+        /// <param name="overrideEventDelayMilliseconds"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("[controller]/Simulate")]
         public StatusCodeResult Simulate([FromBody] JObject data, [FromQuery] int delayMilliseconds, [FromQuery] int? overrideEventDelayMilliseconds)
@@ -166,6 +190,10 @@ namespace WebAPI.Controllers
             return new StatusCodeResult(200);
         }
 
+        /// <summary>
+        /// Returns all riders that have been added to the system and can start a lap
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("[controller]/GetRiders")]
         public ActionResult GetRiders()
@@ -197,7 +225,7 @@ namespace WebAPI.Controllers
         /// <summary>
         /// Removes a rider from the running race
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
         [Route("[controller]/Rider")]
@@ -210,6 +238,12 @@ namespace WebAPI.Controllers
             });
         }
 
+        /// <summary>
+        /// Changes the starting position of the rider with the given id
+        /// </summary>
+        /// <param name="riderId"></param>
+        /// <param name="newPosition"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("[controller]/ChangeStartingOrder")]
         public ActionResult ChangeStartingOrder([FromQuery] Guid riderId, [FromQuery] int newPosition)

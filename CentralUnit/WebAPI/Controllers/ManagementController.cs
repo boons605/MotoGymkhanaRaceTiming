@@ -9,9 +9,16 @@ using System.IO;
 
 namespace WebAPI.Controllers
 {
+    /// <summary>
+    /// This controller provides endpoints to manage the system. These endpoints are not required during a race
+    /// </summary>
     [ApiController]
     public class ManagementController : ControllerBase
     {
+        /// <summary>
+        /// Returns the 20 most recent lines in the system log
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("[controller]/LogEntries")]
         public JsonResult GetLogEntries()
